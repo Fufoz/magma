@@ -1,16 +1,44 @@
 #include <volk.h>
+#include <GLFW/glfw3.h>
 
 #include "logging.h"
 #include "vk_dbg.h"
 #include "vk_boilerplate.h"
+
 #include <vector>
+#include <string>
+
+std::vector<std::string> desiredExtensions = {
+	"VK_EXT_debug_report"
+};
+std::vector<std::string> desiredLayers = {
+	"VK_LAYER_LUNARG_standard_validation"
+};
 
 int main(int argc, char **argv)
 {
 	magma::log::setSeverityMask(magma::log::MASK_ALL);
 	magma::log::warn("Loading Vulkan loader..");
 	VK_CALL(volkInitialize());
-	VK_CHECK(requestLayersAndExtensions());
+
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+	if(!glfwVulkanSupported())
+	{
+		magma::log::error("GLFW: vulkan is not supported!");
+		return -1;
+	}
+
+	uint32_t requiredExtCount = {};
+	const char** requiredExtStrings = glfwGetRequiredInstanceExtensions(&requiredExtCount);
+
+	for(std::size_t i = 0; i < requiredExtCount; i++)
+	{
+		desiredExtensions.push_back(requiredExtStrings[i]);
+	}
+
+	VK_CHECK(requestLayersAndExtensions(desiredExtensions, desiredLayers));
+	
 	VkInstance instance = createInstance();
 	volkLoadInstance(instance);
 	VkDebugReportCallbackEXT dbgCallback = registerDebugCallback(instance);
@@ -31,6 +59,6 @@ int main(int argc, char **argv)
 	VkQueue graphicsQueue = VK_NULL_HANDLE;
     vkGetDeviceQueue(logicalDevice, queueFamilyIdx, 0, &graphicsQueue);
 	assert(graphicsQueue == VK_NULL_HANDLE);
-
+	
 	return 0;
 }

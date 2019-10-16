@@ -4,30 +4,21 @@
 
 #include <vector>
 
-const char *desiredLayers[] = {
-	"VK_LAYER_LUNARG_standard_validation"
-};
-const uint32_t layersSize = sizeof(desiredLayers)/sizeof(desiredLayers[0]);
-
-const char *desiredExtensions[] = {
-	"VK_KHR_surface",
-	"VK_KHR_win32_surface",
-	"VK_EXT_debug_report"
-};
-const uint32_t extSize = sizeof(desiredExtensions)/sizeof(desiredExtensions[0]);
-
 const char *desiredDeviceExtensions[] = {
 	"VK_KHR_swapchain"
 };
 const uint32_t deviceExtSize = sizeof(desiredDeviceExtensions)/sizeof(desiredDeviceExtensions[0]);
 
-VkBool32 requestLayersAndExtensions()
+VkBool32 requestLayersAndExtensions(const std::vector<std::string>& desiredExtensions, const std::vector<std::string>& desiredLayers)
 {
 	uint32_t extCount = {};
 	vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
 	std::vector<VkExtensionProperties> extensions = {};
 	extensions.resize(extCount); 
 	vkEnumerateInstanceExtensionProperties(nullptr, &extCount, extensions.data());
+	magma::log::debug("Desired Extensions:");
+	for(auto& extension : desiredExtensions)
+		magma::log::debug("\t Extension: {}", extension);
 
 	magma::log::debug("Extensions:");
 	for(auto& extension : extensions)
@@ -39,7 +30,7 @@ VkBool32 requestLayersAndExtensions()
 	{
 		for(auto& extension : extensions)
 		{
-			if(!strcmp(desiredExt, extension.extensionName))
+			if(!strcmp(desiredExt.c_str(), extension.extensionName))
 			{
 				extFound++;
 			}
@@ -64,14 +55,14 @@ VkBool32 requestLayersAndExtensions()
 	{
 		for(auto& layer : layers)
 		{
-			if(!strcmp(desiredLayer, layer.layerName))
+			if(!strcmp(desiredLayer.c_str(), layer.layerName))
 			{
 				layersFound++;
 			}
 		}
 	}
 
-	return (extFound == extSize) && (layersFound == layersSize) ? VK_TRUE : VK_FALSE; 
+	return (extFound == desiredExtensions.size()) && (layersFound == desiredLayers.size()) ? VK_TRUE : VK_FALSE; 
 }
 
 VkDebugReportCallbackEXT registerDebugCallback(VkInstance instance)
@@ -108,10 +99,10 @@ VkInstance createInstance()
 	instanceCreateInfo.pNext = nullptr;
 	instanceCreateInfo.flags = 0;
 	instanceCreateInfo.pApplicationInfo = &appInfo;
-	instanceCreateInfo.enabledLayerCount = sizeof(desiredLayers)/sizeof(desiredLayers[0]);
-	instanceCreateInfo.ppEnabledLayerNames = desiredLayers;
-	instanceCreateInfo.enabledExtensionCount = sizeof(desiredExtensions)/sizeof(desiredExtensions[0]);
-	instanceCreateInfo.ppEnabledExtensionNames = desiredExtensions;
+	instanceCreateInfo.enabledLayerCount = desiredLayers.size();
+	instanceCreateInfo.ppEnabledLayerNames = (char**)desiredLayers.data();
+	instanceCreateInfo.enabledExtensionCount = desiredExtensions.size();
+	instanceCreateInfo.ppEnabledExtensionNames = (char**)desiredExtensions.data();
 	VkInstance instance = VK_NULL_HANDLE;
 	VK_CALL(vkCreateInstance(&instanceCreateInfo, nullptr, &instance));
 	return instance;
