@@ -9,7 +9,7 @@ const char *desiredDeviceExtensions[] = {
 };
 const uint32_t deviceExtSize = sizeof(desiredDeviceExtensions)/sizeof(desiredDeviceExtensions[0]);
 
-VkBool32 requestLayersAndExtensions(const std::vector<std::string>& desiredExtensions, const std::vector<std::string>& desiredLayers)
+VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desiredExtensions, const std::vector<const char*>& desiredLayers)
 {
 	uint32_t extCount = {};
 	vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
@@ -30,7 +30,7 @@ VkBool32 requestLayersAndExtensions(const std::vector<std::string>& desiredExten
 	{
 		for(auto& extension : extensions)
 		{
-			if(!strcmp(desiredExt.c_str(), extension.extensionName))
+			if(!strcmp(desiredExt, extension.extensionName))
 			{
 				extFound++;
 			}
@@ -55,7 +55,7 @@ VkBool32 requestLayersAndExtensions(const std::vector<std::string>& desiredExten
 	{
 		for(auto& layer : layers)
 		{
-			if(!strcmp(desiredLayer.c_str(), layer.layerName))
+			if(!strcmp(desiredLayer, layer.layerName))
 			{
 				layersFound++;
 			}
@@ -67,20 +67,20 @@ VkBool32 requestLayersAndExtensions(const std::vector<std::string>& desiredExten
 
 VkDebugReportCallbackEXT registerDebugCallback(VkInstance instance)
 {
-    //connect debug callback function
-    VkDebugReportCallbackCreateInfoEXT callbackInfo = {};    
-    
-    callbackInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-    callbackInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT |
-        VK_DEBUG_REPORT_WARNING_BIT_EXT |
-        VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
-        VK_DEBUG_REPORT_ERROR_BIT_EXT |
-        VK_DEBUG_REPORT_DEBUG_BIT_EXT;
-    callbackInfo.pfnCallback = debugCallback;
+	//connect debug callback function
+	VkDebugReportCallbackCreateInfoEXT callbackInfo = {};    
+	
+	callbackInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
+	callbackInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT |
+		VK_DEBUG_REPORT_WARNING_BIT_EXT |
+		VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
+		VK_DEBUG_REPORT_ERROR_BIT_EXT |
+		VK_DEBUG_REPORT_DEBUG_BIT_EXT;
+	callbackInfo.pfnCallback = debugCallback;
 
-    VkDebugReportCallbackEXT callback = 0;
-    VK_CALL(vkCreateDebugReportCallbackEXT(instance, &callbackInfo, nullptr, &callback));
-    return callback;
+	VkDebugReportCallbackEXT callback = 0;
+	VK_CALL(vkCreateDebugReportCallbackEXT(instance, &callbackInfo, nullptr, &callback));
+	return callback;
 }
 
 VkInstance createInstance()
@@ -111,70 +111,70 @@ VkInstance createInstance()
 //finds queue family index of the supplied physical device
 uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFlags desiredFlags)
 {
-    uint32_t queueFamPropsCount = 0;
-    //Reports properties of the queues of the specified physical device
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamPropsCount, nullptr);
-    VkQueueFamilyProperties queueFamProps[16] =  {};
+	uint32_t queueFamPropsCount = 0;
+	//Reports properties of the queues of the specified physical device
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamPropsCount, nullptr);
+	VkQueueFamilyProperties queueFamProps[16] =  {};
 
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamPropsCount, queueFamProps);
-    
-    int queueFamilyIndex = -1;
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamPropsCount, queueFamProps);
+	
+	int queueFamilyIndex = -1;
 
-    for(uint32_t i = 0 ; i < queueFamPropsCount; i++) 
+	for(uint32_t i = 0 ; i < queueFamPropsCount; i++) 
 	{
-        if(queueFamProps[i].queueCount > 0 && queueFamProps[i].queueFlags & desiredFlags) 
+		if(queueFamProps[i].queueCount > 0 && queueFamProps[i].queueFlags & desiredFlags) 
 		{
-            return i;
-        }
-    }
+			return i;
+		}
+	}
 
-    return VK_QUEUE_FAMILY_IGNORED;
+	return VK_QUEUE_FAMILY_IGNORED;
 }
 
 VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlags queueFlags, VkPhysicalDeviceType preferredGPUType, VkPhysicalDevice* physicalDevice, uint32_t* queueFamIdx)
 {
-    uint32_t physicalDeviceCount = 0;
-    int32_t preferredIndex = -1;
-    //Enumerates the physical devices accessible to a Vulkan instance
-    VK_CALL(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
+	uint32_t physicalDeviceCount = 0;
+	int32_t preferredIndex = -1;
+	//Enumerates the physical devices accessible to a Vulkan instance
+	VK_CALL(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
 
-    VkPhysicalDevice deviceList[16];
+	VkPhysicalDevice deviceList[16];
 
-    VK_CALL(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, deviceList));
+	VK_CALL(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, deviceList));
 
-    for(uint32_t i = 0; i < physicalDeviceCount; i++) 
+	for(uint32_t i = 0; i < physicalDeviceCount; i++) 
 	{
-        VkPhysicalDeviceProperties vkPhysicalDeviceProps = {};
-        vkGetPhysicalDeviceProperties(deviceList[i], &vkPhysicalDeviceProps);
+		VkPhysicalDeviceProperties vkPhysicalDeviceProps = {};
+		vkGetPhysicalDeviceProperties(deviceList[i], &vkPhysicalDeviceProps);
 
-        magma::log::warn("Checking GPU - {}", vkPhysicalDeviceProps.deviceName);
+		magma::log::warn("Checking GPU - {}", vkPhysicalDeviceProps.deviceName);
 
-        //checks whether physical device supports queue family with graphics flag set
-        uint32_t familyIndex = findQueueFamilyIndex(deviceList[i], queueFlags);
-        
-        if(familyIndex == VK_QUEUE_FAMILY_IGNORED)
-            continue;
+		//checks whether physical device supports queue family with graphics flag set
+		uint32_t familyIndex = findQueueFamilyIndex(deviceList[i], queueFlags);
+		
+		if(familyIndex == VK_QUEUE_FAMILY_IGNORED)
+			continue;
 
-        if(vkPhysicalDeviceProps.deviceType == preferredGPUType) 
+		if(vkPhysicalDeviceProps.deviceType == preferredGPUType) 
 		{
-            preferredIndex = i;
-            break;
-        }
-    }
+			preferredIndex = i;
+			break;
+		}
+	}
 
-    if(preferredIndex >= 0) 
+	if(preferredIndex >= 0) 
 	{
-        VkPhysicalDeviceProperties vkPhysicalDeviceProps = {};
-        vkGetPhysicalDeviceProperties(deviceList[preferredIndex], &vkPhysicalDeviceProps);
+		VkPhysicalDeviceProperties vkPhysicalDeviceProps = {};
+		vkGetPhysicalDeviceProperties(deviceList[preferredIndex], &vkPhysicalDeviceProps);
 
-        magma::log::warn("Selected GPU - {}", vkPhysicalDeviceProps.deviceName);
+		magma::log::warn("Selected GPU - {}", vkPhysicalDeviceProps.deviceName);
 		*queueFamIdx = preferredIndex;
 		*physicalDevice = deviceList[preferredIndex];
 		return VK_TRUE;
-    }
+	}
 
-    magma::log::error("No compatible GPUS were found!");
-    return VK_FALSE;
+	magma::log::error("No compatible GPUS were found!");
+	return VK_FALSE;
 }
 
 VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIdx)
@@ -213,11 +213,11 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t queueFami
 	VkDeviceQueueCreateInfo queueCreateInfo = {};
 	float queuePriority = 1.f;
 	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.pNext = nullptr;
-    queueCreateInfo.flags = VK_FLAGS_NONE;
-    queueCreateInfo.queueFamilyIndex = (uint32_t)queueFamilyIdx;
-    queueCreateInfo.queueCount = 1;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
+	queueCreateInfo.pNext = nullptr;
+	queueCreateInfo.flags = VK_FLAGS_NONE;
+	queueCreateInfo.queueFamilyIndex = (uint32_t)queueFamilyIdx;
+	queueCreateInfo.queueCount = 1;
+	queueCreateInfo.pQueuePriorities = &queuePriority;
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

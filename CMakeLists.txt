@@ -3,8 +3,10 @@ cmake_minimum_required(VERSION 3.10)
 if (WIN32)
    set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
 elseif(LINUX)
-#	set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+#	set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WAYLAND_KHR)
 endif()
+
+set(GLFW_INSTALL OFF)
 
 add_subdirectory(extern/volk)
 add_subdirectory(extern/glfw)

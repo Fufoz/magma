@@ -5,14 +5,14 @@
 #include <vector>
 #include <string>
 
-extern std::vector<std::string> desiredExtensions;
-extern std::vector<std::string> desiredLayers;
+extern std::vector<const char*> desiredExtensions;
+extern std::vector<const char*> desiredLayers;
 
 VkInstance createInstance();
 
 VkBool32 requestLayersAndExtensions(
-	const std::vector<std::string>& desiredExtensions,
-	const std::vector<std::string>& desiredLayers
+	const std::vector<const char*>& desiredExtensions,
+	const std::vector<const char*>& desiredLayers
 );
 
 VkDebugReportCallbackEXT registerDebugCallback(VkInstance instance);

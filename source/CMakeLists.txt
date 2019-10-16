@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.10)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-list(APPEND CMAKE_INSTALL_RPATH "$ORIGIN")
+
 add_executable(magma 
 	main.cc
 	logging.cc

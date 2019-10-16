@@ -4,3 +4,6 @@
 [submodule "extern/volk"]
 	path = extern/volk
 	url = https://github.com/zeux/volk.git
+[submodule "extern/glfw"]
+	path = extern/glfw
+	url = https://github.com/glfw/glfw.git
