@@ -1,2 +1,2 @@
 # Magma
-Magma is a polygon for vulkan graphics test projects using Vulkan API.
+Magma is a polygon for graphics test projects using Vulkan API.
