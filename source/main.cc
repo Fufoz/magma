@@ -150,24 +150,24 @@ int main(int argc, char **argv)
 
 	//create swapchain
 	VkSwapchainCreateInfoKHR swapChainCreateInfo = {};
-    swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    swapChainCreateInfo.pNext = nullptr;
-    swapChainCreateInfo.flags = VK_FLAGS_NONE;
-    swapChainCreateInfo.surface = windowSurface;
-    swapChainCreateInfo.minImageCount = surfaceCapabilities.minImageCount;
-    swapChainCreateInfo.imageFormat = selectedFormat.format;
-    swapChainCreateInfo.imageColorSpace = selectedFormat.colorSpace;
-    swapChainCreateInfo.imageExtent = selectedExtent;
-    swapChainCreateInfo.imageArrayLayers = 1;
-    swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    swapChainCreateInfo.queueFamilyIndexCount = 1;
-    swapChainCreateInfo.pQueueFamilyIndices = &queueFamilyIdx;
-    swapChainCreateInfo.presentMode = selectedPresentMode;
+	swapChainCreateInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	swapChainCreateInfo.pNext = nullptr;
+	swapChainCreateInfo.flags = VK_FLAGS_NONE;
+	swapChainCreateInfo.surface = windowSurface;
+	swapChainCreateInfo.minImageCount = surfaceCapabilities.minImageCount;
+	swapChainCreateInfo.imageFormat = selectedFormat.format;
+	swapChainCreateInfo.imageColorSpace = selectedFormat.colorSpace;
+	swapChainCreateInfo.imageExtent = selectedExtent;
+	swapChainCreateInfo.imageArrayLayers = 1;
+	swapChainCreateInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+	swapChainCreateInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	swapChainCreateInfo.queueFamilyIndexCount = 1;
+	swapChainCreateInfo.pQueueFamilyIndices = &queueFamilyIdx;
+	swapChainCreateInfo.presentMode = selectedPresentMode;
 	swapChainCreateInfo.preTransform = surfaceCapabilities.currentTransform;
 	swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    swapChainCreateInfo.clipped = VK_TRUE;
-    swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+	swapChainCreateInfo.clipped = VK_TRUE;
+	swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
 
 	VkSwapchainKHR swapChain = VK_NULL_HANDLE;
 	VK_CALL(vkCreateSwapchainKHR(logicalDevice, &swapChainCreateInfo, nullptr, &swapChain));
@@ -181,5 +181,31 @@ int main(int argc, char **argv)
 	VkExtent2D currentImageExtent = selectedExtent;
 	VkFormat swapchainImageFormat = selectedFormat.format;
 
+	//images that we can actually "touch"
+	std::vector<VkImageView> imageViews = {};
+	imageViews.resize(swapChainImageCount);
+
+	//populate imageViews vector
+	for(uint32_t i = 0; i < imageViews.size(); i++)
+	{
+		VkImageViewCreateInfo imageViewCreateInfo = {};
+		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		imageViewCreateInfo.pNext = nullptr;
+		imageViewCreateInfo.image = images[i];
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		imageViewCreateInfo.format = swapchainImageFormat;
+		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+		imageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+
+		VK_CALL(vkCreateImageView(logicalDevice, &imageViewCreateInfo, nullptr, &imageViews[i]));
+	}
+	
 	return 0;
 }
