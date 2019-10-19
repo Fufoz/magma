@@ -1,9 +1,11 @@
 #include <volk.h>
 #include <GLFW/glfw3.h>
 
+#include "maths.h"
 #include "logging.h"
 #include "vk_dbg.h"
 #include "vk_boilerplate.h"
+#include "vk_shader.h"
 
 #include <vector>
 #include <string>
@@ -24,7 +26,7 @@ const char* glfwError()
 		return err;
 	}
 	
-	return "No eror";
+	return "No error";
 }
 
 int main(int argc, char **argv)
@@ -32,7 +34,7 @@ int main(int argc, char **argv)
 	magma::log::setSeverityMask(magma::log::MASK_ALL);
 	magma::log::warn("Loading Vulkan loader..");
 	VK_CALL(volkInitialize());
-
+	
 	if(glfwInit() != GLFW_TRUE)
 	{
 		magma::log::error("GLFW: failed to init! {}", glfwError());
@@ -206,6 +208,53 @@ int main(int argc, char **argv)
 
 		VK_CALL(vkCreateImageView(logicalDevice, &imageViewCreateInfo, nullptr, &imageViews[i]));
 	}
+
+	//loading spirv shaders
+	std::vector<uint8_t> shaderSourceVert = {};
+	std::vector<uint8_t> shaderSourceFrag = {};
+	VK_CHECK(loadShader("./shaders/triangleVert.spv", shaderSourceVert));
+	VK_CHECK(loadShader("./shaders/triangleFrag.spv", shaderSourceFrag));
+	VkShaderModule vertShaderModule = createShaderModule(logicalDevice, shaderSourceVert);
+	VkShaderModule fragShaderModule = createShaderModule(logicalDevice, shaderSourceFrag);
+
+	//pipeline configuration:
+
+	//assign shaders to a specific pipeline stage
+	VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo = {};
+	vertShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	vertShaderStageCreateInfo.pNext = nullptr;
+	vertShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
+	vertShaderStageCreateInfo.module = vertShaderModule;
+	vertShaderStageCreateInfo.pName = "main";
+	vertShaderStageCreateInfo.pSpecializationInfo = nullptr;
+
+	VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo = {};
+	fragShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	fragShaderStageCreateInfo.pNext = nullptr;
+	fragShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragShaderStageCreateInfo.module = fragShaderModule;
+	fragShaderStageCreateInfo.pName = "main";
+	fragShaderStageCreateInfo.pSpecializationInfo = nullptr;
 	
+	Vec3 verticies[3] = {
+		{-0.5f, -0.5f, 0.f},
+		{ 0.5f, -0.5f, 0.f},
+		{ 0.0f,  0.5f, 0.f}
+	};
+/*
+	VkVertexInputBindingDescription vertexInputBindingDescription = {};
+	vertexInputBindingDescription.binding = 0;
+	vertexInputBindingDescription.stride = sizeof(Vec3);
+	vertexInputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; 
+
+	VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {};
+	vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputStateCreateInfo.pNext = nullptr;
+	vertexInputStateCreateInfo.flags = VK_FLAGS_NONE;
+	vertexInputStateCreateInfo.vertexBindingDescriptionCount;
+	vertexInputStateCreateInfo.pVertexBindingDescriptions;
+	vertexInputStateCreateInfo.vertexAttributeDescriptionCount;
+	vertexInputStateCreateInfo.pVertexAttributeDescriptions;
+*/
 	return 0;
 }

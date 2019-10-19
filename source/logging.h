@@ -8,7 +8,7 @@ namespace magma
 namespace log
 {
 
-	enum LogMask
+	enum SeverityMask
 	{
 		MASK_INFO  = 1 << 0,
 		MASK_DEBUG = 1 << 1,
@@ -17,9 +17,9 @@ namespace log
 		MASK_ALL   = MASK_INFO|MASK_DEBUG|MASK_WARN|MASK_ERROR
 	};
 
-	void setSeverityMask(LogMask mask);
+	void setSeverityMask(SeverityMask mask);
 	
-	void dump(const std::string& info, LogMask mask);
+	void dump(const std::string& info, SeverityMask mask);
 	
 	template<typename... Args> void info(Args... args)
 	{

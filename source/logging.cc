@@ -11,14 +11,14 @@ namespace magma
 namespace log
 {
 
-	static int logMask = 0;
+	static int severityMask = 0;
 
-	void setSeverityMask(LogMask mask)
+	void setSeverityMask(SeverityMask mask)
 	{
-		logMask |= mask;
+		severityMask |= mask;
 	}
 
-	const char* maskToStr(LogMask mask)
+	const char* maskToStr(SeverityMask mask)
 	{
 		switch(mask)
 		{
@@ -39,7 +39,7 @@ namespace log
 		COLOR_WHITE = FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE|FOREGROUND_INTENSITY
 	};
 
-	Color logLvlToColor(LogMask mask)
+	Color logLvlToColor(SeverityMask mask)
 	{
 		switch(mask) {
 			case MASK_INFO : return  COLOR_WHITE;
@@ -50,15 +50,15 @@ namespace log
 		}
 	}
 
-	void dump(const std::string& info, LogMask mask)
+	void dump(const std::string& info, SeverityMask mask)
 	{
-		if(logMask & mask)
+		if(severityMask & mask)
 		{
 			FILE* streamHandle = mask & MASK_ERROR ? stderr : stdout;
 			HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
 			CONSOLE_SCREEN_BUFFER_INFO consoleInfo = {};
 			GetConsoleScreenBufferInfo(consoleHandle, &consoleInfo);
-			SetConsoleTextAttribute(consoleHandle, COLOR_GREEN);
+			SetConsoleTextAttribute(consoleHandle, COLOR_WHITE);
 			fprintf(streamHandle, "[Magma]");
 			SetConsoleTextAttribute(consoleHandle, logLvlToColor(mask));
 			fprintf(streamHandle, " %s\n", info.c_str());
@@ -73,7 +73,7 @@ namespace log
 	static const char* COLOR_YELLOW = "\x1B[33m";
 	static const char* COLOR_WHITE = "\033[0m";
 
-	const char* logLvlToColor(LogMask mask)
+	const char* logLvlToColor(SeverityMask mask)
 	{
 		switch(mask) {
 			case MASK_INFO : return  COLOR_WHITE;
@@ -84,9 +84,9 @@ namespace log
 		}
 	}
 
-	void dump(const std::string& info, LogMask mask)
+	void dump(const std::string& info, SeverityMask mask)
 	{
-		if(logMask & mask)
+		if(severityMask & mask)
 		{
 			FILE* streamHandle = mask & MASK_ERROR ? stderr : stdout;
 			fprintf(streamHandle, "%s[Magma] %s %s %s\n", COLOR_WHITE, logLvlToColor(mask), info.c_str(), COLOR_WHITE);

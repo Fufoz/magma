@@ -6,6 +6,7 @@ add_executable(magma
 	logging.cc
 	vk_dbg.cc
 	vk_boilerplate.cc
+	vk_shader.cc
 )
 
 target_include_directories(magma PRIVATE ${Vulkan_INCLUDE_DIRS})
