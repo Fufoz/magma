@@ -9,17 +9,20 @@
 
 union Vec2
 {
-	struct {
+	struct
+	{
 		float x;
 		float y;
 	};
 
-	struct {
+	struct
+	{
 		float u;
 		float v;
 	};
 	
-	struct {
+	struct 
+	{
 		float data[2];
 	};
 
@@ -29,30 +32,35 @@ union Vec2
 
 union Vec3
 {
-	struct {
+	struct 
+	{
 		Vec2 xy;
 		float _z;
 	};
 
-	struct {
+	struct
+	{
 		float x;
 		float y;
 		float z;
 	};
 	
-	struct {
+	struct
+	{
 		float u;
 		float v;
 		float _;
 	};
 
-	struct {
+	struct
+	{
 		float R;
 		float G;
 		float B;
 	};
 
-	struct {
+	struct
+	{
 		float data[3];
 	};
 
@@ -62,9 +70,12 @@ union Vec3
 
 union Vec4
 {
-	struct {
-		union {
-			struct {
+	struct 
+	{
+		union 
+		{
+			struct 
+			{
 				float x;
 				float y;
 				float z;
@@ -75,14 +86,16 @@ union Vec4
 		float w;
 	};
 
-	struct {
+	struct
+	{
 		float R;
 		float G;
 		float B;
 		float A;
 	};
 
-	struct {
+	struct
+	{
 		float data[4];
 	};
 
@@ -92,15 +105,18 @@ union Vec4
 
 union mat4x4
 {
-	struct {
+	struct 
+	{
 		float p[16];
 	};
 
-	struct {
+	struct 
+	{
 		Vec4 rows[4];
 	};
 	
-	struct {
+	struct
+	{
 		Vec4 firstRow;
 		Vec4 secondRow;
 		Vec4 thirdRow;
@@ -110,15 +126,18 @@ union mat4x4
 
 union mat3x3
 {
-	struct {
+	struct
+	{
 		float p[9];
 	};
 
-	struct {
+	struct
+	{
 		Vec3 rows[3];
 	};
 	
-	struct {
+	struct
+	{
 		Vec3 firstRow;
 		Vec3 secondRow;
 		Vec3 thirdRow;
@@ -127,14 +146,16 @@ union mat3x3
 
 union Quat
 {
-	struct {
+	struct
+	{
 		float x;
 		float y;
 		float z;
 		float w;
 	};
 
-	struct {
+	struct
+	{
 		Vec3 complex;
 		float scalar;
 	};

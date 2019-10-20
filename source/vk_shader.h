@@ -5,6 +5,6 @@
 #include <vector>
 
 VkBool32 loadShader(const char* path, std::vector<uint8_t>& out);
-VkShaderModule createShaderModule(VkDevice logicalDevice, std::vector<uint8_t>& source);
+VkShaderModule createShaderModule(VkDevice logicalDevice, const std::vector<uint8_t>& source);
 
 #endif

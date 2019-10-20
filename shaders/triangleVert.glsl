@@ -1,10 +1,13 @@
 #version 450
 
+//attribute locations in vertex buffer
 layout(location = 0) in vec3 vertexCoord;
-layout(location = 1) out vec3 vertColor;
+layout(location = 1) in vec3 vertexColor;
+
+out vec3 fragColor;
 
 void main()
 {
 	gl_Position = vec4(vertexCoord, 1.0);
-	vertColor = vec3(0.5, 0.2, 0.4);
+	fragColor = vertexColor;
 }

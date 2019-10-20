@@ -30,7 +30,7 @@ VkBool32 loadShader(const char* path, std::vector<uint8_t>& out)
 	return VK_TRUE;
 }
 
-VkShaderModule createShaderModule(VkDevice logicalDevice, std::vector<uint8_t>& source)
+VkShaderModule createShaderModule(VkDevice logicalDevice, const std::vector<uint8_t>& source)
 {
 	VkShaderModuleCreateInfo moduleCreateInfo = {};
 	moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
