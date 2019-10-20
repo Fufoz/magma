@@ -290,14 +290,14 @@ int main(int argc, char **argv)
 
 	VkViewport viewport = {};
 	viewport.x = 0.f;
-    viewport.y = 0.f;
-    viewport.width = windowWidth;
-    viewport.height = windowHeight;
-    viewport.minDepth = 0.f;
-    viewport.maxDepth = 1.f;
+	viewport.y = 0.f;
+	viewport.width = windowWidth;
+	viewport.height = windowHeight;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
 
 	VkRect2D scissors = {};
-    scissors.extent = currentImageExtent;
+	scissors.extent = currentImageExtent;
 
 	VkPipelineViewportStateCreateInfo pipeViewPortStateCreateInfo = {};
 	pipeViewPortStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -354,14 +354,14 @@ int main(int argc, char **argv)
 	//1.specify per-target color blend settings per each color attachment
 	//alpha-blend testing(blend fragment color based on it's opacity)
 	VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
-    colorBlendAttachmentState.blendEnable = VK_TRUE;
-    colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-    colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-    colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
-    colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT|
+	colorBlendAttachmentState.blendEnable = VK_TRUE;
+	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT|
 		VK_COLOR_COMPONENT_G_BIT|
 		VK_COLOR_COMPONENT_B_BIT|
 		VK_COLOR_COMPONENT_A_BIT;
@@ -385,46 +385,46 @@ int main(int argc, char **argv)
 		VK_DYNAMIC_STATE_LINE_WIDTH
 	};
 	VkPipelineDynamicStateCreateInfo pipeDynamicStateCreateInfo = {};
-    pipeDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    pipeDynamicStateCreateInfo.pNext = nullptr;
-    pipeDynamicStateCreateInfo.flags = VK_FLAGS_NONE;
-    pipeDynamicStateCreateInfo.dynamicStateCount = 1;
-    pipeDynamicStateCreateInfo.pDynamicStates = dynamicStates;
+	pipeDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	pipeDynamicStateCreateInfo.pNext = nullptr;
+	pipeDynamicStateCreateInfo.flags = VK_FLAGS_NONE;
+	pipeDynamicStateCreateInfo.dynamicStateCount = 1;
+	pipeDynamicStateCreateInfo.pDynamicStates = dynamicStates;
 
 	VkPipelineLayoutCreateInfo pipeLayoutCreateInfo = {};
-    pipeLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeLayoutCreateInfo.pNext =  nullptr;
-    pipeLayoutCreateInfo.flags = VK_FLAGS_NONE;
-    pipeLayoutCreateInfo.setLayoutCount = 0;
-    pipeLayoutCreateInfo.pSetLayouts = nullptr;
-    pipeLayoutCreateInfo.pushConstantRangeCount = 0;
-    pipeLayoutCreateInfo.pPushConstantRanges = nullptr;
+	pipeLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeLayoutCreateInfo.pNext =  nullptr;
+	pipeLayoutCreateInfo.flags = VK_FLAGS_NONE;
+	pipeLayoutCreateInfo.setLayoutCount = 0;
+	pipeLayoutCreateInfo.pSetLayouts = nullptr;
+	pipeLayoutCreateInfo.pushConstantRangeCount = 0;
+	pipeLayoutCreateInfo.pPushConstantRanges = nullptr;
 
 	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreatePipelineLayout(logicalDevice, &pipeLayoutCreateInfo, nullptr, &pipelineLayout));
 /*
 	VkAttachmentDescription attachmentDescr = {};
-    VkAttachmentDescriptionFlags    flags;
-    VkFormat                        format = swapchainImageFormat;
-    VkSampleCountFlagBits           samples = VK_SAMPLE_COUNT_1_BIT;
-    VkAttachmentLoadOp              loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    VkAttachmentStoreOp             storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    VkAttachmentLoadOp              stencilLoadOp;
-    VkAttachmentStoreOp             stencilStoreOp;
-    VkImageLayout                   initialLayout;
-    VkImageLayout                   finalLayout;
+	VkAttachmentDescriptionFlags    flags;
+	VkFormat                        format = swapchainImageFormat;
+	VkSampleCountFlagBits           samples = VK_SAMPLE_COUNT_1_BIT;
+	VkAttachmentLoadOp              loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	VkAttachmentStoreOp             storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	VkAttachmentLoadOp              stencilLoadOp;
+	VkAttachmentStoreOp             stencilStoreOp;
+	VkImageLayout                   initialLayout;
+	VkImageLayout                   finalLayout;
 */
 	/*
 	VkRenderPassCreateInfo renderPassInfo = {};
-    VkStructureType                   sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    const void*                       pNext = nullptr;
-    VkRenderPassCreateFlags           flags = VK_FLAGS_NONE;
-    uint32_t                          attachmentCount;
-    const VkAttachmentDescription*    pAttachments;
-    uint32_t                          subpassCount;
-    const VkSubpassDescription*       pSubpasses;
-    uint32_t                          dependencyCount;
-    const VkSubpassDependency*        pDependencies;
+	VkStructureType                   sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	const void*                       pNext = nullptr;
+	VkRenderPassCreateFlags           flags = VK_FLAGS_NONE;
+	uint32_t                          attachmentCount;
+	const VkAttachmentDescription*    pAttachments;
+	uint32_t                          subpassCount;
+	const VkSubpassDescription*       pSubpasses;
+	uint32_t                          dependencyCount;
+	const VkSubpassDependency*        pDependencies;
 */
 
 	return 0;
