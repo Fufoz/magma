@@ -220,21 +220,20 @@ int main(int argc, char **argv)
 	//pipeline configuration:
 
 	//assign shaders to a specific pipeline stage
-	VkPipelineShaderStageCreateInfo vertShaderStageCreateInfo = {};
-	vertShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	vertShaderStageCreateInfo.pNext = nullptr;
-	vertShaderStageCreateInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
-	vertShaderStageCreateInfo.module = vertShaderModule;
-	vertShaderStageCreateInfo.pName = "main";
-	vertShaderStageCreateInfo.pSpecializationInfo = nullptr;
+	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
+	shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfos[0].pNext = nullptr;
+	shaderStageCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	shaderStageCreateInfos[0].module = vertShaderModule;
+	shaderStageCreateInfos[0].pName = "main";
+	shaderStageCreateInfos[0].pSpecializationInfo = nullptr;
 
-	VkPipelineShaderStageCreateInfo fragShaderStageCreateInfo = {};
-	fragShaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	fragShaderStageCreateInfo.pNext = nullptr;
-	fragShaderStageCreateInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	fragShaderStageCreateInfo.module = fragShaderModule;
-	fragShaderStageCreateInfo.pName = "main";
-	fragShaderStageCreateInfo.pSpecializationInfo = nullptr;
+	shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfos[1].pNext = nullptr;
+	shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	shaderStageCreateInfos[1].module = fragShaderModule;
+	shaderStageCreateInfos[1].pName = "main";
+	shaderStageCreateInfos[1].pSpecializationInfo = nullptr;
 	
 	struct VertexPC
 	{
@@ -335,13 +334,15 @@ int main(int argc, char **argv)
 	pipeMultisampleCreateInfo.alphaToCoverageEnable = VK_FALSE;
 	pipeMultisampleCreateInfo.alphaToOneEnable = VK_FALSE;
 
+
+	//disable depth/stencile pipe
 	VkPipelineDepthStencilStateCreateInfo pipeDepthStencilCreateInfo = {};
 	pipeDepthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	pipeDepthStencilCreateInfo.pNext = nullptr;
 	pipeDepthStencilCreateInfo.flags = VK_FLAGS_NONE;
-	pipeDepthStencilCreateInfo.depthTestEnable = VK_TRUE;
-	pipeDepthStencilCreateInfo.depthWriteEnable = VK_TRUE;
-	pipeDepthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
+	//pipeDepthStencilCreateInfo.depthTestEnable = VK_TRUE;
+	//pipeDepthStencilCreateInfo.depthWriteEnable = VK_TRUE;
+	//pipeDepthStencilCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS;
 	pipeDepthStencilCreateInfo.depthBoundsTestEnable = VK_FALSE;
 	pipeDepthStencilCreateInfo.stencilTestEnable = VK_FALSE;
 	//pipeDepthStencilCreateInfo.front = ;
@@ -370,7 +371,7 @@ int main(int argc, char **argv)
 	pipeColorBlendCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
 	pipeColorBlendCreateInfo.pNext = nullptr;
 	pipeColorBlendCreateInfo.flags = VK_FLAGS_NONE;
-	pipeColorBlendCreateInfo.logicOpEnable = VK_TRUE;
+	pipeColorBlendCreateInfo.logicOpEnable = VK_FALSE;
 	pipeColorBlendCreateInfo.logicOp = VK_LOGIC_OP_COPY;
 	pipeColorBlendCreateInfo.attachmentCount = 1;
 	pipeColorBlendCreateInfo.pAttachments = &colorBlendAttachmentState;
@@ -402,30 +403,84 @@ int main(int argc, char **argv)
 
 	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreatePipelineLayout(logicalDevice, &pipeLayoutCreateInfo, nullptr, &pipelineLayout));
-/*
-	VkAttachmentDescription attachmentDescr = {};
-	VkAttachmentDescriptionFlags    flags;
-	VkFormat                        format = swapchainImageFormat;
-	VkSampleCountFlagBits           samples = VK_SAMPLE_COUNT_1_BIT;
-	VkAttachmentLoadOp              loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	VkAttachmentStoreOp             storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	VkAttachmentLoadOp              stencilLoadOp;
-	VkAttachmentStoreOp             stencilStoreOp;
-	VkImageLayout                   initialLayout;
-	VkImageLayout                   finalLayout;
-*/
-	/*
-	VkRenderPassCreateInfo renderPassInfo = {};
-	VkStructureType                   sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	const void*                       pNext = nullptr;
-	VkRenderPassCreateFlags           flags = VK_FLAGS_NONE;
-	uint32_t                          attachmentCount;
-	const VkAttachmentDescription*    pAttachments;
-	uint32_t                          subpassCount;
-	const VkSubpassDescription*       pSubpasses;
-	uint32_t                          dependencyCount;
-	const VkSubpassDependency*        pDependencies;
-*/
 
+	VkAttachmentDescription attachmentDescr = {};
+	//color attachment
+	attachmentDescr.flags = {};
+	attachmentDescr.format = swapchainImageFormat;
+	attachmentDescr.samples = VK_SAMPLE_COUNT_1_BIT;
+	attachmentDescr.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachmentDescr.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachmentDescr.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachmentDescr.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachmentDescr.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachmentDescr.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+/*
+	//depth attachment
+	attachmentDescr[0].flags = {};
+	attachmentDescr[0].format = swapchainImageFormat;
+	attachmentDescr[0].samples = VK_SAMPLE_COUNT_1_BIT;
+	attachmentDescr[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	attachmentDescr[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachmentDescr[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	attachmentDescr[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	attachmentDescr[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	attachmentDescr[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+*/
+	VkAttachmentReference colorAttachmentRef = {};
+    colorAttachmentRef.attachment = 0;//index to a vkAttachmentDescription array
+    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;//???? WHY
+
+	VkSubpassDescription subpassDescr = {};
+//    VkSubpassDescriptionFlags       flags;
+	subpassDescr.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+  //  uint32_t                        inputAttachmentCount;
+  //  const VkAttachmentReference*    pInputAttachments;
+    subpassDescr.colorAttachmentCount = 1;
+    subpassDescr.pColorAttachments = &colorAttachmentRef;
+    //const VkAttachmentReference*    pResolveAttachments;
+    //const VkAttachmentReference*    pDepthStencilAttachment;
+    //uint32_t                        preserveAttachmentCount;
+    //const uint32_t*                 pPreserveAttachments;
+
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.pNext = nullptr;
+	renderPassInfo.flags = VK_FLAGS_NONE;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &attachmentDescr;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpassDescr;
+	//uint32_t                          dependencyCount;
+	//const VkSubpassDependency*        pDependencies;
+
+	VkRenderPass renderPass = VK_NULL_HANDLE;
+	VK_CALL(vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass));
+//	vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
+
+	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
+	graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	graphicsPipelineCreateInfo.pNext = nullptr;
+	graphicsPipelineCreateInfo.flags = VK_FLAGS_NONE;
+	graphicsPipelineCreateInfo.stageCount = 2;
+	graphicsPipelineCreateInfo.pStages = shaderStageCreateInfos;
+	graphicsPipelineCreateInfo.pVertexInputState = &pipeVertexInputStateCreateInfo;
+	graphicsPipelineCreateInfo.pInputAssemblyState = &pipeInputAssemblyCreateInfo;
+//	graphicsPipelineCreateInfo.pTessellationState =;
+	graphicsPipelineCreateInfo.pViewportState = &pipeViewPortStateCreateInfo;
+	graphicsPipelineCreateInfo.pRasterizationState = &pipeRastStateCreateInfo;
+	graphicsPipelineCreateInfo.pMultisampleState = &pipeMultisampleCreateInfo;
+	graphicsPipelineCreateInfo.pDepthStencilState = &pipeDepthStencilCreateInfo;
+	graphicsPipelineCreateInfo.pColorBlendState = &pipeColorBlendCreateInfo;
+	graphicsPipelineCreateInfo.pDynamicState = &pipeDynamicStateCreateInfo;
+	graphicsPipelineCreateInfo.layout = pipelineLayout;
+	graphicsPipelineCreateInfo.renderPass = renderPass;
+	graphicsPipelineCreateInfo.subpass = 0;
+	graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE ;
+	graphicsPipelineCreateInfo.basePipelineIndex = -1;
+
+	VkPipeline graphicsPipe = VK_NULL_HANDLE;
+	VK_CALL(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &graphicsPipe));
 	return 0;
 }
