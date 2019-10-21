@@ -210,12 +210,10 @@ int main(int argc, char **argv)
 	}
 
 	//loading spirv shaders
-	std::vector<uint8_t> shaderSourceVert = {};
-	std::vector<uint8_t> shaderSourceFrag = {};
-	VK_CHECK(loadShader("./shaders/triangleVert.spv", shaderSourceVert));
-	VK_CHECK(loadShader("./shaders/triangleFrag.spv", shaderSourceFrag));
-	VkShaderModule vertShaderModule = createShaderModule(logicalDevice, shaderSourceVert);
-	VkShaderModule fragShaderModule = createShaderModule(logicalDevice, shaderSourceFrag);
+	VkShaderModule vertShaderModule = VK_NULL_HANDLE;
+	VkShaderModule fragShaderModule = VK_NULL_HANDLE;
+	VK_CHECK(loadShader(logicalDevice, "./shaders/triangleVert.spv", &vertShaderModule));
+	VK_CHECK(loadShader(logicalDevice, "./shaders/triangleFrag.spv", &fragShaderModule));
 
 	//pipeline configuration:
 
@@ -429,20 +427,20 @@ int main(int argc, char **argv)
 	attachmentDescr[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 */
 	VkAttachmentReference colorAttachmentRef = {};
-    colorAttachmentRef.attachment = 0;//index to a vkAttachmentDescription array
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;//???? WHY
+	colorAttachmentRef.attachment = 0;//index to a vkAttachmentDescription array
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;//???? WHY
 
 	VkSubpassDescription subpassDescr = {};
 //    VkSubpassDescriptionFlags       flags;
 	subpassDescr.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
   //  uint32_t                        inputAttachmentCount;
   //  const VkAttachmentReference*    pInputAttachments;
-    subpassDescr.colorAttachmentCount = 1;
-    subpassDescr.pColorAttachments = &colorAttachmentRef;
-    //const VkAttachmentReference*    pResolveAttachments;
-    //const VkAttachmentReference*    pDepthStencilAttachment;
-    //uint32_t                        preserveAttachmentCount;
-    //const uint32_t*                 pPreserveAttachments;
+	subpassDescr.colorAttachmentCount = 1;
+	subpassDescr.pColorAttachments = &colorAttachmentRef;
+	//const VkAttachmentReference*    pResolveAttachments;
+	//const VkAttachmentReference*    pDepthStencilAttachment;
+	//uint32_t                        preserveAttachmentCount;
+	//const uint32_t*                 pPreserveAttachments;
 
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
@@ -477,7 +475,7 @@ int main(int argc, char **argv)
 	graphicsPipelineCreateInfo.layout = pipelineLayout;
 	graphicsPipelineCreateInfo.renderPass = renderPass;
 	graphicsPipelineCreateInfo.subpass = 0;
-	graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE ;
+	graphicsPipelineCreateInfo.basePipelineHandle = VK_NULL_HANDLE;
 	graphicsPipelineCreateInfo.basePipelineIndex = -1;
 
 	VkPipeline graphicsPipe = VK_NULL_HANDLE;

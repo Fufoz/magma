@@ -2,35 +2,9 @@
 #include "logging.h"
 #include "vk_dbg.h"
 
-VkBool32 loadShader(const char* path, std::vector<uint8_t>& out)
-{
-	FILE* shaderFile = fopen(path, "rb");
-	if(!shaderFile)
-	{
-		magma::log::error("Failed to load shader by path: {}", path);
-		return VK_FALSE;
-	}
+#include <vector>
 
-	fseek(shaderFile, 0, SEEK_END);
-	std::size_t fileSize = ftell(shaderFile);
-	rewind(shaderFile);
-	out.resize(fileSize);
-	
-	std::size_t totalBytesRead = {};
-	uint8_t* data = out.data();
-	while(totalBytesRead < fileSize)
-	{
-		std::size_t bytesRead = fread(data, sizeof(uint8_t), fileSize, shaderFile);
-		totalBytesRead += bytesRead;
-		data += bytesRead;
-	}
-
-	assert(totalBytesRead == fileSize);
-	fclose(shaderFile);
-	return VK_TRUE;
-}
-
-VkShaderModule createShaderModule(VkDevice logicalDevice, const std::vector<uint8_t>& source)
+static VkShaderModule createShaderModule(VkDevice logicalDevice, const std::vector<uint8_t>& source)
 {
 	VkShaderModuleCreateInfo moduleCreateInfo = {};
 	moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -42,4 +16,37 @@ VkShaderModule createShaderModule(VkDevice logicalDevice, const std::vector<uint
 	VkShaderModule module = VK_NULL_HANDLE;
 	VK_CALL(vkCreateShaderModule(logicalDevice, &moduleCreateInfo, nullptr, &module));
 	return module;
+}
+
+VkBool32 loadShader(VkDevice logicalDevice, const char* path, VkShaderModule* shaderModule)
+{
+	FILE* shaderFile = fopen(path, "rb");
+	if(!shaderFile)
+	{
+		magma::log::error("Failed to load shader by path: {}", path);
+		return VK_FALSE;
+	}
+
+	fseek(shaderFile, 0, SEEK_END);
+	std::size_t fileSize = ftell(shaderFile);
+	rewind(shaderFile);
+	
+	std::vector<uint8_t> buffer;
+	buffer.resize(fileSize);
+	
+	std::size_t totalBytesRead = {};
+	uint8_t* data = buffer.data();
+	while(totalBytesRead < fileSize)
+	{
+		std::size_t bytesRead = fread(data, sizeof(uint8_t), fileSize, shaderFile);
+		totalBytesRead += bytesRead;
+		data += bytesRead;
+	}
+
+	assert(totalBytesRead == fileSize);
+	fclose(shaderFile);
+
+	*shaderModule = createShaderModule(logicalDevice, buffer);
+
+	return *shaderModule != VK_NULL_HANDLE ? VK_TRUE : VK_FALSE;
 }
