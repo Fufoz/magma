@@ -6,6 +6,7 @@
 #include "vk_dbg.h"
 #include "vk_boilerplate.h"
 #include "vk_shader.h"
+#include "vk_buffer.h"
 
 #include <vector>
 #include <string>
@@ -244,6 +245,12 @@ int main(int argc, char **argv)
 		{{ 0.5f, -0.5f, 0.f}, {0.0, 1.0, 0.0}},
 		{{ 0.0f,  0.5f, 0.f}, {0.0, 0.0, 1.0}}
 	};
+
+	Buffer stagingBuffer = createBuffer(logicalDevice, physicalDevice,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+		sizeof(verticies), queueFamilyIdx
+	); 
 
 	VkVertexInputBindingDescription vertexBindingDescription = {};
 	vertexBindingDescription.binding = 0;
