@@ -7,14 +7,14 @@ Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkB
 
 	//prepare staging buffer for vertices gpu upload
 	VkBufferCreateInfo stagingBufferCreateInfo = {};
-    stagingBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    stagingBufferCreateInfo.pNext = nullptr;
-    stagingBufferCreateInfo.flags = {};
-    stagingBufferCreateInfo.size = size;
-    stagingBufferCreateInfo.usage = usageFlags;
-    stagingBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    stagingBufferCreateInfo.queueFamilyIndexCount = 1;
-    stagingBufferCreateInfo.pQueueFamilyIndices = &queueFamilyIdx;
+	stagingBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	stagingBufferCreateInfo.pNext = nullptr;
+	stagingBufferCreateInfo.flags = {};
+	stagingBufferCreateInfo.size = size;
+	stagingBufferCreateInfo.usage = usageFlags;
+	stagingBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	stagingBufferCreateInfo.queueFamilyIndexCount = 1;
+	stagingBufferCreateInfo.pQueueFamilyIndices = &queueFamilyIdx;
 
 	VkBuffer stagingBuffer = VK_NULL_HANDLE;
 	VK_CALL(vkCreateBuffer(logicalDevice, &stagingBufferCreateInfo, nullptr, &stagingBuffer)); 
@@ -50,10 +50,10 @@ Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkB
 	}
 
 	VkMemoryAllocateInfo memAllocInfo = {};
-    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memAllocInfo.pNext = nullptr;
-    memAllocInfo.allocationSize = memReqs.size;
-    memAllocInfo.memoryTypeIndex = memTypeIdx;
+	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memAllocInfo.pNext = nullptr;
+	memAllocInfo.allocationSize = memReqs.size;
+	memAllocInfo.memoryTypeIndex = memTypeIdx;
 
 	VkDeviceMemory stagingMemory = VK_NULL_HANDLE;
 	
