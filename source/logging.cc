@@ -11,9 +11,9 @@ namespace magma
 namespace log
 {
 
-	static int severityMask = 0;
-
-	void setSeverityMask(SeverityMask mask)
+	static SeverityFlags severityMask = 0;
+	
+	void setSeverityMask(SeverityFlags mask)
 	{
 		severityMask |= mask;
 	}

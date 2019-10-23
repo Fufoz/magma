@@ -8,11 +8,14 @@
 struct Buffer
 {
 	VkBuffer buffer;
+	VkDeviceSize bufferSize;
 	VkDeviceMemory backupMemory;
 };
 
 Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkBufferUsageFlags usageFlags,
-	VkMemoryPropertyFlagBits memoryPropertyFlags, std::size_t size, uint32_t queueFamilyIdx, const void* copyFrom = nullptr);
+	VkMemoryPropertyFlagBits requiredMemProperties, std::size_t size, uint32_t queueFamilyIdx);
+
+VkResult copyDataToStagingBuffer(VkDevice logicalDevice, VkDeviceSize offset, const void* copyFrom, Buffer* buffer);
 
 void destroyBuffer(VkDevice logicalDevice, Buffer* buffer);
 

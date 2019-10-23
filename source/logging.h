@@ -16,8 +16,9 @@ namespace log
 		MASK_ERROR = 1 << 3,
 		MASK_ALL   = MASK_INFO|MASK_DEBUG|MASK_WARN|MASK_ERROR
 	};
+	typedef uint32_t SeverityFlags;
 
-	void setSeverityMask(SeverityMask mask);
+	void setSeverityMask(SeverityFlags mask);
 	
 	void dump(const std::string& info, SeverityMask mask);
 	

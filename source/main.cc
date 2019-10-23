@@ -32,7 +32,7 @@ const char* glfwError()
 
 int main(int argc, char **argv)
 {
-	magma::log::setSeverityMask(magma::log::MASK_ALL);
+	magma::log::setSeverityMask(magma::log::MASK_ERROR|magma::log::MASK_WARN);
 	magma::log::warn("Loading Vulkan loader..");
 	VK_CALL(volkInitialize());
 	
@@ -250,7 +250,8 @@ int main(int argc, char **argv)
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 		sizeof(verticies), queueFamilyIdx
-	); 
+	);
+	VK_CALL(copyDataToStagingBuffer(logicalDevice, 0, &verticies, &stagingBuffer));
 
 	VkVertexInputBindingDescription vertexBindingDescription = {};
 	vertexBindingDescription.binding = 0;
