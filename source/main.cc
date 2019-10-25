@@ -32,7 +32,7 @@ const char* glfwError()
 
 int main(int argc, char **argv)
 {
-	magma::log::setSeverityMask(magma::log::MASK_ERROR|magma::log::MASK_WARN);
+	magma::log::setSeverityMask(magma::log::MASK_ALL);
 	magma::log::warn("Loading Vulkan loader..");
 	VK_CALL(volkInitialize());
 	
@@ -253,10 +253,83 @@ int main(int argc, char **argv)
 	);
 	VK_CALL(copyDataToStagingBuffer(logicalDevice, 0, &verticies, &stagingBuffer));
 
+	Buffer deviceLocalBuffer = createBuffer(logicalDevice, physicalDevice, 
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		sizeof(verticies),
+		queueFamilyIdx
+	);
+
+	//creating command buffer for transfer operation
+	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
+	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	cmdPoolCreateInfo.pNext = nullptr;
+	cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	cmdPoolCreateInfo.queueFamilyIndex = queueFamilyIdx;
+
+	VkCommandPool commandPool = VK_NULL_HANDLE;
+	VK_CALL(vkCreateCommandPool(logicalDevice, &cmdPoolCreateInfo, nullptr, &commandPool));
+
+	VkCommandBufferAllocateInfo cmdBuffAllocInfo = {};
+    cmdBuffAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    cmdBuffAllocInfo.pNext = nullptr;
+    cmdBuffAllocInfo.commandPool = commandPool;
+    cmdBuffAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    cmdBuffAllocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	VK_CALL(vkAllocateCommandBuffers(logicalDevice, &cmdBuffAllocInfo, &commandBuffer));
+
+	//begin recording transfer commands
+	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cmdBufferBeginInfo.pNext = nullptr;
+	cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	cmdBufferBeginInfo.pInheritanceInfo = nullptr;
+
+	VK_CALL(vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo));
+
+	VkBufferCopy bufferCopy = {};
+	bufferCopy.size = sizeof(verticies);
+
+	vkCmdCopyBuffer(commandBuffer, stagingBuffer.buffer, deviceLocalBuffer.buffer, 1, &bufferCopy);
+	
+	VK_CALL(vkEndCommandBuffer(commandBuffer));
+	
+	VkSubmitInfo queueSubmitInfo = {};
+	queueSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	queueSubmitInfo.pNext = nullptr;
+	queueSubmitInfo.waitSemaphoreCount = 0;
+	queueSubmitInfo.pWaitSemaphores = nullptr;
+	queueSubmitInfo.pWaitDstStageMask = nullptr;
+	queueSubmitInfo.commandBufferCount = 1;
+	queueSubmitInfo.pCommandBuffers = &commandBuffer;
+	queueSubmitInfo.signalSemaphoreCount = 0;
+	queueSubmitInfo.pSignalSemaphores = nullptr;
+
+	VkFenceCreateInfo fenceCreateInfo = {};
+    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    fenceCreateInfo.pNext = nullptr;
+    fenceCreateInfo.flags = 0;
+
+	VkFence fence = VK_NULL_HANDLE;
+	VK_CALL(vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &fence));
+
+	VK_CALL(vkQueueSubmit(graphicsQueue, 1, &queueSubmitInfo, fence));
+	VK_CALL(vkWaitForFences(logicalDevice, 1, &fence, VK_TRUE, 1000000000));
+
+	//set fence back to unsignalled state
+	VK_CALL(vkResetFences(logicalDevice, 1, &fence));
+
+	VK_CALL(vkResetCommandBuffer(commandBuffer, 0));
+	
+	//destroy staging buffer since we don't need it anymore
+	destroyBuffer(logicalDevice, &stagingBuffer);
+
 	VkVertexInputBindingDescription vertexBindingDescription = {};
 	vertexBindingDescription.binding = 0;
 	vertexBindingDescription.stride = sizeof(VertexPC);
-	vertexBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX; 
+	vertexBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 	VkVertexInputAttributeDescription vertexAttribDescriptions[2] = {};
 	vertexAttribDescriptions[0].location = 0;
@@ -361,13 +434,13 @@ int main(int argc, char **argv)
 	//1.specify per-target color blend settings per each color attachment
 	//alpha-blend testing(blend fragment color based on it's opacity)
 	VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {};
-	colorBlendAttachmentState.blendEnable = VK_TRUE;
-	colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-	colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-	colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
-	colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-	colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
-	colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
+	colorBlendAttachmentState.blendEnable = VK_FALSE;
+	//colorBlendAttachmentState.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
+	//colorBlendAttachmentState.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+	//colorBlendAttachmentState.colorBlendOp = VK_BLEND_OP_ADD;
+	//colorBlendAttachmentState.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+	//colorBlendAttachmentState.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+	//colorBlendAttachmentState.alphaBlendOp = VK_BLEND_OP_ADD;
 	colorBlendAttachmentState.colorWriteMask = VK_COLOR_COMPONENT_R_BIT|
 		VK_COLOR_COMPONENT_G_BIT|
 		VK_COLOR_COMPONENT_B_BIT|

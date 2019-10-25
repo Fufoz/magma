@@ -71,6 +71,7 @@ void destroyBuffer(VkDevice logicalDevice, Buffer* buffer)
 	vkFreeMemory(logicalDevice, buffer->backupMemory, nullptr);
 	buffer->buffer = VK_NULL_HANDLE;
 	buffer->backupMemory = nullptr;
+	buffer->bufferSize = 0;
 }
 
 VkResult copyDataToStagingBuffer(VkDevice logicalDevice, VkDeviceSize offset, const void* copyFrom, Buffer* buffer)
