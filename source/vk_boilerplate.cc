@@ -5,7 +5,8 @@
 #include <vector>
 
 const char *desiredDeviceExtensions[] = {
-	"VK_KHR_swapchain"
+	"VK_KHR_swapchain",
+	"VK_KHR_maintenance1"//for negative viewport values
 };
 const uint32_t deviceExtSize = sizeof(desiredDeviceExtensions)/sizeof(desiredDeviceExtensions[0]);
 
@@ -91,6 +92,8 @@ VkInstance createInstance()
 	appInfo.pApplicationName = "Magma";
 	appInfo.applicationVersion = 1;
 	appInfo.pEngineName = "Magma";
+	//TODO: add vk_khr_maintenance1 extension if you want to support negative viewport values
+	// in vulkan 1.0 api version
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
 	

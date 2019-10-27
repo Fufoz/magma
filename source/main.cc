@@ -88,8 +88,8 @@ int main(int argc, char **argv)
 
 	//disable glfw window context creation
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	uint32_t windowWidth = 640;
-	uint32_t windowHeight = 480;
+	int windowWidth = 640;
+	int windowHeight = 480;
 	GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight, "Magma", nullptr, nullptr);
 	
 	assert(window);
@@ -141,8 +141,8 @@ int main(int argc, char **argv)
 	if(surfaceCapabilities.currentExtent.width == 0xffffffff
 		|| surfaceCapabilities.currentExtent.height == 0xffffffff)
 	{
-		selectedExtent.width = std::min(std::max(surfaceCapabilities.minImageExtent.width, windowWidth), surfaceCapabilities.maxImageExtent.width);
-		selectedExtent.height = std::min(std::max(surfaceCapabilities.minImageExtent.width, windowWidth), surfaceCapabilities.maxImageExtent.width);
+		selectedExtent.width = std::min(std::max(surfaceCapabilities.minImageExtent.width, (uint32_t)windowWidth), surfaceCapabilities.maxImageExtent.width);
+		selectedExtent.height = std::min(std::max(surfaceCapabilities.minImageExtent.width, (uint32_t)windowWidth), surfaceCapabilities.maxImageExtent.width);
 	}
 
 	//check for surface presentation support, to suppress validation layer warnings, even though 
@@ -241,9 +241,9 @@ int main(int argc, char **argv)
 	};
 
 	VertexPC verticies[3] = {
-		{{-0.5f, -0.5f, 0.f}, {1.f, 0.f, 0.f}},
-		{{ 0.0f,  0.5f, 0.f}, {0.f, 0.f, 1.f}},
-		{{ 0.5f, -0.5f, 0.f}, {0.f, 1.f, 0.f}}
+		{{-0.5f, -0.5f, 0.f}, {0.6f, 0.9f, 1.f}},
+		{{ 0.5f, -0.5f, 0.f}, {0.6f, 0.9f, 1.f}},
+		{{ 0.0f,  0.5f, 0.f}, {1.f, 0.f, 0.f}}
 	};
 
 	Buffer stagingBuffer = createBuffer(logicalDevice, physicalDevice,
@@ -367,9 +367,9 @@ int main(int argc, char **argv)
 
 	VkViewport viewport = {};
 	viewport.x = 0.f;
-	viewport.y = 0.f;
+	viewport.y = windowHeight;
 	viewport.width = windowWidth;
-	viewport.height = windowHeight;
+	viewport.height = -windowHeight;
 	viewport.minDepth = 0.f;
 	viewport.maxDepth = 1.f;
 
