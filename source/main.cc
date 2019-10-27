@@ -178,9 +178,9 @@ int main(int argc, char **argv)
 	//grab swapchain images
 	uint32_t swapChainImageCount = {};
 	VK_CALL(vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, nullptr));
-	std::vector<VkImage> images = {};
-	images.resize(swapChainImageCount);
-	VK_CALL(vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, images.data()));
+	std::vector<VkImage> swapChainImages = {};
+	swapChainImages.resize(swapChainImageCount);
+	VK_CALL(vkGetSwapchainImagesKHR(logicalDevice, swapChain, &swapChainImageCount, swapChainImages.data()));
 	VkExtent2D currentImageExtent = selectedExtent;
 	VkFormat swapchainImageFormat = selectedFormat.format;
 
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
 		VkImageViewCreateInfo imageViewCreateInfo = {};
 		imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 		imageViewCreateInfo.pNext = nullptr;
-		imageViewCreateInfo.image = images[i];
+		imageViewCreateInfo.image = swapChainImages[i];
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 		imageViewCreateInfo.format = swapchainImageFormat;
 		imageViewCreateInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
@@ -241,9 +241,9 @@ int main(int argc, char **argv)
 	};
 
 	VertexPC verticies[3] = {
-		{{-0.5f, -0.5f, 0.f}, {1.0, 0.0, 0.0}},
-		{{ 0.5f, -0.5f, 0.f}, {0.0, 1.0, 0.0}},
-		{{ 0.0f,  0.5f, 0.f}, {0.0, 0.0, 1.0}}
+		{{-0.5f, -0.5f, 0.f}, {1.f, 0.f, 0.f}},
+		{{ 0.0f,  0.5f, 0.f}, {0.f, 0.f, 1.f}},
+		{{ 0.5f, -0.5f, 0.f}, {0.f, 1.f, 0.f}}
 	};
 
 	Buffer stagingBuffer = createBuffer(logicalDevice, physicalDevice,
@@ -264,18 +264,18 @@ int main(int argc, char **argv)
 	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
 	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	cmdPoolCreateInfo.pNext = nullptr;
-	cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	cmdPoolCreateInfo.flags = VK_FLAGS_NONE;
 	cmdPoolCreateInfo.queueFamilyIndex = queueFamilyIdx;
 
 	VkCommandPool commandPool = VK_NULL_HANDLE;
 	VK_CALL(vkCreateCommandPool(logicalDevice, &cmdPoolCreateInfo, nullptr, &commandPool));
 
 	VkCommandBufferAllocateInfo cmdBuffAllocInfo = {};
-    cmdBuffAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    cmdBuffAllocInfo.pNext = nullptr;
-    cmdBuffAllocInfo.commandPool = commandPool;
-    cmdBuffAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    cmdBuffAllocInfo.commandBufferCount = 1;
+	cmdBuffAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBuffAllocInfo.pNext = nullptr;
+	cmdBuffAllocInfo.commandPool = commandPool;
+	cmdBuffAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBuffAllocInfo.commandBufferCount = 1;
 
 	VkCommandBuffer commandBuffer;
 	VK_CALL(vkAllocateCommandBuffers(logicalDevice, &cmdBuffAllocInfo, &commandBuffer));
@@ -308,9 +308,9 @@ int main(int argc, char **argv)
 	queueSubmitInfo.pSignalSemaphores = nullptr;
 
 	VkFenceCreateInfo fenceCreateInfo = {};
-    fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceCreateInfo.pNext = nullptr;
-    fenceCreateInfo.flags = 0;
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.pNext = nullptr;
+	fenceCreateInfo.flags = 0;
 
 	VkFence fence = VK_NULL_HANDLE;
 	VK_CALL(vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &fence));
@@ -321,8 +321,7 @@ int main(int argc, char **argv)
 	//set fence back to unsignalled state
 	VK_CALL(vkResetFences(logicalDevice, 1, &fence));
 
-	VK_CALL(vkResetCommandBuffer(commandBuffer, 0));
-	
+	vkFreeCommandBuffers(logicalDevice, commandPool, 1, &commandBuffer);
 	//destroy staging buffer since we don't need it anymore
 	destroyBuffer(logicalDevice, &stagingBuffer);
 
@@ -341,7 +340,7 @@ int main(int argc, char **argv)
 	vertexAttribDescriptions[1].binding = 0;
 	vertexAttribDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
 	vertexAttribDescriptions[1].offset = sizeof(Vec3);
-
+	
 	VkPipelineVertexInputStateCreateInfo pipeVertexInputStateCreateInfo = {};
 	pipeVertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 	pipeVertexInputStateCreateInfo.pNext = nullptr;
@@ -523,6 +522,15 @@ int main(int argc, char **argv)
 	//uint32_t                        preserveAttachmentCount;
 	//const uint32_t*                 pPreserveAttachments;
 
+	VkSubpassDependency subpassDep = {};
+	subpassDep.srcSubpass = VK_SUBPASS_EXTERNAL;
+	subpassDep.dstSubpass = 0;
+	subpassDep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpassDep.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	subpassDep.srcAccessMask = 0;
+	subpassDep.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	subpassDep.dependencyFlags = VK_FLAGS_NONE;
+
 	VkRenderPassCreateInfo renderPassInfo = {};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
 	renderPassInfo.pNext = nullptr;
@@ -531,8 +539,8 @@ int main(int argc, char **argv)
 	renderPassInfo.pAttachments = &attachmentDescr;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpassDescr;
-	//uint32_t                          dependencyCount;
-	//const VkSubpassDependency*        pDependencies;
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &subpassDep;
 
 	VkRenderPass renderPass = VK_NULL_HANDLE;
 	VK_CALL(vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass));
@@ -561,5 +569,111 @@ int main(int argc, char **argv)
 
 	VkPipeline graphicsPipe = VK_NULL_HANDLE;
 	VK_CALL(vkCreateGraphicsPipelines(logicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &graphicsPipe));
+
+	std::vector<VkFramebuffer> frameBuffers = {};
+	frameBuffers.resize(imageViews.size());
+	for(std::size_t i = 0; i < frameBuffers.size(); i++)
+	{
+		VkFramebufferCreateInfo frameBufferCreateInfo = {};
+		frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		frameBufferCreateInfo.pNext = nullptr;
+		frameBufferCreateInfo.flags = VK_FLAGS_NONE;
+		frameBufferCreateInfo.renderPass = renderPass;
+		frameBufferCreateInfo.attachmentCount = 1;
+		frameBufferCreateInfo.pAttachments = &imageViews[i];
+		frameBufferCreateInfo.width = currentImageExtent.width;
+		frameBufferCreateInfo.height = currentImageExtent.height;
+		frameBufferCreateInfo.layers = 1;
+		VK_CALL(vkCreateFramebuffer(logicalDevice, &frameBufferCreateInfo, nullptr, &frameBuffers[i]));
+	}
+
+	//build command buffer for each swapchain image
+	VkCommandBufferAllocateInfo buffAllocInfo = {};
+	buffAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	buffAllocInfo.pNext = nullptr;
+	buffAllocInfo.commandPool = commandPool;
+	buffAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	buffAllocInfo.commandBufferCount = swapChainImages.size();
+	std::vector<VkCommandBuffer> commandBuffers = {};
+	commandBuffers.resize(swapChainImages.size());
+	vkAllocateCommandBuffers(logicalDevice, &buffAllocInfo,commandBuffers.data());
+	for(uint32_t i = 0; i < commandBuffers.size(); i++)
+	{
+		VkCommandBufferBeginInfo cmdBuffBegInfo = {};
+    	cmdBuffBegInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    	cmdBuffBegInfo.pNext = nullptr;
+    	cmdBuffBegInfo.flags = VK_FLAGS_NONE;
+    	cmdBuffBegInfo.pInheritanceInfo = nullptr;
+
+		VkClearValue clearColor = {};
+		clearColor.color = {0.7f, 0.76f, 0.76f, 1.f};
+		
+		VK_CALL(vkBeginCommandBuffer(commandBuffers[i], &cmdBuffBegInfo));
+		VkRenderPassBeginInfo renderPassBegInfo = {};
+    	renderPassBegInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+    	renderPassBegInfo.pNext = nullptr;
+    	renderPassBegInfo.renderPass = renderPass;
+    	renderPassBegInfo.framebuffer = frameBuffers[i];
+    	renderPassBegInfo.renderArea.offset = {0, 0};
+		renderPassBegInfo.renderArea.extent = currentImageExtent;
+    	renderPassBegInfo.clearValueCount = 1;
+    	renderPassBegInfo.pClearValues = &clearColor;
+		
+		vkCmdBeginRenderPass(commandBuffers[i], &renderPassBegInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipe);
+			vkCmdSetViewport(commandBuffers[i], 0, 1, &viewport);
+			VkDeviceSize offsets = 0;
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &deviceLocalBuffer.buffer, &offsets);
+			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(commandBuffers[i]);
+
+		VK_CALL(vkEndCommandBuffer(commandBuffers[i]));
+	}
+
+	VkSemaphore imageAvailable = {};
+	VkSemaphore imageMayPresent = {};
+
+	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphoreCreateInfo.pNext = nullptr;
+	VK_CALL(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, nullptr, &imageAvailable));
+	VK_CALL(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, nullptr, &imageMayPresent));
+
+	//render loop
+	while(!glfwWindowShouldClose(window))
+	{
+		glfwPollEvents();
+		
+		uint32_t imageId = {};
+		vkAcquireNextImageKHR(logicalDevice, swapChain, UINT64_MAX, imageAvailable, VK_NULL_HANDLE, &imageId);
+		VkSubmitInfo queueSubmitInfo = {};
+		queueSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		queueSubmitInfo.pNext = nullptr;
+		queueSubmitInfo.waitSemaphoreCount = 1;
+		queueSubmitInfo.pWaitSemaphores = &imageAvailable;
+		VkPipelineStageFlags waitMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		queueSubmitInfo.pWaitDstStageMask = &waitMask;
+		queueSubmitInfo.commandBufferCount = 1;
+		queueSubmitInfo.pCommandBuffers = &commandBuffers[imageId];
+		queueSubmitInfo.signalSemaphoreCount = 1;
+		queueSubmitInfo.pSignalSemaphores = &imageMayPresent;
+		
+		VK_CALL(vkQueueSubmit(graphicsQueue, 1, &queueSubmitInfo, VK_NULL_HANDLE));
+
+		VkPresentInfoKHR presentInfo = {};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.pNext = nullptr;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &imageMayPresent;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &swapChain;
+		presentInfo.pImageIndices = &imageId;
+		presentInfo.pResults = nullptr;
+
+		VK_CALL(vkQueuePresentKHR(graphicsQueue, &presentInfo));
+		vkDeviceWaitIdle(logicalDevice);
+	}
 	return 0;
 }
