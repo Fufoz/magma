@@ -459,16 +459,14 @@ int main(int argc, char **argv)
 	pipeColorBlendCreateInfo.blendConstants[3] = 0.f;
 
 	//amount of settings that can be changed without recreating the whole pipeline
-	VkDynamicState dynamicStates[2] = {
-		VK_DYNAMIC_STATE_VIEWPORT,
-		VK_DYNAMIC_STATE_LINE_WIDTH
-	};
+	VkDynamicState dynamicStates = VK_DYNAMIC_STATE_VIEWPORT;
+
 	VkPipelineDynamicStateCreateInfo pipeDynamicStateCreateInfo = {};
 	pipeDynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
 	pipeDynamicStateCreateInfo.pNext = nullptr;
 	pipeDynamicStateCreateInfo.flags = VK_FLAGS_NONE;
 	pipeDynamicStateCreateInfo.dynamicStateCount = 1;
-	pipeDynamicStateCreateInfo.pDynamicStates = dynamicStates;
+	pipeDynamicStateCreateInfo.pDynamicStates = &dynamicStates;
 
 	VkPipelineLayoutCreateInfo pipeLayoutCreateInfo = {};
 	pipeLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -544,7 +542,6 @@ int main(int argc, char **argv)
 
 	VkRenderPass renderPass = VK_NULL_HANDLE;
 	VK_CALL(vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass));
-//	vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
 
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
 	graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
