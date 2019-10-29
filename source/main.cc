@@ -7,6 +7,7 @@
 #include "vk_boilerplate.h"
 #include "vk_shader.h"
 #include "vk_buffer.h"
+#include "host_timer.h"
 
 #include <vector>
 #include <string>
@@ -629,48 +630,77 @@ int main(int argc, char **argv)
 		VK_CALL(vkEndCommandBuffer(commandBuffers[i]));
 	}
 
-	VkSemaphore imageAvailable = {};
-	VkSemaphore imageMayPresent = {};
+	VkSemaphore imageAvailable = createSemaphore(logicalDevice);
+	VkSemaphore imageMayPresent = createSemaphore(logicalDevice);
 
-	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
-	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	semaphoreCreateInfo.pNext = nullptr;
-	VK_CALL(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, nullptr, &imageAvailable));
-	VK_CALL(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, nullptr, &imageMayPresent));
 
+	uint32_t presentableFrames = swapChainImages.size();
+	std::vector<VkSemaphore> imageAvailableSemaphores = {};
+	imageAvailableSemaphores.resize(presentableFrames);
+	for(auto& semaphore : imageAvailableSemaphores)
+	{
+		semaphore = createSemaphore(logicalDevice);
+	}
+
+	std::vector<VkSemaphore> imageMayPresentSemaphores = {};
+	imageMayPresentSemaphores.resize(presentableFrames);
+	for(auto& semaphore : imageMayPresentSemaphores)
+	{
+		semaphore = createSemaphore(logicalDevice);
+	}
+
+	std::vector<VkFence> imageFences = {};
+	imageFences.resize(presentableFrames);
+	for(auto& fence : imageFences)
+	{
+		fence = createFence(logicalDevice, true);
+	}
+	
+	uint32_t syncIndex = 0;//index in semaphore array to use
 	//render loop
 	while(!glfwWindowShouldClose(window))
 	{
+		HostTimer t;
+		t.start();
 		glfwPollEvents();
 		
+		VK_CALL(vkWaitForFences(logicalDevice, 1, &imageFences[syncIndex], VK_TRUE, UINT64_MAX));
+		VK_CALL(vkResetFences(logicalDevice, 1, &imageFences[syncIndex]));
+
 		uint32_t imageId = {};
-		vkAcquireNextImageKHR(logicalDevice, swapChain, UINT64_MAX, imageAvailable, VK_NULL_HANDLE, &imageId);
+		vkAcquireNextImageKHR(logicalDevice, swapChain, UINT64_MAX, imageAvailableSemaphores[syncIndex], VK_NULL_HANDLE, &imageId);
+		magma::log::info("Image {}", imageId);
 		VkSubmitInfo queueSubmitInfo = {};
 		queueSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		queueSubmitInfo.pNext = nullptr;
 		queueSubmitInfo.waitSemaphoreCount = 1;
-		queueSubmitInfo.pWaitSemaphores = &imageAvailable;
+		queueSubmitInfo.pWaitSemaphores = &imageAvailableSemaphores[syncIndex];
 		VkPipelineStageFlags waitMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 		queueSubmitInfo.pWaitDstStageMask = &waitMask;
 		queueSubmitInfo.commandBufferCount = 1;
 		queueSubmitInfo.pCommandBuffers = &commandBuffers[imageId];
 		queueSubmitInfo.signalSemaphoreCount = 1;
-		queueSubmitInfo.pSignalSemaphores = &imageMayPresent;
+		queueSubmitInfo.pSignalSemaphores = &imageMayPresentSemaphores[syncIndex];
 		
-		VK_CALL(vkQueueSubmit(graphicsQueue, 1, &queueSubmitInfo, VK_NULL_HANDLE));
+		VK_CALL(vkQueueSubmit(graphicsQueue, 1, &queueSubmitInfo, imageFences[syncIndex]));
 
 		VkPresentInfoKHR presentInfo = {};
 		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 		presentInfo.pNext = nullptr;
 		presentInfo.waitSemaphoreCount = 1;
-		presentInfo.pWaitSemaphores = &imageMayPresent;
+		presentInfo.pWaitSemaphores = &imageMayPresentSemaphores[syncIndex];
 		presentInfo.swapchainCount = 1;
 		presentInfo.pSwapchains = &swapChain;
 		presentInfo.pImageIndices = &imageId;
 		presentInfo.pResults = nullptr;
 
 		VK_CALL(vkQueuePresentKHR(graphicsQueue, &presentInfo));
-		vkDeviceWaitIdle(logicalDevice);
+
+		//advance sync index pointing to the next semaphore/fence objects to use
+		syncIndex = (syncIndex + 1) % presentableFrames;
+
+		magma::log::info("Frame Finished within {:.2f} ms", t.stop());
 	}
+
 	return 0;
 }

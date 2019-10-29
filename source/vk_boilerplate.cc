@@ -239,3 +239,27 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t queueFami
 
 	return logicalDevice;
 }
+
+VkSemaphore createSemaphore(VkDevice logicalDevice)
+{
+	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	semaphoreCreateInfo.pNext = nullptr;
+	semaphoreCreateInfo.flags = VK_FLAGS_NONE;
+
+	VkSemaphore semaphore = VK_NULL_HANDLE;
+	VK_CALL(vkCreateSemaphore(logicalDevice, &semaphoreCreateInfo, nullptr, &semaphore));
+	return semaphore;
+}
+
+VkFence createFence(VkDevice logicalDevice, bool signalled)
+{
+	VkFenceCreateInfo fenceCreateInfo = {};
+	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceCreateInfo.pNext = nullptr;
+	fenceCreateInfo.flags = signalled ? VK_FENCE_CREATE_SIGNALED_BIT : VK_FLAGS_NONE;
+	
+	VkFence fence = VK_NULL_HANDLE;
+	VK_CALL(vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &fence));
+	return fence;
+}

@@ -30,4 +30,10 @@ VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlags queue
 
 VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIdx);
 
+
+//sync stuff
+VkSemaphore createSemaphore(VkDevice logicalDevice);
+
+VkFence createFence(VkDevice logicalDevice, bool signalled = false);
+
 #endif
