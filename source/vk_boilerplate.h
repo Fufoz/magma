@@ -5,12 +5,6 @@
 #include <vector>
 #include <string>
 
-struct VulkanContext
-{
-	VkInstance instance;
-	VkPhysicalDevice physicalDevice;
-	VkDevice logicalDevice; 
-};
 
 extern std::vector<const char*> desiredExtensions;
 extern std::vector<const char*> desiredLayers;
