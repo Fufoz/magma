@@ -5,6 +5,8 @@
 #include <vector>
 #include <string>
 
+#include "vk_types.h"
+#include <platform/platform.h>
 
 extern std::vector<const char*> desiredExtensions;
 extern std::vector<const char*> desiredLayers;
@@ -24,6 +26,11 @@ VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlags queue
 
 VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIdx);
 
+VkBool32 initVulkanGlobalContext(
+	std::vector<const char*>& desiredLayers,
+	std::vector<const char*>& desiredExtensions,
+	VulkanGlobalContext* generalInfo
+);
 
 //sync stuff
 VkSemaphore createSemaphore(VkDevice logicalDevice);

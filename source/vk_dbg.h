@@ -9,11 +9,13 @@
 
 #define VK_FLAGS_NONE 0
 
-#define VK_CALL(function)                                                          \
-do{                                                                                \
-VkResult error = function;                                                         \
-if(error != VK_SUCCESS)                                                            \
-	magma::log::error("Error calling {}. Reason: {} ",#function,vkStrError(error));\
+#define VK_CALL(function)                                                           \
+do{                                                                                 \
+VkResult error = function;                                                          \
+if(error != VK_SUCCESS){                                                            \
+	magma::log::error("Error calling {}. Reason: {} ",#function,vkStrError(error)); \
+	assert(!"VK_ASSERT!");														    \
+}																					\
 }while(0)
 
 #define VK_CALL_RETURN(function)                                                   \

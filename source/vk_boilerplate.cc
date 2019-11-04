@@ -1,8 +1,9 @@
 #include "vk_boilerplate.h"
+#include "vk_loader.h"
 #include "vk_dbg.h"
 #include "logging.h"
-
 #include <vector>
+#include <platform/platform.h>
 
 const char *desiredDeviceExtensions[] = {
 	"VK_KHR_swapchain",
@@ -262,4 +263,55 @@ VkFence createFence(VkDevice logicalDevice, bool signalled)
 	VkFence fence = VK_NULL_HANDLE;
 	VK_CALL(vkCreateFence(logicalDevice, &fenceCreateInfo, nullptr, &fence));
 	return fence;
+}
+
+VkBool32 initVulkanGlobalContext(
+	std::vector<const char*>& resiredLayers,
+	std::vector<const char*>& desiredExtensions,
+	VulkanGlobalContext* generalInfo)
+{
+
+	VK_CALL(locateAndInitVulkan());
+
+	uint32_t requiredExtCount = {};
+	const char** requiredExtStrings = getRequiredSurfaceExtensions(&requiredExtCount);
+
+	for(std::size_t i = 0; i < requiredExtCount; i++)
+	{
+		desiredExtensions.push_back(requiredExtStrings[i]);
+	}
+
+	VK_CHECK(requestLayersAndExtensions(desiredExtensions, desiredLayers));
+	
+	VkInstance instance = createInstance();
+
+	loadInstanceFunctionPointers(instance);
+	
+	VkDebugReportCallbackEXT dbgCallback = registerDebugCallback(instance);
+	
+	uint32_t queueFamilyIdx = -1;
+	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	VK_CHECK(pickQueueIndexAndPhysicalDevice(
+		instance,
+		VK_QUEUE_GRAPHICS_BIT,
+		VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
+		&physicalDevice,
+		&queueFamilyIdx)
+	);
+	assert(queueFamilyIdx >= 0);
+	VkDevice logicalDevice = createLogicalDevice(physicalDevice, queueFamilyIdx);
+	loadDeviceFunctionPointers(logicalDevice);
+
+	VkQueue graphicsQueue = VK_NULL_HANDLE;
+	vkGetDeviceQueue(logicalDevice, queueFamilyIdx, 0, &graphicsQueue);
+	assert(graphicsQueue != VK_NULL_HANDLE);
+
+	generalInfo->instance = instance;
+	generalInfo->logicalDevice = logicalDevice;
+	generalInfo->physicalDevice = physicalDevice;
+	generalInfo->debugCallback = dbgCallback;
+	generalInfo->queueFamIdx = queueFamilyIdx;
+	generalInfo->graphicsQueue = graphicsQueue;
+
+	return VK_TRUE;
 }
