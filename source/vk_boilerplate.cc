@@ -11,7 +11,7 @@ const char *desiredDeviceExtensions[] = {
 };
 const uint32_t deviceExtSize = sizeof(desiredDeviceExtensions)/sizeof(desiredDeviceExtensions[0]);
 
-VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desiredExtensions, const std::vector<const char*>& desiredLayers)
+static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desiredExtensions, const std::vector<const char*>& desiredLayers)
 {
 	uint32_t extCount = {};
 	vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
@@ -67,7 +67,7 @@ VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desiredExten
 	return (extFound == desiredExtensions.size()) && (layersFound == desiredLayers.size()) ? VK_TRUE : VK_FALSE; 
 }
 
-VkDebugReportCallbackEXT registerDebugCallback(VkInstance instance)
+static VkDebugReportCallbackEXT registerDebugCallback(VkInstance instance)
 {
 	//connect debug callback function
 	VkDebugReportCallbackCreateInfoEXT callbackInfo = {};    
@@ -85,7 +85,7 @@ VkDebugReportCallbackEXT registerDebugCallback(VkInstance instance)
 	return callback;
 }
 
-VkInstance createInstance()
+static VkInstance createInstance()
 {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -113,7 +113,7 @@ VkInstance createInstance()
 }
 
 //finds queue family index of the supplied physical device
-uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFlags desiredFlags)
+static uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFlags desiredFlags)
 {
 	uint32_t queueFamPropsCount = 0;
 	//Reports properties of the queues of the specified physical device
@@ -135,7 +135,7 @@ uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFlags desi
 	return VK_QUEUE_FAMILY_IGNORED;
 }
 
-VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlags queueFlags, VkPhysicalDeviceType preferredGPUType, VkPhysicalDevice* physicalDevice, uint32_t* queueFamIdx)
+static VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlags queueFlags, VkPhysicalDeviceType preferredGPUType, VkPhysicalDevice* physicalDevice, uint32_t* queueFamIdx)
 {
 	uint32_t physicalDeviceCount = 0;
 	int32_t preferredIndex = -1;
@@ -181,7 +181,7 @@ VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlags queue
 	return VK_FALSE;
 }
 
-VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIdx)
+static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIdx)
 {
 	uint32_t deviceExtCount = {};
 	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtCount, nullptr);
