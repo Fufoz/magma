@@ -1,5 +1,4 @@
 #include <volk.h>
-#include <GLFW/glfw3.h>
 
 #include "maths.h"
 #include "logging.h"
@@ -22,6 +21,7 @@ std::vector<const char*> desiredLayers = {
 int main(int argc, char **argv)
 {
 	magma::log::setSeverityMask(magma::log::MASK_ALL);
+
 	VulkanGlobalContext vkCtx = {};
 	VK_CHECK(initVulkanGlobalContext(desiredLayers, desiredExtensions, &vkCtx));
 
@@ -130,19 +130,12 @@ int main(int argc, char **argv)
 	queueSubmitInfo.signalSemaphoreCount = 0;
 	queueSubmitInfo.pSignalSemaphores = nullptr;
 
-	VkFenceCreateInfo fenceCreateInfo = {};
-	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-	fenceCreateInfo.pNext = nullptr;
-	fenceCreateInfo.flags = 0;
-
-	VkFence fence = VK_NULL_HANDLE;
-	VK_CALL(vkCreateFence(vkCtx.logicalDevice, &fenceCreateInfo, nullptr, &fence));
+	VkFence fence = createFence(vkCtx.logicalDevice);
 
 	VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &queueSubmitInfo, fence));
-	VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &fence, VK_TRUE, 1000000000));
-
-	//set fence back to unsignalled state
-	VK_CALL(vkResetFences(vkCtx.logicalDevice, 1, &fence));
+	VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX));
+	
+	vkDestroyFence(vkCtx.logicalDevice, fence, nullptr);
 
 	vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, 1, &commandBuffer);
 	//destroy staging buffer since we don't need it anymore
@@ -427,7 +420,7 @@ int main(int argc, char **argv)
 
 		VkClearValue clearColor = {};
 		clearColor.color = {0.7f, 0.76f, 0.76f, 1.f};
-		
+
 		VK_CALL(vkBeginCommandBuffer(commandBuffers[i], &cmdBuffBegInfo));
 		VkRenderPassBeginInfo renderPassBegInfo = {};
     	renderPassBegInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -438,7 +431,7 @@ int main(int argc, char **argv)
 		renderPassBegInfo.renderArea.extent = windowInfo.windowExtent;
     	renderPassBegInfo.clearValueCount = 1;
     	renderPassBegInfo.pClearValues = &clearColor;
-		
+
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassBegInfo, VK_SUBPASS_CONTENTS_INLINE);
 
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipe);
@@ -451,10 +444,6 @@ int main(int argc, char **argv)
 
 		VK_CALL(vkEndCommandBuffer(commandBuffers[i]));
 	}
-
-	VkSemaphore imageAvailable = createSemaphore(vkCtx.logicalDevice);
-	VkSemaphore imageMayPresent = createSemaphore(vkCtx.logicalDevice);
-
 
 	uint32_t presentableFrames = swapChain.imageCount;
 	std::vector<VkSemaphore> imageAvailableSemaphores = {};
@@ -477,7 +466,7 @@ int main(int argc, char **argv)
 	{
 		fence = createFence(vkCtx.logicalDevice, true);
 	}
-	
+
 	uint32_t syncIndex = 0;//index in semaphore array to use
 	//render loop
 	while(!glfwWindowShouldClose((GLFWwindow*)windowInfo.windowHandle))
@@ -485,7 +474,7 @@ int main(int argc, char **argv)
 		HostTimer t;
 		t.start();
 		glfwPollEvents();
-		
+
 		VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &imageFences[syncIndex], VK_TRUE, UINT64_MAX));
 		VK_CALL(vkResetFences(vkCtx.logicalDevice, 1, &imageFences[syncIndex]));
 
@@ -503,7 +492,7 @@ int main(int argc, char **argv)
 		queueSubmitInfo.pCommandBuffers = &commandBuffers[imageId];
 		queueSubmitInfo.signalSemaphoreCount = 1;
 		queueSubmitInfo.pSignalSemaphores = &imageMayPresentSemaphores[syncIndex];
-		
+
 		VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &queueSubmitInfo, imageFences[syncIndex]));
 
 		VkPresentInfoKHR presentInfo = {};

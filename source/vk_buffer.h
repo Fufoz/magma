@@ -1,16 +1,9 @@
 #ifndef VK_BUFFER_H
 #define VK_BUFFER_H
 
-#include <volk.h>
+#include "vk_types.h"
 
 #include <cstddef>
-
-struct Buffer
-{
-	VkBuffer buffer;
-	VkDeviceSize bufferSize;
-	VkDeviceMemory backupMemory;
-};
 
 Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkBufferUsageFlags usageFlags,
 	VkMemoryPropertyFlagBits requiredMemProperties, std::size_t size, uint32_t queueFamilyIdx);

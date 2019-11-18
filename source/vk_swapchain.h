@@ -7,6 +7,6 @@ VkBool32 createSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uin
 
 VkResult destroySwapChain(SwapChain* swapChain);
 
-VkResult recreateSwapChain(SwapChain* swapChain);
+VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, SwapChain* swapChain);
 
 #endif

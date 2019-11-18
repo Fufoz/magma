@@ -14,6 +14,7 @@ struct VulkanGlobalContext
 	VkDebugReportCallbackEXT debugCallback;
 	uint32_t queueFamIdx;
 	VkQueue graphicsQueue;
+	VkPipeline graphicsPipe;
 };
 
 struct WindowInfo
@@ -48,6 +49,13 @@ struct Shader
 {
 	VkShaderModule handle;
 	VkShaderStageFlagBits shaderStage;
+};
+
+struct Buffer
+{
+	VkBuffer buffer;
+	VkDeviceSize bufferSize;
+	VkDeviceMemory backupMemory;
 };
 
 #endif

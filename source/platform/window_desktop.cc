@@ -75,3 +75,8 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 
 	return VK_TRUE;
 }
+
+void destroyPlatformWindow(void* windowHandle)
+{
+	glfwDestroyWindow((GLFWwindow*)windowHandle);
+}

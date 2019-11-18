@@ -141,3 +141,27 @@ VkBool32 createSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uin
 	
 	return VK_TRUE;
 }
+
+VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, SwapChain* swapChain)
+{
+	//wait until gpu is done using any runtime objects
+	vkDeviceWaitIdle(vkCtx.logicalDevice);
+
+	for(auto& fb : swapChain->runtime.frameBuffers)
+	{
+		vkDestroyFramebuffer(vkCtx.logicalDevice, fb, nullptr);
+	}
+
+	for(auto& imageView : swapChain->runtime.imageViews)
+	{
+		vkDestroyImageView(vkCtx.logicalDevice, imageView, nullptr);
+	}
+
+	for(auto& image : swapChain->runtime.images)
+	{
+		vkDestroyImage(vkCtx.logicalDevice, image, nullptr);
+	}
+
+	//vkDestroyPipeline(vkCtx.logicalDevice, vkCtx.
+	return VK_SUCCESS;
+}

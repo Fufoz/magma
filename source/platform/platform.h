@@ -8,7 +8,7 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 
 const char** getRequiredSurfaceExtensions(uint32_t* surfaceExtCount);
 
-void destroyPlatformWindow();
+void destroyPlatformWindow(void* windowHandle);
 
 VkBool32 isPresentationSupported();
 
