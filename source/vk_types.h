@@ -2,9 +2,8 @@
 #define MAGMA_VK_TYPES_H
 
 #include <volk.h>
-#include <GLFW/glfw3.h>
-
 #include <vector>
+#include <GLFW/glfw3.h>
 
 struct VulkanGlobalContext
 {
@@ -49,6 +48,12 @@ struct Shader
 {
 	VkShaderModule handle;
 	VkShaderStageFlagBits shaderStage;
+};
+
+struct GraphicsPipe
+{
+	VkPipelineShaderStageCreateInfo* shaderCreateInfos;
+	uint32_t shaderStageCreateInfosCount;
 };
 
 struct Buffer

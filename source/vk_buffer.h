@@ -10,6 +10,9 @@ Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkB
 
 VkResult copyDataToStagingBuffer(VkDevice logicalDevice, VkDeviceSize offset, const void* copyFrom, Buffer* buffer);
 
+VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, Buffer* deviceLocalBuffer);
+
 void destroyBuffer(VkDevice logicalDevice, Buffer* buffer);
+
 
 #endif

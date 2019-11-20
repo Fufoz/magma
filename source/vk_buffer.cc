@@ -1,5 +1,6 @@
 #include "vk_buffer.h"
 #include "vk_dbg.h"
+#include "vk_boilerplate.h"
 
 Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkBufferUsageFlags usageFlags,
 	VkMemoryPropertyFlagBits requiredMemProperties, std::size_t size, uint32_t queueFamilyIdx)
@@ -96,4 +97,56 @@ VkResult copyDataToStagingBuffer(VkDevice logicalDevice, VkDeviceSize offset, co
 	vkUnmapMemory(logicalDevice, buffer->backupMemory);
 
 	return VK_SUCCESS;
+}
+
+VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, Buffer* deviceLocalBuffer)
+{
+
+	VkCommandBufferAllocateInfo cmdBuffAllocInfo = {};
+	cmdBuffAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	cmdBuffAllocInfo.pNext = nullptr;
+	cmdBuffAllocInfo.commandPool = commandPool;
+	cmdBuffAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	cmdBuffAllocInfo.commandBufferCount = 1;
+
+	VkCommandBuffer commandBuffer;
+	VK_CALL(vkAllocateCommandBuffers(vkCtx.logicalDevice, &cmdBuffAllocInfo, &commandBuffer));
+
+	//begin recording transfer commands
+	VkCommandBufferBeginInfo cmdBufferBeginInfo = {};
+	cmdBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cmdBufferBeginInfo.pNext = nullptr;
+	cmdBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	cmdBufferBeginInfo.pInheritanceInfo = nullptr;
+
+	VK_CALL(vkBeginCommandBuffer(commandBuffer, &cmdBufferBeginInfo));
+
+	VkBufferCopy bufferCopy = {};
+	bufferCopy.size = stagingBuffer.bufferSize;
+
+	vkCmdCopyBuffer(commandBuffer, stagingBuffer.buffer, deviceLocalBuffer->buffer, 1, &bufferCopy);
+	
+	VK_CALL(vkEndCommandBuffer(commandBuffer));
+	
+	VkSubmitInfo queueSubmitInfo = {};
+	queueSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	queueSubmitInfo.pNext = nullptr;
+	queueSubmitInfo.waitSemaphoreCount = 0;
+	queueSubmitInfo.pWaitSemaphores = nullptr;
+	queueSubmitInfo.pWaitDstStageMask = nullptr;
+	queueSubmitInfo.commandBufferCount = 1;
+	queueSubmitInfo.pCommandBuffers = &commandBuffer;
+	queueSubmitInfo.signalSemaphoreCount = 0;
+	queueSubmitInfo.pSignalSemaphores = nullptr;
+
+	VkFence fence = createFence(vkCtx.logicalDevice);
+
+	VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &queueSubmitInfo, fence));
+	VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX));
+	
+	vkDestroyFence(vkCtx.logicalDevice, fence, nullptr);
+
+	vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, 1, &commandBuffer);
+	
+	return VK_TRUE;
 }
