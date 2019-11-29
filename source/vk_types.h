@@ -13,7 +13,6 @@ struct VulkanGlobalContext
 	VkDebugReportCallbackEXT debugCallback;
 	uint32_t queueFamIdx;
 	VkQueue graphicsQueue;
-	VkPipeline graphicsPipe;
 };
 
 struct WindowInfo
@@ -50,10 +49,12 @@ struct Shader
 	VkShaderStageFlagBits shaderStage;
 };
 
-struct GraphicsPipe
+struct PipelineState
 {
-	VkPipelineShaderStageCreateInfo* shaderCreateInfos;
-	uint32_t shaderStageCreateInfosCount;
+	Shader shaders[2];
+	VkPipeline pipeline;
+	VkPipelineLayout pipelineLayout;
+	VkRenderPass renderPass;
 };
 
 struct Buffer

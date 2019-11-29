@@ -7,6 +7,8 @@ VkBool32 createSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uin
 
 VkResult destroySwapChain(SwapChain* swapChain);
 
-VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, SwapChain* swapChain);
+VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain);
+
+VkBool32 configureGraphicsPipe(VulkanGlobalContext& vkCtx, PipelineState* state);
 
 #endif

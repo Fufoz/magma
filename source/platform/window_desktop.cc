@@ -76,6 +76,14 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 	return VK_TRUE;
 }
 
+VkExtent2D getCurrentWindowExtent(void* windowHandle)
+{
+	int w = {};
+	int h = {};
+	glfwGetWindowSize((GLFWwindow*)windowHandle, &w, &h);
+	return {w, h};
+}
+
 void destroyPlatformWindow(void* windowHandle)
 {
 	glfwDestroyWindow((GLFWwindow*)windowHandle);

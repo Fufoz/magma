@@ -32,31 +32,6 @@ int main(int argc, char **argv)
 	VK_CHECK(createSwapChain(vkCtx, windowInfo, 2, &swapChain));
 
 //////////////////////////////////////////////////////////////////////////
-
-	//loading spirv shaders
-	VkShaderModule vertShaderModule = VK_NULL_HANDLE;
-	VkShaderModule fragShaderModule = VK_NULL_HANDLE;
-	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleVert.spv", &vertShaderModule));
-	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleFrag.spv", &fragShaderModule));
-
-	//pipeline configuration:
-
-	//assign shaders to a specific pipeline stage
-	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
-	shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shaderStageCreateInfos[0].pNext = nullptr;
-	shaderStageCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shaderStageCreateInfos[0].module = vertShaderModule;
-	shaderStageCreateInfos[0].pName = "main";
-	shaderStageCreateInfos[0].pSpecializationInfo = nullptr;
-
-	shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-	shaderStageCreateInfos[1].pNext = nullptr;
-	shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	shaderStageCreateInfos[1].module = fragShaderModule;
-	shaderStageCreateInfos[1].pName = "main";
-	shaderStageCreateInfos[1].pSpecializationInfo = nullptr;
-	
 	struct VertexPC
 	{
 		Vec3 pos;
@@ -66,7 +41,7 @@ int main(int argc, char **argv)
 	VertexPC verticies[3] = {
 		{{-0.5f, -0.5f, 0.f}, {0.6f, 0.9f, 1.f}},
 		{{ 0.5f, -0.5f, 0.f}, {0.6f, 0.9f, 1.f}},
-		{{ 0.0f,  0.5f, 0.f}, {1.f, 0.f, 0.f}}
+		{{ 0.0f,  0.5f, 0.f}, {1.0f, 0.0f, 0.f}}
 	};
 
 	Buffer stagingBuffer = createBuffer(vkCtx.logicalDevice, vkCtx.physicalDevice,
@@ -94,6 +69,30 @@ int main(int argc, char **argv)
 	VK_CALL(vkCreateCommandPool(vkCtx.logicalDevice, &cmdPoolCreateInfo, nullptr, &commandPool));
 
 	pushDataToDeviceLocalBuffer(commandPool, vkCtx, stagingBuffer, &deviceLocalBuffer);
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//pipeline configuration:
+
+	//loading spirv shaders
+	VkShaderModule vertShaderModule = VK_NULL_HANDLE;
+	VkShaderModule fragShaderModule = VK_NULL_HANDLE;
+	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleVert.spv", &vertShaderModule));
+	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleFrag.spv", &fragShaderModule));
+
+	//assign shaders to a specific pipeline stage
+	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
+	shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfos[0].pNext = nullptr;
+	shaderStageCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+	shaderStageCreateInfos[0].module = vertShaderModule;
+	shaderStageCreateInfos[0].pName = "main";
+	shaderStageCreateInfos[0].pSpecializationInfo = nullptr;
+
+	shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfos[1].pNext = nullptr;
+	shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+	shaderStageCreateInfos[1].module = fragShaderModule;
+	shaderStageCreateInfos[1].pName = "main";
+	shaderStageCreateInfos[1].pSpecializationInfo = nullptr;
 
 	VkVertexInputBindingDescription vertexBindingDescription = {};
 	vertexBindingDescription.binding = 0;
@@ -262,18 +261,6 @@ int main(int argc, char **argv)
 	attachmentDescr.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	attachmentDescr.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
-/*
-	//depth attachment
-	attachmentDescr[0].flags = {};
-	attachmentDescr[0].format = swapchainImageFormat;
-	attachmentDescr[0].samples = VK_SAMPLE_COUNT_1_BIT;
-	attachmentDescr[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attachmentDescr[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-	attachmentDescr[0].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-	attachmentDescr[0].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-	attachmentDescr[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-	attachmentDescr[0].finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-*/
 	VkAttachmentReference colorAttachmentRef = {};
 	colorAttachmentRef.attachment = 0;//index to a vkAttachmentDescription array
 	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;//???? WHY
@@ -422,6 +409,7 @@ int main(int argc, char **argv)
 	}
 
 	uint32_t syncIndex = 0;//index in semaphore array to use
+
 	//render loop
 	while(!glfwWindowShouldClose((GLFWwindow*)windowInfo.windowHandle))
 	{
@@ -433,8 +421,30 @@ int main(int argc, char **argv)
 		VK_CALL(vkResetFences(vkCtx.logicalDevice, 1, &imageFences[syncIndex]));
 
 		uint32_t imageId = {};
-		vkAcquireNextImageKHR(vkCtx.logicalDevice, swapChain.swapchain, UINT64_MAX, imageAvailableSemaphores[syncIndex], VK_NULL_HANDLE, &imageId);
-		//magma::log::info("Image {}", imageId);
+
+		VkResult acquireStatus = vkAcquireNextImageKHR(
+			vkCtx.logicalDevice, swapChain.swapchain,
+			UINT64_MAX, imageAvailableSemaphores[syncIndex],
+			VK_NULL_HANDLE, &imageId
+		);
+
+		switch(acquireStatus)
+		{
+			case VK_SUCCESS : break;
+			case VK_ERROR_OUT_OF_DATE_KHR : 
+			{
+				//recteate swapchain if its no longer matches surface properties
+				magma::log::warn("Swapchain-Surface properties mismatch!");
+				break;
+			}
+			default : 
+			{
+				magma::log::error("Image acquire returned {}", vkStrError(acquireStatus));
+				assert(!"ACQUIRE IMG ASSERT");
+				break;
+			}
+		}
+
 		VkSubmitInfo queueSubmitInfo = {};
 		queueSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		queueSubmitInfo.pNext = nullptr;
@@ -459,7 +469,11 @@ int main(int argc, char **argv)
 		presentInfo.pImageIndices = &imageId;
 		presentInfo.pResults = nullptr;
 
-		VK_CALL(vkQueuePresentKHR(vkCtx.graphicsQueue, &presentInfo));
+		VkResult presentStatus = vkQueuePresentKHR(vkCtx.graphicsQueue, &presentInfo);
+		if(presentStatus == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			magma::log::warn("Swapchain-Surface properties mismatch!");
+		}
 
 		//advance sync index pointing to the next semaphore/fence objects to use
 		syncIndex = (syncIndex + 1) % presentableFrames;

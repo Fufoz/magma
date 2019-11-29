@@ -1,5 +1,6 @@
 #include "vk_swapchain.h"
 #include "vk_dbg.h"
+#include "platform/platform.h"
 
 static VkSurfaceFormatKHR querySurfaceFormat(VkSurfaceKHR windowSurface, VkPhysicalDevice physicalDevice)
 {
@@ -64,7 +65,7 @@ static VkExtent2D pickImageExtent(VkExtent2D imageExtent, VkSurfaceCapabilitiesK
 	return selectedExtent;
 }
 
-static VkSwapchainKHR createSwapChain(VkDevice logicalDevice, VkSurfaceKHR windowSurface, VkSurfaceCapabilitiesKHR surfaceCaps, VkSurfaceFormatKHR surfaceFormat, VkExtent2D imageExtent, VkPresentModeKHR presentationMode, uint32_t queueFamIdx)
+static VkSwapchainKHR createSwapChain(VkDevice logicalDevice, VkSurfaceKHR windowSurface, VkSurfaceCapabilitiesKHR surfaceCaps, VkSurfaceFormatKHR surfaceFormat, VkExtent2D imageExtent, VkPresentModeKHR presentationMode, uint32_t queueFamIdx, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE)
 {
 
 	//create swapchain
@@ -86,7 +87,7 @@ static VkSwapchainKHR createSwapChain(VkDevice logicalDevice, VkSurfaceKHR windo
 	swapChainCreateInfo.preTransform = surfaceCaps.currentTransform;
 	swapChainCreateInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	swapChainCreateInfo.clipped = VK_TRUE;
-	swapChainCreateInfo.oldSwapchain = VK_NULL_HANDLE;
+	swapChainCreateInfo.oldSwapchain = oldSwapchain;
 
 	VkSwapchainKHR swapChain = VK_NULL_HANDLE;
 	VK_CALL(vkCreateSwapchainKHR(logicalDevice, &swapChainCreateInfo, nullptr, &swapChain));
@@ -101,7 +102,7 @@ VkBool32 createSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uin
 	VkExtent2D imageExtent = pickImageExtent(windowInfo.windowExtent, windowInfo.surfaceCaps);
 	VK_CHECK(queryPresentationSupport(vkCtx.physicalDevice, vkCtx.queueFamIdx, windowInfo.surface));
 	VkSwapchainKHR vkSwapChain = createSwapChain(vkCtx.logicalDevice, windowInfo.surface, windowInfo.surfaceCaps,
-		surfaceFormat, imageExtent, selectedPresentMode, vkCtx.queueFamIdx);
+		surfaceFormat, imageExtent, selectedPresentMode, vkCtx.queueFamIdx, swapChain->swapchain);
 	
 	uint32_t swapChainImageCount = {};
 	VK_CALL(vkGetSwapchainImagesKHR(vkCtx.logicalDevice, vkSwapChain, &swapChainImageCount, nullptr));
@@ -142,7 +143,19 @@ VkBool32 createSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uin
 	return VK_TRUE;
 }
 
-VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, SwapChain* swapChain)
+VkResult destroySwapChain(VkDevice logicalDevice, SwapChain* swapChain)
+{
+	vkDestroySwapchainKHR(logicalDevice, swapChain->swapchain, nullptr);
+	swapChain->swapchain = VK_NULL_HANDLE;
+	return VK_SUCCESS;
+}
+
+VkBool32 configureGraphicsPipe(VulkanGlobalContext& vkCtx, PipelineState* state)
+{
+
+}
+
+VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain)
 {
 	//wait until gpu is done using any runtime objects
 	vkDeviceWaitIdle(vkCtx.logicalDevice);
@@ -162,6 +175,12 @@ VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, SwapChain* swapChain)
 		vkDestroyImage(vkCtx.logicalDevice, image, nullptr);
 	}
 
-	//vkDestroyPipeline(vkCtx.logicalDevice, vkCtx.
+	windowInfo.windowExtent = getCurrentWindowExtent(windowInfo.windowHandle);
+
+	createSwapChain(vkCtx, windowInfo, swapChain->imageCount, swapChain);
+
+	//vkDestroyPipeline(vkCtx.logicalDevice, vkCtx.graphicsPipe, nullptr);
+	//vkDestroyRenderPass(vkCtx.logicalDevice, vkCtx.renderPass, nullptr);
+
 	return VK_SUCCESS;
 }
