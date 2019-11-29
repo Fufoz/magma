@@ -71,12 +71,19 @@ int main(int argc, char **argv)
 	pushDataToDeviceLocalBuffer(commandPool, vkCtx, stagingBuffer, &deviceLocalBuffer);
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//pipeline configuration:
+	PipelineState pipelineState = {};
 
 	//loading spirv shaders
 	VkShaderModule vertShaderModule = VK_NULL_HANDLE;
 	VkShaderModule fragShaderModule = VK_NULL_HANDLE;
 	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleVert.spv", &vertShaderModule));
 	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleFrag.spv", &fragShaderModule));
+
+	pipelineState.shaders[0].handle = vertShaderModule;
+	pipelineState.shaders[0].shaderStage = VK_SHADER_STAGE_VERTEX_BIT;
+
+	pipelineState.shaders[1].handle = fragShaderModule;
+	pipelineState.shaders[1].shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 	//assign shaders to a specific pipeline stage
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
