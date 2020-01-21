@@ -94,7 +94,7 @@ static VkSwapchainKHR createSwapChain(VkDevice logicalDevice, VkSurfaceKHR windo
 	return swapChain;
 }
 
-VkBool32 createSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain)
+VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain)
 {
 	//query for available surface formats
 	VkSurfaceFormatKHR surfaceFormat = querySurfaceFormat(windowInfo.surface, vkCtx.physicalDevice);	

@@ -46,7 +46,7 @@ struct SwapChain
 struct Shader
 {
 	VkShaderModule handle;
-	VkShaderStageFlagBits shaderStage;
+	VkShaderStageFlagBits shaderType;
 };
 
 struct PipelineState

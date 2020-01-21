@@ -1,8 +1,8 @@
 #ifndef VK_SHADER_H
 #define VK_SHADER_H
 
-#include <volk.h>
+#include <vk_types.h>
 
-VkBool32 loadShader(VkDevice logicalDevice, const char* path, VkShaderModule* shaderModule);
+VkBool32 loadShader(VkDevice logicalDevice, const char* path, VkShaderStageFlagBits shaderType, Shader* shader);
 
 #endif

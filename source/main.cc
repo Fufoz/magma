@@ -69,35 +69,95 @@ int main(int argc, char **argv)
 	VK_CALL(vkCreateCommandPool(vkCtx.logicalDevice, &cmdPoolCreateInfo, nullptr, &commandPool));
 
 	pushDataToDeviceLocalBuffer(commandPool, vkCtx, stagingBuffer, &deviceLocalBuffer);
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//pipeline configuration:
 	PipelineState pipelineState = {};
 
 	//loading spirv shaders
-	VkShaderModule vertShaderModule = VK_NULL_HANDLE;
-	VkShaderModule fragShaderModule = VK_NULL_HANDLE;
-	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleVert.spv", &vertShaderModule));
-	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleFrag.spv", &fragShaderModule));
+	Shader vertexShader = {};
+	Shader fragmentShader = {};
+	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleVert.spv", VK_SHADER_STAGE_VERTEX_BIT, &vertexShader));
+	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, &fragmentShader));
 
-	pipelineState.shaders[0].handle = vertShaderModule;
-	pipelineState.shaders[0].shaderStage = VK_SHADER_STAGE_VERTEX_BIT;
+	pipelineState.shaders[0] = vertexShader;
+	pipelineState.shaders[1] = fragmentShader;
 
-	pipelineState.shaders[1].handle = fragShaderModule;
-	pipelineState.shaders[1].shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT;
+/*
+	VkPipelineLayoutCreateInfo layoutCreateInfo = {};
+	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	layoutCreateInfo.pNext = nullptr;
+	layoutCreateInfo.flags = VK_FLAGS_NONE;
+	layoutCreateInfo.setLayoutCount = 0;
+	layoutCreateInfo.pSetLayouts = nullptr;
+	layoutCreateInfo.pushConstantRangeCount = 0;
+	layoutCreateInfo.pPushConstantRanges = nullptr;
+	
+	VkPipelineLayout pipeLayout;
+	vkCreatePipelineLayout(vkCtx.logicalDevice, &layoutCreateInfo, nullptr, &pipeLayout);
+	pipelineState.pipelineLayout = pipeLayout;
 
+	VkAttachmentDescription colorAttachmentDescr = {};
+    
+	colorAttachmentDescr.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
+    colorAttachmentDescr.format = swapChain.imageFormat;
+    colorAttachmentDescr.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorAttachmentDescr.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    colorAttachmentDescr.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachmentDescr.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    colorAttachmentDescr.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    colorAttachmentDescr.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    colorAttachmentDescr.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkAttachmentReference colorAttachmentReference = {};
+    colorAttachmentReference.attachment = 0;
+    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpassDescription = {};
+	subpassDescription.flags = VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX;
+	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpassDescription.inputAttachmentCount = 0;
+	subpassDescription.pInputAttachments = nullptr;
+	subpassDescription.colorAttachmentCount = 1;
+	subpassDescription.pColorAttachments = &colorAttachmentReference;
+	subpassDescription.pResolveAttachments = nullptr;
+	subpassDescription.pDepthStencilAttachment = nullptr;
+	subpassDescription.preserveAttachmentCount = 0;
+	subpassDescription.pPreserveAttachments = nullptr;
+
+	VkSubpassDependency subpassDependency = {};
+    uint32_t                srcSubpass;
+    uint32_t                dstSubpass;
+    VkPipelineStageFlags    srcStageMask;
+    VkPipelineStageFlags    dstStageMask;
+    VkAccessFlags           srcAccessMask;
+    VkAccessFlags           dstAccessMask;
+    VkDependencyFlags       dependencyFlags;
+
+	VkRenderPassCreateInfo renderPassInfo = {};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.pNext = nullptr;
+	renderPassInfo.flags = VK_FLAGS_NONE;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &colorAttachmentDescr;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpassDescription;
+	renderPassInfo.dependencyCount = ;
+	renderPassInfo.pDependencies = ;
+*/
 	//assign shaders to a specific pipeline stage
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
 	shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStageCreateInfos[0].pNext = nullptr;
-	shaderStageCreateInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-	shaderStageCreateInfos[0].module = vertShaderModule;
+	shaderStageCreateInfos[0].stage = vertexShader.shaderType;
+	shaderStageCreateInfos[0].module = vertexShader.handle;
 	shaderStageCreateInfos[0].pName = "main";
 	shaderStageCreateInfos[0].pSpecializationInfo = nullptr;
 
 	shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	shaderStageCreateInfos[1].pNext = nullptr;
-	shaderStageCreateInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-	shaderStageCreateInfos[1].module = fragShaderModule;
+	shaderStageCreateInfos[1].stage = fragmentShader.shaderType;
+	shaderStageCreateInfos[1].module = fragmentShader.handle;
 	shaderStageCreateInfos[1].pName = "main";
 	shaderStageCreateInfos[1].pSpecializationInfo = nullptr;
 

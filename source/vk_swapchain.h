@@ -3,11 +3,11 @@
 
 #include "vk_types.h"
 
-VkBool32 createSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain);
+VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain);
 
 VkResult destroySwapChain(SwapChain* swapChain);
 
-VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain);
+VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, PipelineState* pipe, SwapChain* swapChain);
 
 VkBool32 configureGraphicsPipe(VulkanGlobalContext& vkCtx, PipelineState* state);
 
