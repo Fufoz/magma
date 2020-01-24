@@ -89,20 +89,20 @@ int main(int argc, char **argv)
 
 	VkVertexInputBindingDescription bindDescr = {};
 	bindDescr.binding = 0;
-    bindDescr.stride = sizeof(VertexPC);
-    bindDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	bindDescr.stride = sizeof(VertexPC);
+	bindDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
 	const uint32_t attribCount = 2;
 	VkVertexInputAttributeDescription attrDescr[attribCount] = {};
 	attrDescr[0].location = 0;
-    attrDescr[0].binding = 0;
-    attrDescr[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attrDescr[0].offset = 0;
+	attrDescr[0].binding = 0;
+	attrDescr[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attrDescr[0].offset = 0;
 
 	attrDescr[1].location = 1;
-    attrDescr[1].binding = 0;
-    attrDescr[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    attrDescr[1].offset = sizeof(Vec3);
+	attrDescr[1].binding = 0;
+	attrDescr[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+	attrDescr[1].offset = sizeof(Vec3);
 
 	vbuff.bindingDescr = bindDescr;
 	vbuff.attribCount = attribCount;
@@ -384,24 +384,24 @@ int main(int argc, char **argv)
 	for(uint32_t i = 0; i < commandBuffers.size(); i++)
 	{
 		VkCommandBufferBeginInfo cmdBuffBegInfo = {};
-    	cmdBuffBegInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    	cmdBuffBegInfo.pNext = nullptr;
-    	cmdBuffBegInfo.flags = VK_FLAGS_NONE;
-    	cmdBuffBegInfo.pInheritanceInfo = nullptr;
+		cmdBuffBegInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdBuffBegInfo.pNext = nullptr;
+		cmdBuffBegInfo.flags = VK_FLAGS_NONE;
+		cmdBuffBegInfo.pInheritanceInfo = nullptr;
 
 		VkClearValue clearColor = {};
 		clearColor.color = {0.7f, 0.76f, 0.76f, 1.f};
 
 		VK_CALL(vkBeginCommandBuffer(commandBuffers[i], &cmdBuffBegInfo));
 		VkRenderPassBeginInfo renderPassBegInfo = {};
-    	renderPassBegInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    	renderPassBegInfo.pNext = nullptr;
-    	renderPassBegInfo.renderPass = renderPass;
-    	renderPassBegInfo.framebuffer = swapChain.runtime.frameBuffers[i];
-    	renderPassBegInfo.renderArea.offset = {0, 0};
+		renderPassBegInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassBegInfo.pNext = nullptr;
+		renderPassBegInfo.renderPass = renderPass;
+		renderPassBegInfo.framebuffer = swapChain.runtime.frameBuffers[i];
+		renderPassBegInfo.renderArea.offset = {0, 0};
 		renderPassBegInfo.renderArea.extent = windowInfo.windowExtent;
-    	renderPassBegInfo.clearValueCount = 1;
-    	renderPassBegInfo.pClearValues = &clearColor;
+		renderPassBegInfo.clearValueCount = 1;
+		renderPassBegInfo.pClearValues = &clearColor;
 
 		vkCmdBeginRenderPass(commandBuffers[i], &renderPassBegInfo, VK_SUBPASS_CONTENTS_INLINE);
 
