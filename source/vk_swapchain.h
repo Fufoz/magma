@@ -9,6 +9,4 @@ VkResult destroySwapChain(SwapChain* swapChain);
 
 VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, PipelineState* pipe, SwapChain* swapChain);
 
-VkBool32 configureGraphicsPipe(VulkanGlobalContext& vkCtx, PipelineState* state);
-
 #endif

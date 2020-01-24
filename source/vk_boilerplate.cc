@@ -142,8 +142,8 @@ static VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlag
 	//Enumerates the physical devices accessible to a Vulkan instance
 	VK_CALL(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, nullptr));
 
-	VkPhysicalDevice deviceList[16];
-
+	const uint32_t MAX_DEVICE_COUNT = 16;
+	VkPhysicalDevice deviceList[MAX_DEVICE_COUNT] = {};
 	VK_CALL(vkEnumeratePhysicalDevices(instance, &physicalDeviceCount, deviceList));
 
 	for(uint32_t i = 0; i < physicalDeviceCount; i++) 

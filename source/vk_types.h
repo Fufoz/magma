@@ -64,11 +64,14 @@ struct Buffer
 	VkDeviceMemory backupMemory;
 };
 
-const uint32_t MAX_VERTEX_ATTRIB_DESCR = 10;
+const uint32_t MAX_VERTEX_INPUT_ATTRIB_DESCR = 10;
+const uint32_t MAX_VERTEX_INPUT_BINDING_DESCR = MAX_VERTEX_INPUT_ATTRIB_DESCR;
 struct VertexBuffer
 {
-	VkVertexInputAttributeDescription attrDescr[MAX_VERTEX_ATTRIB_DESCR];
 	Buffer gpuBuffer;
+	VkVertexInputBindingDescription bindingDescr;
+	VkVertexInputAttributeDescription attrDescr[MAX_VERTEX_INPUT_ATTRIB_DESCR];
+	uint32_t attribCount;
 };
 
 #endif

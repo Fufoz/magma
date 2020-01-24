@@ -7,6 +7,7 @@
 #include "vk_shader.h"
 #include "vk_buffer.h"
 #include "vk_swapchain.h"
+#include "vk_pipeline.h"
 #include "host_timer.h"
 #include <vector>
 #include <string>
@@ -83,68 +84,32 @@ int main(int argc, char **argv)
 	pipelineState.shaders[0] = vertexShader;
 	pipelineState.shaders[1] = fragmentShader;
 
-/*
-	VkPipelineLayoutCreateInfo layoutCreateInfo = {};
-	layoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	layoutCreateInfo.pNext = nullptr;
-	layoutCreateInfo.flags = VK_FLAGS_NONE;
-	layoutCreateInfo.setLayoutCount = 0;
-	layoutCreateInfo.pSetLayouts = nullptr;
-	layoutCreateInfo.pushConstantRangeCount = 0;
-	layoutCreateInfo.pPushConstantRanges = nullptr;
-	
-	VkPipelineLayout pipeLayout;
-	vkCreatePipelineLayout(vkCtx.logicalDevice, &layoutCreateInfo, nullptr, &pipeLayout);
-	pipelineState.pipelineLayout = pipeLayout;
+	//specify vertex attributes
+	VertexBuffer vbuff = {};
 
-	VkAttachmentDescription colorAttachmentDescr = {};
-    
-	colorAttachmentDescr.flags = VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT;
-    colorAttachmentDescr.format = swapChain.imageFormat;
-    colorAttachmentDescr.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorAttachmentDescr.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-    colorAttachmentDescr.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachmentDescr.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    colorAttachmentDescr.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    colorAttachmentDescr.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    colorAttachmentDescr.finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	VkVertexInputBindingDescription bindDescr = {};
+	bindDescr.binding = 0;
+    bindDescr.stride = sizeof(VertexPC);
+    bindDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-	VkAttachmentReference colorAttachmentReference = {};
-    colorAttachmentReference.attachment = 0;
-    colorAttachmentReference.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	const uint32_t attribCount = 2;
+	VkVertexInputAttributeDescription attrDescr[attribCount] = {};
+	attrDescr[0].location = 0;
+    attrDescr[0].binding = 0;
+    attrDescr[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attrDescr[0].offset = 0;
 
-	VkSubpassDescription subpassDescription = {};
-	subpassDescription.flags = VK_SUBPASS_DESCRIPTION_PER_VIEW_ATTRIBUTES_BIT_NVX;
-	subpassDescription.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-	subpassDescription.inputAttachmentCount = 0;
-	subpassDescription.pInputAttachments = nullptr;
-	subpassDescription.colorAttachmentCount = 1;
-	subpassDescription.pColorAttachments = &colorAttachmentReference;
-	subpassDescription.pResolveAttachments = nullptr;
-	subpassDescription.pDepthStencilAttachment = nullptr;
-	subpassDescription.preserveAttachmentCount = 0;
-	subpassDescription.pPreserveAttachments = nullptr;
+	attrDescr[1].location = 1;
+    attrDescr[1].binding = 0;
+    attrDescr[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+    attrDescr[1].offset = sizeof(Vec3);
 
-	VkSubpassDependency subpassDependency = {};
-    uint32_t                srcSubpass;
-    uint32_t                dstSubpass;
-    VkPipelineStageFlags    srcStageMask;
-    VkPipelineStageFlags    dstStageMask;
-    VkAccessFlags           srcAccessMask;
-    VkAccessFlags           dstAccessMask;
-    VkDependencyFlags       dependencyFlags;
+	vbuff.bindingDescr = bindDescr;
+	vbuff.attribCount = attribCount;
+	vbuff.attrDescr[0] = attrDescr[0];
+	vbuff.attrDescr[1] = attrDescr[1];
+	configureGraphicsPipe(swapChain, vkCtx, vbuff, windowInfo.windowExtent, &pipelineState);
 
-	VkRenderPassCreateInfo renderPassInfo = {};
-	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-	renderPassInfo.pNext = nullptr;
-	renderPassInfo.flags = VK_FLAGS_NONE;
-	renderPassInfo.attachmentCount = 1;
-	renderPassInfo.pAttachments = &colorAttachmentDescr;
-	renderPassInfo.subpassCount = 1;
-	renderPassInfo.pSubpasses = &subpassDescription;
-	renderPassInfo.dependencyCount = ;
-	renderPassInfo.pDependencies = ;
-*/
 	//assign shaders to a specific pipeline stage
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
 	shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -249,7 +214,7 @@ int main(int argc, char **argv)
 	pipeMultisampleCreateInfo.alphaToOneEnable = VK_FALSE;
 
 
-	//disable depth/stencile pipe
+	//disable depth/stencil pipe
 	VkPipelineDepthStencilStateCreateInfo pipeDepthStencilCreateInfo = {};
 	pipeDepthStencilCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
 	pipeDepthStencilCreateInfo.pNext = nullptr;
@@ -391,9 +356,7 @@ int main(int argc, char **argv)
 	VkPipeline graphicsPipe = VK_NULL_HANDLE;
 	VK_CALL(vkCreateGraphicsPipelines(vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &graphicsPipe));
 
-	std::vector<VkFramebuffer> frameBuffers = {};
-	frameBuffers.resize(swapChain.imageCount);
-	for(std::size_t i = 0; i < frameBuffers.size(); i++)
+	for(std::size_t i = 0; i < swapChain.imageCount; i++)
 	{
 		VkFramebufferCreateInfo frameBufferCreateInfo = {};
 		frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
@@ -405,7 +368,7 @@ int main(int argc, char **argv)
 		frameBufferCreateInfo.width = windowInfo.windowExtent.width;
 		frameBufferCreateInfo.height = windowInfo.windowExtent.height;
 		frameBufferCreateInfo.layers = 1;
-		VK_CALL(vkCreateFramebuffer(vkCtx.logicalDevice, &frameBufferCreateInfo, nullptr, &frameBuffers[i]));
+		VK_CALL(vkCreateFramebuffer(vkCtx.logicalDevice, &frameBufferCreateInfo, nullptr, &swapChain.runtime.frameBuffers[i]));
 	}
 
 	//build command buffer for each swapchain image
@@ -434,7 +397,7 @@ int main(int argc, char **argv)
     	renderPassBegInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     	renderPassBegInfo.pNext = nullptr;
     	renderPassBegInfo.renderPass = renderPass;
-    	renderPassBegInfo.framebuffer = frameBuffers[i];
+    	renderPassBegInfo.framebuffer = swapChain.runtime.frameBuffers[i];
     	renderPassBegInfo.renderArea.offset = {0, 0};
 		renderPassBegInfo.renderArea.extent = windowInfo.windowExtent;
     	renderPassBegInfo.clearValueCount = 1;

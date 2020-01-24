@@ -81,7 +81,7 @@ VkExtent2D getCurrentWindowExtent(void* windowHandle)
 	int w = {};
 	int h = {};
 	glfwGetWindowSize((GLFWwindow*)windowHandle, &w, &h);
-	return {w, h};
+	return {(uint32_t)w, (uint32_t)h};
 }
 
 void destroyPlatformWindow(void* windowHandle)

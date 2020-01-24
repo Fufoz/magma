@@ -135,6 +135,9 @@ VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInf
 		VK_CALL(vkCreateImageView(vkCtx.logicalDevice, &imageViewCreateInfo, nullptr, &imageViews[i]));
 	}
 
+	auto& frameBuffers = swapChain->runtime.frameBuffers;
+	frameBuffers.resize(swapChainImageCount);
+
 	swapChain->imageCount = preferredImageCount > windowInfo.surfaceCaps.maxImageCount ? windowInfo.surfaceCaps.maxImageCount : preferredImageCount;
 	swapChain->presentMode = selectedPresentMode;
 	swapChain->swapchain = vkSwapChain;
@@ -148,11 +151,6 @@ VkResult destroySwapChain(VkDevice logicalDevice, SwapChain* swapChain)
 	vkDestroySwapchainKHR(logicalDevice, swapChain->swapchain, nullptr);
 	swapChain->swapchain = VK_NULL_HANDLE;
 	return VK_SUCCESS;
-}
-
-VkBool32 configureGraphicsPipe(VulkanGlobalContext& vkCtx, PipelineState* state)
-{
-
 }
 
 VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain)

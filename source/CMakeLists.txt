@@ -9,6 +9,7 @@ list(APPEND Sources
 	vk_shader.cc
 	vk_buffer.cc
 	vk_swapchain.cc
+	vk_pipeline.cc
 )
 
 if(ANDROID OR IOS)
