@@ -10,6 +10,8 @@ VkBool32 isPresentationSupported();
 
 VkExtent2D getCurrentWindowExtent(void* windowHandle);
 
+void updateWindowDimensions(VkPhysicalDevice physicalDevice, WindowInfo* out);
+
 const char** getRequiredSurfaceExtensions(uint32_t* surfaceExtCount);
 
 void destroyPlatformWindow(void* windowHandle);

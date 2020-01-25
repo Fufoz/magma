@@ -10,6 +10,7 @@ list(APPEND Sources
 	vk_buffer.cc
 	vk_swapchain.cc
 	vk_pipeline.cc
+	vk_commands.cc
 )
 
 if(ANDROID OR IOS)

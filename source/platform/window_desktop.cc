@@ -84,6 +84,17 @@ VkExtent2D getCurrentWindowExtent(void* windowHandle)
 	return {(uint32_t)w, (uint32_t)h};
 }
 
+void updateWindowDimensions(VkPhysicalDevice physicalDevice, WindowInfo* out)
+{
+	//query created surface capabilities
+	VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
+	VK_CALL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, out->surface, &surfaceCapabilities));
+
+	out->windowExtent = getCurrentWindowExtent(out->windowHandle);
+	out->surfaceCaps = surfaceCapabilities;
+
+}
+
 void destroyPlatformWindow(void* windowHandle)
 {
 	glfwDestroyWindow((GLFWwindow*)windowHandle);

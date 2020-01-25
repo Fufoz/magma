@@ -141,17 +141,19 @@ VkBool32 configureGraphicsPipe(SwapChain& swapChain, VulkanGlobalContext& vkCtx,
 	pipeDynamicStateCreateInfo.dynamicStateCount = 1;
 	pipeDynamicStateCreateInfo.pDynamicStates = &dynamicStates;
 
-	VkPipelineLayoutCreateInfo pipeLayoutCreateInfo = {};
-	pipeLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipeLayoutCreateInfo.pNext =  nullptr;
-	pipeLayoutCreateInfo.flags = VK_FLAGS_NONE;
-	pipeLayoutCreateInfo.setLayoutCount = 0;
-	pipeLayoutCreateInfo.pSetLayouts = nullptr;
-	pipeLayoutCreateInfo.pushConstantRangeCount = 0;
-	pipeLayoutCreateInfo.pPushConstantRanges = nullptr;
+	VkPipelineLayout pipelineLayout = state->pipelineLayout;
+	if(pipelineLayout == VK_NULL_HANDLE) {
+		VkPipelineLayoutCreateInfo pipeLayoutCreateInfo = {};
+		pipeLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+		pipeLayoutCreateInfo.pNext =  nullptr;
+		pipeLayoutCreateInfo.flags = VK_FLAGS_NONE;
+		pipeLayoutCreateInfo.setLayoutCount = 0;
+		pipeLayoutCreateInfo.pSetLayouts = nullptr;
+		pipeLayoutCreateInfo.pushConstantRangeCount = 0;
+		pipeLayoutCreateInfo.pPushConstantRanges = nullptr;
 
-	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
-	VK_CALL(vkCreatePipelineLayout(vkCtx.logicalDevice, &pipeLayoutCreateInfo, nullptr, &pipelineLayout));
+		VK_CALL(vkCreatePipelineLayout(vkCtx.logicalDevice, &pipeLayoutCreateInfo, nullptr, &pipelineLayout));
+	}
 
 	VkAttachmentDescription attachmentDescr = {};
 	//color attachment
@@ -203,7 +205,6 @@ VkBool32 configureGraphicsPipe(SwapChain& swapChain, VulkanGlobalContext& vkCtx,
 
 	VkRenderPass renderPass = VK_NULL_HANDLE;
 	VK_CALL(vkCreateRenderPass(vkCtx.logicalDevice, &renderPassInfo, nullptr, &renderPass));
-	state->renderPass = renderPass;
 
 	VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {};
 	graphicsPipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -230,6 +231,9 @@ VkBool32 configureGraphicsPipe(SwapChain& swapChain, VulkanGlobalContext& vkCtx,
 	VK_CALL(vkCreateGraphicsPipelines(vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &graphicsPipe));
 	
 	state->pipeline = graphicsPipe;
-	
+	state->renderPass = renderPass;
+	state->viewport = viewport;
+	state->pipelineLayout = pipelineLayout;
+
 	return VK_TRUE;
 }

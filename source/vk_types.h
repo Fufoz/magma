@@ -55,6 +55,7 @@ struct PipelineState
 	VkPipeline pipeline;
 	VkPipelineLayout pipelineLayout;
 	VkRenderPass renderPass;
+	VkViewport viewport;
 };
 
 struct Buffer
@@ -63,6 +64,7 @@ struct Buffer
 	VkDeviceSize bufferSize;
 	VkDeviceMemory backupMemory;
 };
+
 
 const uint32_t MAX_VERTEX_INPUT_ATTRIB_DESCR = 10;
 const uint32_t MAX_VERTEX_INPUT_BINDING_DESCR = MAX_VERTEX_INPUT_ATTRIB_DESCR;

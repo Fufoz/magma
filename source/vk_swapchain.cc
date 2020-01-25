@@ -91,6 +91,12 @@ static VkSwapchainKHR createSwapChain(VkDevice logicalDevice, VkSurfaceKHR windo
 
 	VkSwapchainKHR swapChain = VK_NULL_HANDLE;
 	VK_CALL(vkCreateSwapchainKHR(logicalDevice, &swapChainCreateInfo, nullptr, &swapChain));
+	
+	if(oldSwapchain != VK_NULL_HANDLE)
+	{
+		vkDestroySwapchainKHR(logicalDevice, oldSwapchain, nullptr);
+	}
+
 	return swapChain;
 }
 
@@ -109,7 +115,7 @@ VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInf
 	auto& images = swapChain->runtime.images; 
 	images.resize(swapChainImageCount);
 	VK_CALL(vkGetSwapchainImagesKHR(vkCtx.logicalDevice, vkSwapChain, &swapChainImageCount, images.data()));
-	
+
 	auto& imageViews = swapChain->runtime.imageViews;
 	imageViews.resize(swapChainImageCount);
 	
@@ -156,7 +162,7 @@ VkResult destroySwapChain(VkDevice logicalDevice, SwapChain* swapChain)
 VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain)
 {
 	//wait until gpu is done using any runtime objects
-	vkDeviceWaitIdle(vkCtx.logicalDevice);
+	VkResult status =  vkDeviceWaitIdle(vkCtx.logicalDevice);
 
 	for(auto& fb : swapChain->runtime.frameBuffers)
 	{
@@ -166,19 +172,31 @@ VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, S
 	for(auto& imageView : swapChain->runtime.imageViews)
 	{
 		vkDestroyImageView(vkCtx.logicalDevice, imageView, nullptr);
-	}
+	}	
 
-	for(auto& image : swapChain->runtime.images)
-	{
-		vkDestroyImage(vkCtx.logicalDevice, image, nullptr);
-	}
-
+	updateWindowDimensions(vkCtx.physicalDevice, &windowInfo);
 	windowInfo.windowExtent = getCurrentWindowExtent(windowInfo.windowHandle);
 
 	createSwapChain(vkCtx, windowInfo, swapChain->imageCount, swapChain);
 
-	//vkDestroyPipeline(vkCtx.logicalDevice, vkCtx.graphicsPipe, nullptr);
-	//vkDestroyRenderPass(vkCtx.logicalDevice, vkCtx.renderPass, nullptr);
-
 	return VK_SUCCESS;
+}
+
+
+void buildFrameBuffers(VkDevice logicaDevice, const PipelineState& pipelineState, VkExtent2D windowExtent, SwapChain* swapChain)
+{
+	for(std::size_t i = 0; i < swapChain->imageCount; i++)
+	{
+		VkFramebufferCreateInfo frameBufferCreateInfo = {};
+		frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		frameBufferCreateInfo.pNext = nullptr;
+		frameBufferCreateInfo.flags = VK_FLAGS_NONE;
+		frameBufferCreateInfo.renderPass = pipelineState.renderPass;
+		frameBufferCreateInfo.attachmentCount = 1;
+		frameBufferCreateInfo.pAttachments = &swapChain->runtime.imageViews[i];
+		frameBufferCreateInfo.width = windowExtent.width;
+		frameBufferCreateInfo.height = windowExtent.height;
+		frameBufferCreateInfo.layers = 1;
+		VK_CALL(vkCreateFramebuffer(logicaDevice, &frameBufferCreateInfo, nullptr, &swapChain->runtime.frameBuffers[i]));
+	}
 }
