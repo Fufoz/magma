@@ -17,6 +17,8 @@ VkBool32 initVulkanGlobalContext(
 	VulkanGlobalContext* generalInfo
 );
 
+void destroyGlobalContext(VulkanGlobalContext* ctx);
+
 //sync stuff
 VkSemaphore createSemaphore(VkDevice logicalDevice);
 

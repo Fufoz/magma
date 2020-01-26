@@ -237,3 +237,12 @@ VkBool32 configureGraphicsPipe(SwapChain& swapChain, VulkanGlobalContext& vkCtx,
 
 	return VK_TRUE;
 }
+
+void destroyPipeline(const VulkanGlobalContext& ctx, PipelineState* pipeline)
+{
+	vkDestroyShaderModule(ctx.logicalDevice, pipeline->shaders[0].handle, nullptr);
+	vkDestroyShaderModule(ctx.logicalDevice, pipeline->shaders[1].handle, nullptr);
+	vkDestroyPipelineLayout(ctx.logicalDevice, pipeline->pipelineLayout, nullptr);
+	vkDestroyRenderPass(ctx.logicalDevice, pipeline->renderPass, nullptr);
+	vkDestroyPipeline(ctx.logicalDevice, pipeline->pipeline, nullptr);
+}

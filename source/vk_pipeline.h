@@ -8,5 +8,5 @@ VkBool32 configureGraphicsPipe(SwapChain& swapChain,
 	VkExtent2D windowExtent,
 	PipelineState* state);
 
-
+void destroyPipeline(const VulkanGlobalContext& ctx, PipelineState* pipeline);
 #endif

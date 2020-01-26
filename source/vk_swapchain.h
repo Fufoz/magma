@@ -5,7 +5,7 @@
 
 VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain);
 
-VkResult destroySwapChain(SwapChain* swapChain);
+VkResult destroySwapChain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain);
 
 VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain);
 

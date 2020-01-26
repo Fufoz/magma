@@ -110,30 +110,26 @@ int main(int argc, char **argv)
 	createCommandBuffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
 	buildTriangleCommandBuffer(swapChain, pipelineState, deviceLocalBuffer.buffer, windowInfo.windowExtent, commandBuffers);
 
-	uint32_t presentableFrames = swapChain.imageCount;
-	std::vector<VkSemaphore> imageAvailableSemaphores = {};
-	imageAvailableSemaphores.resize(presentableFrames);
-	for(auto& semaphore : imageAvailableSemaphores)
-	{
-		semaphore = createSemaphore(vkCtx.logicalDevice);
-	}
-
-	std::vector<VkSemaphore> imageMayPresentSemaphores = {};
-	imageMayPresentSemaphores.resize(presentableFrames);
-	for(auto& semaphore : imageMayPresentSemaphores)
-	{
-		semaphore = createSemaphore(vkCtx.logicalDevice);
-	}
-
-	std::vector<VkFence> imageFences = {};
-	imageFences.resize(presentableFrames);
-	for(auto& fence : imageFences)
-	{
-		fence = createFence(vkCtx.logicalDevice, true);
-	}
-
 	uint32_t syncIndex = 0;//index in semaphore array to use
-	
+	//aliases for per frame sync objects
+	auto& imageFences = swapChain.runtime.workSubmittedFences;
+	auto& imageAvailableSemaphores = swapChain.runtime.imageAvailableSemaphores;
+	auto& imageMayPresentSemaphores = swapChain.runtime.imageMayPresentSemaphores;
+
+	auto& resizeHandler = [&]()
+	{
+		recreateSwapChain(vkCtx, windowInfo, &swapChain);
+		vkDestroyRenderPass(vkCtx.logicalDevice, pipelineState.renderPass, nullptr);
+		pipelineState.renderPass = VK_NULL_HANDLE;
+		vkDestroyPipeline(vkCtx.logicalDevice, pipelineState.pipeline, nullptr);
+		pipelineState.pipeline = VK_NULL_HANDLE;
+		configureGraphicsPipe(swapChain, vkCtx, vbuff, windowInfo.windowExtent, &pipelineState);
+		buildFrameBuffers(vkCtx.logicalDevice, pipelineState, windowInfo.windowExtent, &swapChain);
+		vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, commandBuffers.size(), commandBuffers.data());
+		createCommandBuffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
+		buildTriangleCommandBuffer(swapChain, pipelineState, deviceLocalBuffer.buffer, windowInfo.windowExtent, commandBuffers);
+	};
+
 	//render loop
 	while(!glfwWindowShouldClose((GLFWwindow*)windowInfo.windowHandle))
 	{
@@ -197,24 +193,26 @@ int main(int argc, char **argv)
 		if(presentStatus == VK_ERROR_OUT_OF_DATE_KHR)
 		{
 			magma::log::warn("Swapchain-Surface properties mismatch!");
-			recreateSwapChain(vkCtx, windowInfo, &swapChain);
-			vkDestroyRenderPass(vkCtx.logicalDevice, pipelineState.renderPass, nullptr);
-			pipelineState.renderPass = VK_NULL_HANDLE;
-			vkDestroyPipeline(vkCtx.logicalDevice, pipelineState.pipeline, nullptr);
-			pipelineState.pipeline = VK_NULL_HANDLE;
-			configureGraphicsPipe(swapChain, vkCtx, vbuff, windowInfo.windowExtent, &pipelineState);
-			buildFrameBuffers(vkCtx.logicalDevice, pipelineState, windowInfo.windowExtent, &swapChain);
-			vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, commandBuffers.size(), commandBuffers.data());
-			createCommandBuffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
-			buildTriangleCommandBuffer(swapChain, pipelineState, deviceLocalBuffer.buffer, windowInfo.windowExtent, commandBuffers);
-			vkDeviceWaitIdle(vkCtx.logicalDevice);
+			resizeHandler();
 		}
 
 		//advance sync index pointing to the next semaphore/fence objects to use
-		syncIndex = (syncIndex + 1) % presentableFrames;
+		syncIndex = (syncIndex + 1) % swapChain.imageCount;
 
 		magma::log::info("Frame Finished within {:.2f} ms", t.stop());
 	}
+
+	//flush command queue before cleanup
+	vkDeviceWaitIdle(vkCtx.logicalDevice);
+	
+	destroyPipeline(vkCtx, &pipelineState);
+	vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, commandBuffers.size(), commandBuffers.data());
+	vkDestroyCommandPool(vkCtx.logicalDevice, commandPool, nullptr);
+	destroyBuffer(vkCtx.logicalDevice, &stagingBuffer);
+	destroyBuffer(vkCtx.logicalDevice, &deviceLocalBuffer);
+	destroySwapChain(vkCtx, &swapChain);
+	destroyPlatformWindow(vkCtx, &windowInfo);
+	destroyGlobalContext(&vkCtx);
 
 	return 0;
 }

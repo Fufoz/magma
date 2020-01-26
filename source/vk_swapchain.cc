@@ -1,5 +1,6 @@
 #include "vk_swapchain.h"
 #include "vk_dbg.h"
+#include "vk_boilerplate.h"
 #include "platform/platform.h"
 
 static VkSurfaceFormatKHR querySurfaceFormat(VkSurfaceKHR windowSurface, VkPhysicalDevice physicalDevice)
@@ -100,15 +101,41 @@ static VkSwapchainKHR createSwapChain(VkDevice logicalDevice, VkSurfaceKHR windo
 	return swapChain;
 }
 
+static void buildSyncPrimitives(const VulkanGlobalContext& vkCtx, SwapChain* swapChain)
+{
+	uint32_t presentableFrames = swapChain->imageCount;
+	auto& imageAvailableSemaphores = swapChain->runtime.imageAvailableSemaphores;
+	imageAvailableSemaphores.resize(presentableFrames);
+	for(auto& semaphore : imageAvailableSemaphores)
+	{
+		semaphore = createSemaphore(vkCtx.logicalDevice);
+	}
+
+	auto& imageMayPresentSemaphores = swapChain->runtime.imageMayPresentSemaphores;
+	imageMayPresentSemaphores.resize(presentableFrames);
+	for(auto& semaphore : imageMayPresentSemaphores)
+	{
+		semaphore = createSemaphore(vkCtx.logicalDevice);
+	}
+
+	auto& imageFences = swapChain->runtime.workSubmittedFences;
+	imageFences.resize(presentableFrames);
+	for(auto& fence : imageFences)
+	{
+		fence = createFence(vkCtx.logicalDevice, true);
+	}
+}
+
 VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain)
 {
+	VkSwapchainKHR oldSwapchain = swapChain->swapchain;
 	//query for available surface formats
 	VkSurfaceFormatKHR surfaceFormat = querySurfaceFormat(windowInfo.surface, vkCtx.physicalDevice);	
 	VkPresentModeKHR selectedPresentMode = queryPresentMode(windowInfo.surface, vkCtx.physicalDevice, VK_PRESENT_MODE_FIFO_KHR);
 	VkExtent2D imageExtent = pickImageExtent(windowInfo.windowExtent, windowInfo.surfaceCaps);
 	VK_CHECK(queryPresentationSupport(vkCtx.physicalDevice, vkCtx.queueFamIdx, windowInfo.surface));
 	VkSwapchainKHR vkSwapChain = createSwapChain(vkCtx.logicalDevice, windowInfo.surface, windowInfo.surfaceCaps,
-		surfaceFormat, imageExtent, selectedPresentMode, vkCtx.queueFamIdx, swapChain->swapchain);
+		surfaceFormat, imageExtent, selectedPresentMode, vkCtx.queueFamIdx, oldSwapchain);
 	
 	uint32_t swapChainImageCount = {};
 	VK_CALL(vkGetSwapchainImagesKHR(vkCtx.logicalDevice, vkSwapChain, &swapChainImageCount, nullptr));
@@ -149,20 +176,51 @@ VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInf
 	swapChain->swapchain = vkSwapChain;
 	swapChain->imageFormat = surfaceFormat.format;
 	
+	if(oldSwapchain == VK_NULL_HANDLE)
+	{
+		buildSyncPrimitives(vkCtx, swapChain);
+	}
+
 	return VK_TRUE;
 }
 
-VkResult destroySwapChain(VkDevice logicalDevice, SwapChain* swapChain)
+VkResult destroySwapChain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain)
 {
-	vkDestroySwapchainKHR(logicalDevice, swapChain->swapchain, nullptr);
-	swapChain->swapchain = VK_NULL_HANDLE;
+	
+	for(auto& fb : swapChain->runtime.frameBuffers)
+	{
+		vkDestroyFramebuffer(vkCtx.logicalDevice, fb, nullptr);
+	}
+
+	for(auto& imageView : swapChain->runtime.imageViews)
+	{
+		vkDestroyImageView(vkCtx.logicalDevice, imageView, nullptr);
+	}
+	
+	for(auto& semaphore : swapChain->runtime.imageAvailableSemaphores)
+	{
+		vkDestroySemaphore(vkCtx.logicalDevice, semaphore, nullptr);
+	}
+
+	for(auto& semaphore : swapChain->runtime.imageMayPresentSemaphores)
+	{
+		vkDestroySemaphore(vkCtx.logicalDevice, semaphore, nullptr);
+	}
+
+	for(auto& fence : swapChain->runtime.workSubmittedFences)
+	{
+		vkDestroyFence(vkCtx.logicalDevice, fence, nullptr);
+	}
+
+	vkDestroySwapchainKHR(vkCtx.logicalDevice, swapChain->swapchain, nullptr);
+
 	return VK_SUCCESS;
 }
 
 VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain)
 {
 	//wait until gpu is done using any runtime objects
-	VkResult status =  vkDeviceWaitIdle(vkCtx.logicalDevice);
+	vkDeviceWaitIdle(vkCtx.logicalDevice);
 
 	for(auto& fb : swapChain->runtime.frameBuffers)
 	{
@@ -175,7 +233,6 @@ VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, S
 	}	
 
 	updateWindowDimensions(vkCtx.physicalDevice, &windowInfo);
-	windowInfo.windowExtent = getCurrentWindowExtent(windowInfo.windowHandle);
 
 	createSwapChain(vkCtx, windowInfo, swapChain->imageCount, swapChain);
 

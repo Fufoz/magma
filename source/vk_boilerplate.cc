@@ -315,3 +315,10 @@ VkBool32 initVulkanGlobalContext(
 
 	return VK_TRUE;
 }
+
+void destroyGlobalContext(VulkanGlobalContext* ctx)
+{
+	vkDestroyDebugReportCallbackEXT(ctx->instance, ctx->debugCallback, nullptr);
+	vkDestroyDevice(ctx->logicalDevice, nullptr);
+	vkDestroyInstance(ctx->instance, nullptr);
+}

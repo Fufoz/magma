@@ -92,10 +92,10 @@ void updateWindowDimensions(VkPhysicalDevice physicalDevice, WindowInfo* out)
 
 	out->windowExtent = getCurrentWindowExtent(out->windowHandle);
 	out->surfaceCaps = surfaceCapabilities;
-
 }
 
-void destroyPlatformWindow(void* windowHandle)
+void destroyPlatformWindow(const VulkanGlobalContext& vkCtx, WindowInfo* info)
 {
-	glfwDestroyWindow((GLFWwindow*)windowHandle);
+	vkDestroySurfaceKHR(vkCtx.instance, info->surface, nullptr);
+	glfwDestroyWindow((GLFWwindow*)info->windowHandle);
 }

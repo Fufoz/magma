@@ -14,7 +14,7 @@ void updateWindowDimensions(VkPhysicalDevice physicalDevice, WindowInfo* out);
 
 const char** getRequiredSurfaceExtensions(uint32_t* surfaceExtCount);
 
-void destroyPlatformWindow(void* windowHandle);
+void destroyPlatformWindow(const VulkanGlobalContext& vkCtx, WindowInfo* info);
 
 
 
