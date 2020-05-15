@@ -1,15 +1,5 @@
-#include <volk.h>
+#include <magma.h>
 
-#include "maths.h"
-#include "logging.h"
-#include "vk_dbg.h"
-#include "vk_boilerplate.h"
-#include "vk_shader.h"
-#include "vk_buffer.h"
-#include "vk_swapchain.h"
-#include "vk_pipeline.h"
-#include "vk_commands.h"
-#include "host_timer.h"
 #include <vector>
 #include <string>
 
@@ -131,11 +121,13 @@ int main(int argc, char **argv)
 	};
 
 	//render loop
-	while(!glfwWindowShouldClose((GLFWwindow*)windowInfo.windowHandle))
+	while(!windowShouldClose(windowInfo.windowHandle))
 	{
 		HostTimer t;
 		t.start();
-		glfwPollEvents();
+		
+		//update OS message queue
+		updateMessageQueue();
 
 		VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &imageFences[syncIndex], VK_TRUE, UINT64_MAX));
 		VK_CALL(vkResetFences(vkCtx.logicalDevice, 1, &imageFences[syncIndex]));

@@ -14,5 +14,4 @@ VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlob
 
 void destroyBuffer(VkDevice logicalDevice, Buffer* buffer);
 
-
 #endif

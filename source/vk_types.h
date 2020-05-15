@@ -3,7 +3,6 @@
 
 #include <volk.h>
 #include <vector>
-#include <GLFW/glfw3.h>
 
 struct VulkanGlobalContext
 {

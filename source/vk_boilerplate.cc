@@ -13,6 +13,14 @@ const uint32_t deviceExtSize = sizeof(desiredDeviceExtensions)/sizeof(desiredDev
 
 static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desiredExtensions, const std::vector<const char*>& desiredLayers)
 {
+	
+	uint32_t vkApiVersion = {};
+	VK_CALL(vkEnumerateInstanceVersion(&vkApiVersion));
+	magma::log::debug("Vulkan api version {}.{}.{}", 
+		VK_VERSION_MAJOR(vkApiVersion),
+		VK_VERSION_MINOR(vkApiVersion),
+		VK_VERSION_PATCH(vkApiVersion));
+	
 	uint32_t extCount = {};
 	vkEnumerateInstanceExtensionProperties(nullptr, &extCount, nullptr);
 	std::vector<VkExtensionProperties> extensions = {};

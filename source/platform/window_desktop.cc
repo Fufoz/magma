@@ -18,6 +18,16 @@ const char* glfwError()
 	return "No error";
 }
 
+bool windowShouldClose(void* windowHandle)
+{
+	return glfwWindowShouldClose((GLFWwindow*)windowHandle);
+}
+
+void updateMessageQueue()
+{
+	glfwPollEvents();
+}
+
 const char** getRequiredSurfaceExtensions(uint32_t* surfaceExtCount)
 {
 	if(glfwInit() != GLFW_TRUE)
@@ -42,7 +52,7 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 	{
 		magma::log::error("GLFW: vulkan is not supported! {}", glfwError());
 		return VK_FALSE;
-	}	
+	}
 	//check whether selected queue family index supports window image presentation
 	if(glfwGetPhysicalDevicePresentationSupport(globalInfo.instance, globalInfo.physicalDevice, globalInfo.queueFamIdx) == GLFW_FALSE)
 	{

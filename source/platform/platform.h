@@ -10,12 +10,15 @@ VkBool32 isPresentationSupported();
 
 VkExtent2D getCurrentWindowExtent(void* windowHandle);
 
+bool windowShouldClose(void* windowHandle);
+
+void updateMessageQueue();
+
 void updateWindowDimensions(VkPhysicalDevice physicalDevice, WindowInfo* out);
 
 const char** getRequiredSurfaceExtensions(uint32_t* surfaceExtCount);
 
 void destroyPlatformWindow(const VulkanGlobalContext& vkCtx, WindowInfo* info);
-
 
 
 #endif

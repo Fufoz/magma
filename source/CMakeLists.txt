@@ -2,9 +2,10 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 list(APPEND Sources 
-	main.cc
+#	main.cc
 	logging.cc
 	vk_dbg.cc
+	vk_loader.cc
 	vk_boilerplate.cc
 	vk_shader.cc
 	vk_buffer.cc
@@ -20,9 +21,7 @@ else()#assume desktop platforms here
 endif()
 
 
-add_executable(magma ${Sources})
+add_library(magma STATIC ${Sources})
 
-target_include_directories(magma PRIVATE ${Vulkan_INCLUDE_DIRS} ./)
-target_link_libraries(magma PRIVATE fmt volk glfw)
-
-install(TARGETS magma RUNTIME DESTINATION ./)
+target_include_directories(magma PUBLIC ${Vulkan_INCLUDE_DIRS} ./)
+target_link_libraries(magma PUBLIC fmt volk glfw)

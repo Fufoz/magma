@@ -3,19 +3,8 @@
 
 #include <volk.h>
 
-inline VkResult locateAndInitVulkan()
-{
-	return volkInitialize();
-}
-
-inline void loadInstanceFunctionPointers(VkInstance instance)
-{
-	volkLoadInstance(instance);
-}
-
-inline void loadDeviceFunctionPointers(VkDevice logicalDevice)
-{
-	volkLoadDevice(logicalDevice);
-}
+VkResult locateAndInitVulkan();
+void loadInstanceFunctionPointers(VkInstance instance);
+void loadDeviceFunctionPointers(VkDevice logicalDevice);
 
 #endif
