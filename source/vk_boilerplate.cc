@@ -80,15 +80,15 @@ static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
 	VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {};
 
 	debugUtilsMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    debugUtilsMessengerCreateInfo.pNext = nullptr;
+	debugUtilsMessengerCreateInfo.pNext = nullptr;
 	debugUtilsMessengerCreateInfo.messageSeverity = 
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    debugUtilsMessengerCreateInfo.messageType = 
-    	VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
-    	VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    debugUtilsMessengerCreateInfo.pfnUserCallback = runtimeDebugCallback;
-    debugUtilsMessengerCreateInfo.pUserData = nullptr;
+	debugUtilsMessengerCreateInfo.messageType = 
+		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
+		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	debugUtilsMessengerCreateInfo.pfnUserCallback = runtimeDebugCallback;
+	debugUtilsMessengerCreateInfo.pUserData = nullptr;
 
 	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCreateInfo, nullptr, &debugMessenger));
@@ -110,18 +110,18 @@ static VkInstance createInstance(std::vector<const char*>& desiredLayers, const 
 	
 	VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {};
 	debugUtilsMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    debugUtilsMessengerCreateInfo.pNext = nullptr;
+	debugUtilsMessengerCreateInfo.pNext = nullptr;
 	debugUtilsMessengerCreateInfo.messageSeverity = 
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-    debugUtilsMessengerCreateInfo.messageType = 
-	    VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT|
-    	VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
-    	VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-    debugUtilsMessengerCreateInfo.pfnUserCallback = instanceDebugCallback;
-    debugUtilsMessengerCreateInfo.pUserData = nullptr;
+	debugUtilsMessengerCreateInfo.messageType = 
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT|
+		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
+		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+	debugUtilsMessengerCreateInfo.pfnUserCallback = instanceDebugCallback;
+	debugUtilsMessengerCreateInfo.pUserData = nullptr;
 
 
 	VkInstanceCreateInfo instanceCreateInfo = {};
