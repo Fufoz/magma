@@ -3,17 +3,18 @@
 #include <vector>
 #include <string>
 
-std::vector<const char*> desiredExtensions = {
-	"VK_EXT_debug_report"
-};
-std::vector<const char*> desiredLayers = {
-	"VK_LAYER_LUNARG_standard_validation"
-};
 
 int main(int argc, char **argv)
 {
 	magma::log::setSeverityMask(magma::log::MASK_ALL);
-
+	
+	std::vector<const char*> desiredExtensions = {
+		"VK_EXT_debug_report"
+	};
+	std::vector<const char*> desiredLayers = {
+		"VK_LAYER_LUNARG_standard_validation"
+	};
+	
 	VulkanGlobalContext vkCtx = {};
 	VK_CHECK(initVulkanGlobalContext(desiredLayers, desiredExtensions, &vkCtx));
 

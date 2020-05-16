@@ -8,8 +8,6 @@
 #include "vk_types.h"
 #include <platform/platform.h>
 
-extern std::vector<const char*> desiredExtensions;
-extern std::vector<const char*> desiredLayers;
 
 VkBool32 initVulkanGlobalContext(
 	std::vector<const char*>& desiredLayers,

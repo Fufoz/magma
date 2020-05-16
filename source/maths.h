@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <cmath>
 
-#define PI 3.14159265359f
+#define M_PI 3.14159265359f
 
 union Vec2
 {
@@ -181,7 +181,7 @@ struct Triangle
 
 inline float toRad(float degree)
 {
-	return degree * PI / 180.f;
+	return degree * M_PI / 180.f;
 }
 
 inline Vec2 operator+(const Vec2& left, const Vec2& right)
@@ -527,7 +527,7 @@ inline mat4x4 perspectiveProjection(float FOV, float aspect, float near, float f
 	float h;
 	float w;
 
-	h = tan(FOV * 0.5f * PI / 180.f) * near;
+	h = tan(FOV * 0.5f * M_PI / 180.f) * near;
 	w = h * aspect;
 	return frustum(-w, w, -h, h, near, far);
 }
@@ -723,7 +723,7 @@ inline mat4x4 lookAt(Vec3 cameraPos, Vec3 thing, Vec3 UpDir = Vec3{0.f, 1.f, 0.f
 
 inline mat4x4 rotateZ(float degrees)
 {
-	float rad = degrees * PI / 180.f;
+	float rad = degrees * M_PI / 180.f;
 
 	return mat4x4 {
 		cosf(rad),  sinf(rad), 0, 0,
@@ -735,7 +735,7 @@ inline mat4x4 rotateZ(float degrees)
 
 inline mat4x4 rotateY(float degrees)
 {
-	float rad = degrees * PI / 180.f;
+	float rad = degrees * M_PI / 180.f;
 	return mat4x4 {
 		cosf(rad), 0, -sinf(rad), 0,
 		0,         1, 0,          0,
@@ -746,7 +746,7 @@ inline mat4x4 rotateY(float degrees)
 
 inline mat4x4 rotateX(float degrees)
 {
-	float rad = degrees * PI / 180.f;
+	float rad = degrees * M_PI / 180.f;
 	return mat4x4 {
 		1, 0,          0,          0,
 		0, cosf(rad),  sinf(rad),  0,
@@ -853,7 +853,7 @@ inline Quat operator*(float scalar, const Quat& right)
 inline Quat quatFromAxisAndAngle(const Vec3& axis, float angle)
 {
 	Quat out = {};
-	float radians = angle * PI / 180.f;
+	float radians = angle * M_PI / 180.f;
 	out.complex = axis * sinf(radians/2.f);
 	out.scalar = cosf(radians/2.f);
 	return out;

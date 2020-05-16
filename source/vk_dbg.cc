@@ -1,35 +1,68 @@
 
 #include "vk_dbg.h"
 
-VkBool32 debugCallback(
-	VkDebugReportFlagsEXT      flags,
-	VkDebugReportObjectTypeEXT objectType,
-	uint64_t                   object,
-	size_t                     location,
-	int32_t                    messageCode,
-	const char*                pLayerPrefix,
-	const char*                pMessage,
-	void*                      pUserData)
+VkBool32 instanceDebugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
+    void*                                            pUserData)
 {
-	// This silences warnings like "For optimal performance image layout should be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL instead of GENERAL."
-	// We'll assume other performance warnings are also not useful.
-	if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-		return VK_FALSE;
-
-	switch(flags) {
-		case VK_DEBUG_REPORT_ERROR_BIT_EXT : magma::log::error("{}", pMessage); break;
-		case VK_DEBUG_REPORT_DEBUG_BIT_EXT : magma::log::debug("{}", pMessage); break;
-		case VK_DEBUG_REPORT_WARNING_BIT_EXT : magma::log::warn("{}",pMessage); break;
-		case VK_DEBUG_REPORT_INFORMATION_BIT_EXT : magma::log::info("{}",pMessage); break;
-		case VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT : magma::log::warn("{}", pMessage); break;
-		default :;
+	switch(messageSeverity)
+	{
+    	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT :
+		{
+			magma::log::debug("[Diagnostic] {}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
+			break;
+		}
+    	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT :
+		{
+			magma::log::info("{}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
+			break;
+		}
+    	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT :
+		{
+			magma::log::warn("{}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
+			break;
+		}
+    	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT :
+		{
+			magma::log::error("{}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
+			assert(!"error");
+			break;
+		}
+		default :
+		{
+			assert(!"unknown severity level in createinstance callback");
+		}
 	}
-
-	if (flags & VK_DEBUG_REPORT_ERROR_BIT_EXT)
-		assert(!"Fatal Validation error encountered!");
 
 	return VK_FALSE;
 }
+
+VkBool32 runtimeDebugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
+    void*                                            pUserData)
+{
+	switch(messageSeverity)
+	{
+    	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT :
+		{
+			magma::log::warn("{}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
+			break;
+		}
+    	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT :
+		{
+			magma::log::error("{}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
+			assert(!"error");
+			break;
+		}
+	}
+
+	return VK_FALSE;
+}
+
 
 const char* vkStrError(VkResult error)
 {

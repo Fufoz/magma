@@ -75,25 +75,27 @@ static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desir
 	return (extFound == desiredExtensions.size()) && (layersFound == desiredLayers.size()) ? VK_TRUE : VK_FALSE; 
 }
 
-static VkDebugReportCallbackEXT registerDebugCallback(VkInstance instance)
+static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
 {
-	//connect debug callback function
-	VkDebugReportCallbackCreateInfoEXT callbackInfo = {};    
-	
-	callbackInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
-	callbackInfo.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT |
-		VK_DEBUG_REPORT_WARNING_BIT_EXT |
-		VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT |
-		VK_DEBUG_REPORT_ERROR_BIT_EXT |
-		VK_DEBUG_REPORT_DEBUG_BIT_EXT;
-	callbackInfo.pfnCallback = debugCallback;
+	VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {};
 
-	VkDebugReportCallbackEXT callback = 0;
-	VK_CALL(vkCreateDebugReportCallbackEXT(instance, &callbackInfo, nullptr, &callback));
-	return callback;
+	debugUtilsMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debugUtilsMessengerCreateInfo.pNext = nullptr;
+	debugUtilsMessengerCreateInfo.messageSeverity = 
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT|
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    debugUtilsMessengerCreateInfo.messageType = 
+    	VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
+    	VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    debugUtilsMessengerCreateInfo.pfnUserCallback = runtimeDebugCallback;
+    debugUtilsMessengerCreateInfo.pUserData = nullptr;
+
+	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
+	VK_CALL(vkCreateDebugUtilsMessengerEXT(instance, &debugUtilsMessengerCreateInfo, nullptr, &debugMessenger));
+	return debugMessenger;
 }
 
-static VkInstance createInstance()
+static VkInstance createInstance(std::vector<const char*>& desiredLayers, const std::vector<const char*>& desiredExtensions)
 {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -106,9 +108,25 @@ static VkInstance createInstance()
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_MAKE_VERSION(1, 0, 0);
 	
+	VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {};
+	debugUtilsMessengerCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debugUtilsMessengerCreateInfo.pNext = nullptr;
+	debugUtilsMessengerCreateInfo.messageSeverity = 
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT|
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT|
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT|
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    debugUtilsMessengerCreateInfo.messageType = 
+	    VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT|
+    	VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
+    	VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
+    debugUtilsMessengerCreateInfo.pfnUserCallback = instanceDebugCallback;
+    debugUtilsMessengerCreateInfo.pUserData = nullptr;
+
+
 	VkInstanceCreateInfo instanceCreateInfo = {};
 	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instanceCreateInfo.pNext = nullptr;
+	instanceCreateInfo.pNext = &debugUtilsMessengerCreateInfo;
 	instanceCreateInfo.flags = 0;
 	instanceCreateInfo.pApplicationInfo = &appInfo;
 	instanceCreateInfo.enabledLayerCount = desiredLayers.size();
@@ -274,11 +292,12 @@ VkFence createFence(VkDevice logicalDevice, bool signalled)
 }
 
 VkBool32 initVulkanGlobalContext(
-	std::vector<const char*>& resiredLayers,
+	std::vector<const char*>& desiredLayers,
 	std::vector<const char*>& desiredExtensions,
 	VulkanGlobalContext* generalInfo)
 {
-
+	assert(generalInfo);
+	
 	VK_CALL(locateAndInitVulkan());
 
 	uint32_t requiredExtCount = {};
@@ -291,11 +310,11 @@ VkBool32 initVulkanGlobalContext(
 
 	VK_CHECK(requestLayersAndExtensions(desiredExtensions, desiredLayers));
 	
-	VkInstance instance = createInstance();
+	VkInstance instance = createInstance(desiredLayers, desiredExtensions);
 
 	loadInstanceFunctionPointers(instance);
 	
-	VkDebugReportCallbackEXT dbgCallback = registerDebugCallback(instance);
+	VkDebugUtilsMessengerEXT dbgCallback = registerDebugCallback(instance);
 	
 	uint32_t queueFamilyIdx = -1;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -326,7 +345,7 @@ VkBool32 initVulkanGlobalContext(
 
 void destroyGlobalContext(VulkanGlobalContext* ctx)
 {
-	vkDestroyDebugReportCallbackEXT(ctx->instance, ctx->debugCallback, nullptr);
+	vkDestroyDebugUtilsMessengerEXT(ctx->instance, ctx->debugCallback, nullptr);
 	vkDestroyDevice(ctx->logicalDevice, nullptr);
 	vkDestroyInstance(ctx->instance, nullptr);
 }

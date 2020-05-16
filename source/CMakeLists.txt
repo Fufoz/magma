@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.10)
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 list(APPEND Sources 
-#	main.cc
 	logging.cc
 	vk_dbg.cc
 	vk_loader.cc

@@ -9,7 +9,7 @@ struct VulkanGlobalContext
 	VkInstance instance;
 	VkDevice logicalDevice;
 	VkPhysicalDevice physicalDevice;
-	VkDebugReportCallbackEXT debugCallback;
+	VkDebugUtilsMessengerEXT debugCallback;
 	uint32_t queueFamIdx;
 	VkQueue graphicsQueue;
 };

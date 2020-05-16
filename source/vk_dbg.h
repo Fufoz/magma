@@ -37,15 +37,16 @@ if(error != VK_TRUE)                                                            
 
 const char* vkStrError(VkResult error);
 
-VkBool32 debugCallback(
-	VkDebugReportFlagsEXT      flags,
-	VkDebugReportObjectTypeEXT objectType,
-	uint64_t                   object,
-	size_t                     location,
-	int32_t                    messageCode,
-	const char*                pLayerPrefix,
-	const char*                pMessage,
-	void*                      pUserData
-);
+VkBool32 instanceDebugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
+    void*                                            pUserData);
+
+VkBool32 runtimeDebugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+    const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
+    void*                                            pUserData);
 
 #endif

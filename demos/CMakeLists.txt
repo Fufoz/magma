@@ -1,3 +1,9 @@
-add_executable(triangle triangle.cc)
-target_link_libraries(triangle PRIVATE magma)
-install(TARGETS triangle RUNTIME DESTINATION ./)
+
+macro(build_example exec_name)
+	add_executable(${exec_name} ${ARGN})
+	target_link_libraries(${exec_name} PRIVATE magma)
+	install(TARGETS ${exec_name} RUNTIME DESTINATION ./)
+endmacro()
+
+#build_example(triangle triangle.cc)
+build_example(flock flock.cc)
