@@ -358,8 +358,8 @@ VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat* out)
 	const VkFormat allDepthFormats[5] = {
 		VK_FORMAT_D16_UNORM,
 		VK_FORMAT_D16_UNORM_S8_UINT,
-	    VK_FORMAT_D24_UNORM_S8_UINT,
-	    VK_FORMAT_D32_SFLOAT_S8_UINT,
+		VK_FORMAT_D24_UNORM_S8_UINT,
+		VK_FORMAT_D32_SFLOAT_S8_UINT,
 		VK_FORMAT_D32_SFLOAT
 	};
 

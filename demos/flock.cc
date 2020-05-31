@@ -145,21 +145,21 @@ int main(int argc, char** argv)
 	VK_CHECK(loadShader(vkCtx.logicalDevice, "shaders/cubeFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, &fragmentShader));
 
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
-    shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStageCreateInfos[0].pNext = nullptr;
-    shaderStageCreateInfos[0].flags = VK_FLAGS_NONE;
-    shaderStageCreateInfos[0].stage = vertexShader.shaderType;
-    shaderStageCreateInfos[0].module = vertexShader.handle;
-    shaderStageCreateInfos[0].pName = "main";
-    shaderStageCreateInfos[0].pSpecializationInfo = nullptr;
+	shaderStageCreateInfos[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfos[0].pNext = nullptr;
+	shaderStageCreateInfos[0].flags = VK_FLAGS_NONE;
+	shaderStageCreateInfos[0].stage = vertexShader.shaderType;
+	shaderStageCreateInfos[0].module = vertexShader.handle;
+	shaderStageCreateInfos[0].pName = "main";
+	shaderStageCreateInfos[0].pSpecializationInfo = nullptr;
 
-    shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStageCreateInfos[1].pNext = nullptr;
-    shaderStageCreateInfos[1].flags = VK_FLAGS_NONE;
-    shaderStageCreateInfos[1].stage = fragmentShader.shaderType;
-    shaderStageCreateInfos[1].module = fragmentShader.handle;
-    shaderStageCreateInfos[1].pName = "main";
-    shaderStageCreateInfos[1].pSpecializationInfo = nullptr;
+	shaderStageCreateInfos[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfos[1].pNext = nullptr;
+	shaderStageCreateInfos[1].flags = VK_FLAGS_NONE;
+	shaderStageCreateInfos[1].stage = fragmentShader.shaderType;
+	shaderStageCreateInfos[1].module = fragmentShader.handle;
+	shaderStageCreateInfos[1].pName = "main";
+	shaderStageCreateInfos[1].pSpecializationInfo = nullptr;
 
 	VkVertexInputBindingDescription bindingDescription = {};
 	bindingDescription.binding = 0;
@@ -179,75 +179,75 @@ int main(int argc, char** argv)
 	attribDescriptions[1].offset = sizeof(Vec3);
 
 	VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {};
-    vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputStateCreateInfo.pNext = nullptr;
-    vertexInputStateCreateInfo.flags = VK_FLAGS_NONE;
-    vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
-    vertexInputStateCreateInfo.pVertexBindingDescriptions = &bindingDescription;
-    vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 2;
-    vertexInputStateCreateInfo.pVertexAttributeDescriptions = attribDescriptions;
+	vertexInputStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+	vertexInputStateCreateInfo.pNext = nullptr;
+	vertexInputStateCreateInfo.flags = VK_FLAGS_NONE;
+	vertexInputStateCreateInfo.vertexBindingDescriptionCount = 1;
+	vertexInputStateCreateInfo.pVertexBindingDescriptions = &bindingDescription;
+	vertexInputStateCreateInfo.vertexAttributeDescriptionCount = 2;
+	vertexInputStateCreateInfo.pVertexAttributeDescriptions = attribDescriptions;
 
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {};
-    inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssemblyStateCreateInfo.pNext = nullptr;
-    inputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
+	inputAssemblyStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyStateCreateInfo.pNext = nullptr;
+	inputAssemblyStateCreateInfo.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+	inputAssemblyStateCreateInfo.primitiveRestartEnable = VK_FALSE;
 	
 	VkViewport viewport = {};
-    viewport.x = 0.f;
-    viewport.y = height;
-    viewport.width = (float)width;
-    viewport.height = -(float)height;
-    viewport.minDepth = 0.f;
-    viewport.maxDepth = 1.f;
+	viewport.x = 0.f;
+	viewport.y = height;
+	viewport.width = (float)width;
+	viewport.height = -(float)height;
+	viewport.minDepth = 0.f;
+	viewport.maxDepth = 1.f;
 	
 	VkRect2D scissors = {};
 	scissors.offset = {0, 0};
-    scissors.extent = {width, height};
+	scissors.extent = {width, height};
 
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
-    viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    viewportStateCreateInfo.pNext = nullptr;
-    viewportStateCreateInfo.viewportCount = 1;
-    viewportStateCreateInfo.pViewports = &viewport;
-    viewportStateCreateInfo.scissorCount = 1;
-    viewportStateCreateInfo.pScissors = &scissors;
+	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportStateCreateInfo.pNext = nullptr;
+	viewportStateCreateInfo.viewportCount = 1;
+	viewportStateCreateInfo.pViewports = &viewport;
+	viewportStateCreateInfo.scissorCount = 1;
+	viewportStateCreateInfo.pScissors = &scissors;
 	
 	VkPipelineRasterizationStateCreateInfo rasterStateCreateInfo = {};
-    rasterStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-    rasterStateCreateInfo.pNext = nullptr;
-    rasterStateCreateInfo.depthClampEnable = VK_FALSE;
-    rasterStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
-    rasterStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
-    rasterStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
-    rasterStateCreateInfo.depthBiasEnable = VK_FALSE;
-    rasterStateCreateInfo.depthBiasConstantFactor = 0.f;
-    rasterStateCreateInfo.depthBiasClamp = 0.f;
-    rasterStateCreateInfo.depthBiasSlopeFactor = 0.f;
-    rasterStateCreateInfo.lineWidth = 1.f;
+	rasterStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+	rasterStateCreateInfo.pNext = nullptr;
+	rasterStateCreateInfo.depthClampEnable = VK_FALSE;
+	rasterStateCreateInfo.rasterizerDiscardEnable = VK_FALSE;
+	rasterStateCreateInfo.polygonMode = VK_POLYGON_MODE_FILL;
+	rasterStateCreateInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+	rasterStateCreateInfo.frontFace = VK_FRONT_FACE_CLOCKWISE;
+	rasterStateCreateInfo.depthBiasEnable = VK_FALSE;
+	rasterStateCreateInfo.depthBiasConstantFactor = 0.f;
+	rasterStateCreateInfo.depthBiasClamp = 0.f;
+	rasterStateCreateInfo.depthBiasSlopeFactor = 0.f;
+	rasterStateCreateInfo.lineWidth = 1.f;
 	
 	VkPipelineMultisampleStateCreateInfo msStateCreateInfo = {};
-    msStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    msStateCreateInfo.pNext = nullptr;
-    msStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    msStateCreateInfo.sampleShadingEnable = VK_FALSE;
-    msStateCreateInfo.pSampleMask = nullptr;
-    msStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
-    msStateCreateInfo.alphaToOneEnable = VK_FALSE;
+	msStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+	msStateCreateInfo.pNext = nullptr;
+	msStateCreateInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+	msStateCreateInfo.sampleShadingEnable = VK_FALSE;
+	msStateCreateInfo.pSampleMask = nullptr;
+	msStateCreateInfo.alphaToCoverageEnable = VK_FALSE;
+	msStateCreateInfo.alphaToOneEnable = VK_FALSE;
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {};
-    depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencilStateCreateInfo.pNext = nullptr;
-    depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
-    depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
+	depthStencilStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+	depthStencilStateCreateInfo.pNext = nullptr;
+	depthStencilStateCreateInfo.depthTestEnable = VK_TRUE;
+	depthStencilStateCreateInfo.depthWriteEnable = VK_TRUE;
 	//override depth buffer if frame sample's depth is greater or equal to the one stored in depth buffer.
-    depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-    depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
-    depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
-    // depthStencilStateCreateInfo.front = ;
-    // depthStencilStateCreateInfo.back = ;
+	depthStencilStateCreateInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+	depthStencilStateCreateInfo.depthBoundsTestEnable = VK_FALSE;
+	depthStencilStateCreateInfo.stencilTestEnable = VK_FALSE;
+	// depthStencilStateCreateInfo.front = ;
+	// depthStencilStateCreateInfo.back = ;
 //    depthStencilStateCreateInfo.minDepthBounds = 0.f;
 //    depthStencilStateCreateInfo.maxDepthBounds = -10.f;
 
@@ -273,24 +273,24 @@ int main(int argc, char** argv)
 	VK_CHECK(getSupportedDepthFormat(vkCtx.physicalDevice, &depthFormat));
 	
 	VkImageCreateInfo depthImageCreateInfo = {};
-    depthImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    depthImageCreateInfo.pNext = nullptr;
-    depthImageCreateInfo.flags = VK_FLAGS_NONE;
-    depthImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    depthImageCreateInfo.format = depthFormat;
-    depthImageCreateInfo.extent = {width, height, 1};
-    depthImageCreateInfo.mipLevels = 1;
-    depthImageCreateInfo.arrayLayers = 1;
-    depthImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    depthImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    depthImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    depthImageCreateInfo.queueFamilyIndexCount = 1;
-    depthImageCreateInfo.pQueueFamilyIndices = &vkCtx.queueFamIdx;
-    depthImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	depthImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	depthImageCreateInfo.pNext = nullptr;
+	depthImageCreateInfo.flags = VK_FLAGS_NONE;
+	depthImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	depthImageCreateInfo.format = depthFormat;
+	depthImageCreateInfo.extent = {width, height, 1};
+	depthImageCreateInfo.mipLevels = 1;
+	depthImageCreateInfo.arrayLayers = 1;
+	depthImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	depthImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	depthImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+	depthImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	depthImageCreateInfo.queueFamilyIndexCount = 1;
+	depthImageCreateInfo.pQueueFamilyIndices = &vkCtx.queueFamIdx;
+	depthImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 	VkImage depthImage = VK_NULL_HANDLE;
 	VK_CALL(vkCreateImage(vkCtx.logicalDevice, &depthImageCreateInfo, nullptr, &depthImage));
-    
+	
 	VkMemoryRequirements memRequirements = {};
 	vkGetImageMemoryRequirements(vkCtx.logicalDevice, depthImage, &memRequirements);
 	VkPhysicalDeviceMemoryProperties deviceMemProps = {};
@@ -302,10 +302,10 @@ int main(int argc, char** argv)
 	findRequiredMemoryTypeIndex(vkCtx.physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &preferredMemTypeIndex);
 
 	VkMemoryAllocateInfo memAllocInfo = {};
-    memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    memAllocInfo.pNext = nullptr;
-    memAllocInfo.allocationSize = memRequirements.size;
-    memAllocInfo.memoryTypeIndex = preferredMemTypeIndex;
+	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memAllocInfo.pNext = nullptr;
+	memAllocInfo.allocationSize = memRequirements.size;
+	memAllocInfo.memoryTypeIndex = preferredMemTypeIndex;
 
 	VkDeviceMemory depthImageMemory = {};
 	VK_CALL(vkAllocateMemory(vkCtx.logicalDevice, &memAllocInfo, nullptr, &depthImageMemory));
@@ -313,17 +313,17 @@ int main(int argc, char** argv)
 	VK_CALL(vkBindImageMemory(vkCtx.logicalDevice, depthImage, depthImageMemory, 0));
 	
 	VkImageViewCreateInfo depthViewCreateInfo = {};
-    depthViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    depthViewCreateInfo.pNext = nullptr;
-    depthViewCreateInfo.flags = VK_FLAGS_NONE;
-    depthViewCreateInfo.image = depthImage;
-    depthViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    depthViewCreateInfo.format = depthFormat;
-    depthViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    depthViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    depthViewCreateInfo.subresourceRange.levelCount = 1;
-    depthViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    depthViewCreateInfo.subresourceRange.layerCount = 1;
+	depthViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	depthViewCreateInfo.pNext = nullptr;
+	depthViewCreateInfo.flags = VK_FLAGS_NONE;
+	depthViewCreateInfo.image = depthImage;
+	depthViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	depthViewCreateInfo.format = depthFormat;
+	depthViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+	depthViewCreateInfo.subresourceRange.baseMipLevel = 0;
+	depthViewCreateInfo.subresourceRange.levelCount = 1;
+	depthViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+	depthViewCreateInfo.subresourceRange.layerCount = 1;
 
 	VkImageView depthImageView = VK_NULL_HANDLE;
 	VK_CALL(vkCreateImageView(vkCtx.logicalDevice, &depthViewCreateInfo, nullptr, &depthImageView));
@@ -353,85 +353,85 @@ int main(int argc, char** argv)
 
 	VkSubpassDescription subpassDescr = {};
 	VkAttachmentReference colorAttachmentRef = {};
-    colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.attachment = 0;
 	//NOTE: layout durring the subpass, not after!! hence we dont use VK_IMAGE_LAYOUT_PRESENT_SRC_KHR here
-    colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 	VkAttachmentReference depthAttachmentRef = {};
-    depthAttachmentRef.attachment = 1;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+	depthAttachmentRef.attachment = 1;
+	depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
 //    subpassDescr.flags;
-    subpassDescr.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpassDescr.inputAttachmentCount = 0;
-    subpassDescr.pInputAttachments = nullptr;
-    subpassDescr.colorAttachmentCount = 1;
-    subpassDescr.pColorAttachments = &colorAttachmentRef;
-    subpassDescr.pResolveAttachments = nullptr;
-    subpassDescr.pDepthStencilAttachment = &depthAttachmentRef;
-    subpassDescr.preserveAttachmentCount = 0;
-    subpassDescr.pPreserveAttachments = nullptr;
+	subpassDescr.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpassDescr.inputAttachmentCount = 0;
+	subpassDescr.pInputAttachments = nullptr;
+	subpassDescr.colorAttachmentCount = 1;
+	subpassDescr.pColorAttachments = &colorAttachmentRef;
+	subpassDescr.pResolveAttachments = nullptr;
+	subpassDescr.pDepthStencilAttachment = &depthAttachmentRef;
+	subpassDescr.preserveAttachmentCount = 0;
+	subpassDescr.pPreserveAttachments = nullptr;
 
 
 	VkSubpassDependency selfDependency = {};
-    selfDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-    selfDependency.dstSubpass = 0;
-    selfDependency.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-    selfDependency.dstStageMask = 
+	selfDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	selfDependency.dstSubpass = 0;
+	selfDependency.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+	selfDependency.dstStageMask = 
 		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|
 		VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    selfDependency.srcAccessMask = 0;
-    selfDependency.dstAccessMask = 
-    	VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
-    	VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
-    	VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT|
-    	VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    selfDependency.dependencyFlags = 0;
+	selfDependency.srcAccessMask = 0;
+	selfDependency.dstAccessMask = 
+		VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
+		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
+		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT|
+		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+	selfDependency.dependencyFlags = 0;
 
 	/*RENDER PASS*/
 	VkRenderPassCreateInfo renderPassCreateInfo = {};
-    renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-    renderPassCreateInfo.pNext = nullptr;
+	renderPassCreateInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassCreateInfo.pNext = nullptr;
 	renderPassCreateInfo.attachmentCount = 2;
-    renderPassCreateInfo.pAttachments = attachments;	
-    renderPassCreateInfo.subpassCount = 1;
-    renderPassCreateInfo.pSubpasses = &subpassDescr;
+	renderPassCreateInfo.pAttachments = attachments;	
+	renderPassCreateInfo.subpassCount = 1;
+	renderPassCreateInfo.pSubpasses = &subpassDescr;
 	renderPassCreateInfo.dependencyCount = 1;
 	renderPassCreateInfo.pDependencies = &selfDependency;
 	VkRenderPass renderPass = VK_NULL_HANDLE;
 	VK_CALL(vkCreateRenderPass(vkCtx.logicalDevice, &renderPassCreateInfo, nullptr, &renderPass));
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutCreateInfo.pNext = nullptr;
-    pipelineLayoutCreateInfo.flags = VK_FLAGS_NONE;
-    pipelineLayoutCreateInfo.setLayoutCount = 0;
-    pipelineLayoutCreateInfo.pSetLayouts = nullptr;
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
-    pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
+	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCreateInfo.pNext = nullptr;
+	pipelineLayoutCreateInfo.flags = VK_FLAGS_NONE;
+	pipelineLayoutCreateInfo.setLayoutCount = 0;
+	pipelineLayoutCreateInfo.pSetLayouts = nullptr;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 0;
+	pipelineLayoutCreateInfo.pPushConstantRanges = nullptr;
 
 	VkPipelineLayout pipeLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreatePipelineLayout(vkCtx.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipeLayout));
 
 	VkGraphicsPipelineCreateInfo pipelineCreateInfo = {};
-    pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineCreateInfo.pNext = nullptr;
-    pipelineCreateInfo.stageCount = 2;
-    pipelineCreateInfo.pStages = shaderStageCreateInfos;
-    pipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
-    pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
-    pipelineCreateInfo.pTessellationState = nullptr;
-    pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
+	pipelineCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	pipelineCreateInfo.pNext = nullptr;
+	pipelineCreateInfo.stageCount = 2;
+	pipelineCreateInfo.pStages = shaderStageCreateInfos;
+	pipelineCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
+	pipelineCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+	pipelineCreateInfo.pTessellationState = nullptr;
+	pipelineCreateInfo.pViewportState = &viewportStateCreateInfo;
 
-    pipelineCreateInfo.pRasterizationState = &rasterStateCreateInfo;
-    pipelineCreateInfo.pMultisampleState = &msStateCreateInfo;
-    pipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
-    pipelineCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
-    pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-    pipelineCreateInfo.layout = pipeLayout;
-    pipelineCreateInfo.renderPass = renderPass;
-    pipelineCreateInfo.subpass = 0;
-    // pipelineCreateInfo.basePipelineHandle = ;
-    // pipelineCreateInfo.basePipelineIndex = ;
+	pipelineCreateInfo.pRasterizationState = &rasterStateCreateInfo;
+	pipelineCreateInfo.pMultisampleState = &msStateCreateInfo;
+	pipelineCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+	pipelineCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
+	pipelineCreateInfo.pDynamicState = &dynamicStateCreateInfo;
+	pipelineCreateInfo.layout = pipeLayout;
+	pipelineCreateInfo.renderPass = renderPass;
+	pipelineCreateInfo.subpass = 0;
+	// pipelineCreateInfo.basePipelineHandle = ;
+	// pipelineCreateInfo.basePipelineIndex = ;
 
 	VkPipeline pipeline;
 	VK_CALL(vkCreateGraphicsPipelines(vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &pipelineCreateInfo, nullptr, &pipeline));
@@ -500,19 +500,19 @@ int main(int argc, char** argv)
 	for(uint32_t i = 0; i < cmdBuffers.size(); i++)
 	{
 		VkCommandBufferBeginInfo beginInfo = {};
-	    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		vkBeginCommandBuffer(cmdBuffers[i], &beginInfo);
 
 		VkRenderPassBeginInfo renderPassBeginInfo = {};
-    	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    	renderPassBeginInfo.pNext = nullptr;
-    	renderPassBeginInfo.renderPass = renderPass;
-    	renderPassBeginInfo.framebuffer = swapChain.runtime.frameBuffers[i];
-    	renderPassBeginInfo.renderArea.offset = {0, 0};
+		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassBeginInfo.pNext = nullptr;
+		renderPassBeginInfo.renderPass = renderPass;
+		renderPassBeginInfo.framebuffer = swapChain.runtime.frameBuffers[i];
+		renderPassBeginInfo.renderArea.offset = {0, 0};
 		renderPassBeginInfo.renderArea.extent = windowInfo.windowExtent;
-    	renderPassBeginInfo.clearValueCount = 2;
-    	renderPassBeginInfo.pClearValues = clearValues;
+		renderPassBeginInfo.clearValueCount = 2;
+		renderPassBeginInfo.pClearValues = clearValues;
 
 		vkCmdBeginRenderPass(cmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(cmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipeState.pipeline);
@@ -551,29 +551,29 @@ int main(int argc, char** argv)
 		));
 
 		VkSubmitInfo submitInfo = {};
-    	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    	submitInfo.pNext = nullptr;
-    	submitInfo.waitSemaphoreCount = 1;
-    	submitInfo.pWaitSemaphores = &imageAvailableSemaphores[syncIndex];
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.pNext = nullptr;
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = &imageAvailableSemaphores[syncIndex];
 		VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    	submitInfo.pWaitDstStageMask = &dstStage;
-    	submitInfo.commandBufferCount = 1;
-    	submitInfo.pCommandBuffers = &cmdBuffers[imageIndex];
-    	submitInfo.signalSemaphoreCount = 1;
-    	submitInfo.pSignalSemaphores = &imageMayPresentSemaphores[syncIndex];
+		submitInfo.pWaitDstStageMask = &dstStage;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &cmdBuffers[imageIndex];
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = &imageMayPresentSemaphores[syncIndex];
 		
 		//VkQueueInf
 		VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &submitInfo, imageFences[syncIndex]));
 
 		VkPresentInfoKHR presentInfo = {};
-    	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    	presentInfo.pNext = nullptr;
-    	presentInfo.waitSemaphoreCount = 1;
-    	presentInfo.pWaitSemaphores = &imageMayPresentSemaphores[syncIndex];
-    	presentInfo.swapchainCount = 1;
-    	presentInfo.pSwapchains = &swapChain.swapchain;
-    	presentInfo.pImageIndices = &imageIndex;
-    	presentInfo.pResults = nullptr;
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.pNext = nullptr;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &imageMayPresentSemaphores[syncIndex];
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &swapChain.swapchain;
+		presentInfo.pImageIndices = &imageIndex;
+		presentInfo.pResults = nullptr;
 
 		VK_CALL(vkQueuePresentKHR(vkCtx.graphicsQueue, &presentInfo));
 		syncIndex = (syncIndex + 1) % swapChain.imageCount;
