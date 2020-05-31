@@ -186,7 +186,9 @@ VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInf
 
 VkResult destroySwapChain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain)
 {
-	
+	//wait until all submitted commands will be executed
+	vkDeviceWaitIdle(vkCtx.logicalDevice);
+
 	for(auto& fb : swapChain->runtime.frameBuffers)
 	{
 		vkDestroyFramebuffer(vkCtx.logicalDevice, fb, nullptr);
@@ -196,7 +198,7 @@ VkResult destroySwapChain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain
 	{
 		vkDestroyImageView(vkCtx.logicalDevice, imageView, nullptr);
 	}
-	
+
 	for(auto& semaphore : swapChain->runtime.imageAvailableSemaphores)
 	{
 		vkDestroySemaphore(vkCtx.logicalDevice, semaphore, nullptr);

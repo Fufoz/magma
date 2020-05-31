@@ -16,11 +16,11 @@ list(APPEND Sources
 if(ANDROID OR IOS)
 	message(FATAL_ERROR "Mobile platforms are not supported at the moment")
 else()#assume desktop platforms here
-	list(APPEND Sources platform/window_desktop.cc)
+	list(APPEND Sources platform/window_desktop.cc platform/input_desktop.cc)
 endif()
 
 
 add_library(magma STATIC ${Sources})
 
 target_include_directories(magma PUBLIC ${Vulkan_INCLUDE_DIRS} ./)
-target_link_libraries(magma PUBLIC fmt volk glfw)
+target_link_libraries(magma PUBLIC fmt volk glfw meshopt)

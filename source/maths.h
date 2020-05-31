@@ -163,22 +163,6 @@ union Quat
 	Vec4 xyzw;
 };
 
-struct Vertex
-{
-	Vec4 pos;
-	Vec3 texCoords;
-	Vec3 normal;
-	Vec3 color;
-	Vec3 tangent;
-};
-
-struct Triangle
-{
-	Vertex v1;
-	Vertex v2;
-	Vertex v3;
-};
-
 inline float toRad(float degree)
 {
 	return degree * M_PI / 180.f;
@@ -679,11 +663,16 @@ inline Vec3& operator*=(Vec3& left, float val)
 
 inline Vec3 operator*(const Vec3& left, const mat4x4& right)
 {
-	Vec4 out = {left.x, left.y, left.z, 0.f};
+	Vec4 out = {left.x, left.y, left.z, 1.f};
 	out = out * right;
 	return out.xyz;
 }
 
+inline Vec3& operator*=(Vec3& left, const mat4x4& right)
+{
+	left = left * right;
+	return left;
+}
 
 inline Vec3 operator*(const Vec3& left, const mat3x3& right)
 {

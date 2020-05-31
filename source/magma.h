@@ -2,6 +2,7 @@
 #define MAGMA_API_H
 
 #include "maths.h"
+#include "input.h"
 #include "logging.h"
 #include "host_timer.h"
 

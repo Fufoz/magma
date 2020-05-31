@@ -2,8 +2,40 @@
 #include "vk_dbg.h"
 #include "vk_boilerplate.h"
 
-Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkBufferUsageFlags usageFlags,
-	VkMemoryPropertyFlagBits requiredMemProperties, std::size_t size, uint32_t queueFamilyIdx)
+bool findRequiredMemoryTypeIndex(
+	VkPhysicalDevice 		physicalDevice,
+	VkMemoryRequirements	resourceMemoryRequirements,
+	VkMemoryPropertyFlags 	desiredMemoryFlags,//DEVICE_LOCAL etc
+	uint32_t* 				memoryTypeIndex)
+{
+	assert(memoryTypeIndex);
+	
+	VkPhysicalDeviceMemoryProperties deviceMemProps = {};
+	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemProps);
+
+	uint32_t resourceMemTypeBits = resourceMemoryRequirements.memoryTypeBits;
+	for(uint32_t i = 0; i < deviceMemProps.memoryTypeCount; i++)
+	{
+		//check if device supports resource memory type
+		if(resourceMemTypeBits & (1 << i))
+		{
+			//check if user desired memory properties are supported(eg DEVICE_LOCAL)
+			if(deviceMemProps.memoryTypes[i].propertyFlags & desiredMemoryFlags)
+			{
+				*memoryTypeIndex = i;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+Buffer createBuffer(
+	const VulkanGlobalContext& 	vkCtx,
+	VkBufferUsageFlags 			usageFlags,
+	VkMemoryPropertyFlagBits 	requiredMemProperties,
+	std::size_t 				size)
 {
 	Buffer buffer = {};
 
@@ -16,39 +48,25 @@ Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkB
 	bufferCreateInfo.usage = usageFlags;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 	bufferCreateInfo.queueFamilyIndexCount = 1;
-	bufferCreateInfo.pQueueFamilyIndices = &queueFamilyIdx;
+	bufferCreateInfo.pQueueFamilyIndices = &vkCtx.queueFamIdx;
 
 	VkBuffer bufferHandle = VK_NULL_HANDLE;
-	VK_CALL(vkCreateBuffer(logicalDevice, &bufferCreateInfo, nullptr, &bufferHandle)); 
+	VK_CALL(vkCreateBuffer(vkCtx.logicalDevice, &bufferCreateInfo, nullptr, &bufferHandle)); 
 
 	VkPhysicalDeviceMemoryProperties memProps = {};
-	vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProps);
+	vkGetPhysicalDeviceMemoryProperties(vkCtx.physicalDevice, &memProps);
 
 	VkMemoryRequirements memReqs = {};
-	vkGetBufferMemoryRequirements(logicalDevice, bufferHandle, &memReqs);
+	vkGetBufferMemoryRequirements(vkCtx.logicalDevice, bufferHandle, &memReqs);
 	uint32_t memTypeBits = memReqs.memoryTypeBits;
 
-	int32_t memTypeIdx = -1;
-	for(uint32_t i = 0; i < memProps.memoryTypeCount; i++)
-	{	
-		//if required memory type for buffer is supported by device
-		if(memTypeBits & (1 << i))
-		{
-			//if selected memory type fits our usage requirements
-			if(memProps.memoryTypes[i].propertyFlags & requiredMemProperties)
-			{
-				memTypeIdx = i;
-				break;
-			}
-		}
-	}
-
-	if(memTypeIdx < 0)
+	uint32_t memTypeIdx = {};
+	if(!findRequiredMemoryTypeIndex(vkCtx.physicalDevice, memReqs, requiredMemProperties, &memTypeIdx))
 	{
 		magma::log::error("Failed to find memory type index for required buffer usage!");
 		return buffer;
 	}
-	
+
 	VkMemoryAllocateInfo memAllocInfo = {};
 	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
 	memAllocInfo.pNext = nullptr;
@@ -57,8 +75,8 @@ Buffer createBuffer(VkDevice logicalDevice, VkPhysicalDevice physicalDevice, VkB
 
 	VkDeviceMemory backupMemory = VK_NULL_HANDLE;
 	
-	VK_CALL(vkAllocateMemory(logicalDevice, &memAllocInfo, nullptr, &backupMemory));
-	VK_CALL(vkBindBufferMemory(logicalDevice, bufferHandle, backupMemory, 0));
+	VK_CALL(vkAllocateMemory(vkCtx.logicalDevice, &memAllocInfo, nullptr, &backupMemory));
+	VK_CALL(vkBindBufferMemory(vkCtx.logicalDevice, bufferHandle, backupMemory, 0));
 	
 	buffer.buffer = bufferHandle;
 	buffer.backupMemory = backupMemory;

@@ -2,14 +2,16 @@
 
 #include <vector>
 #include <string>
-
+////
+void buildTriangleCommandBuffer(const SwapChain& swapChain, const PipelineState& pipelineState,
+	VkBuffer vBuffer, VkExtent2D windowExtent, const std::vector<VkCommandBuffer>& commandBuffers);
 
 int main(int argc, char **argv)
 {
 	magma::log::setSeverityMask(magma::log::MASK_ALL);
 	
 	std::vector<const char*> desiredExtensions = {
-		"VK_EXT_debug_report"
+		"VK_EXT_debug_utils"
 	};
 	std::vector<const char*> desiredLayers = {
 		"VK_LAYER_LUNARG_standard_validation"
@@ -37,18 +39,17 @@ int main(int argc, char **argv)
 		{{ 0.0f,  0.5f, 0.f}, {1.0f, 0.0f, 0.f}}
 	};
 
-	Buffer stagingBuffer = createBuffer(vkCtx.logicalDevice, vkCtx.physicalDevice,
+	Buffer stagingBuffer = createBuffer(vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
-		sizeof(verticies), vkCtx.queueFamIdx
+		sizeof(verticies)
 	);
 	VK_CALL(copyDataToStagingBuffer(vkCtx.logicalDevice, 0, &verticies, &stagingBuffer));
 
-	Buffer deviceLocalBuffer = createBuffer(vkCtx.logicalDevice, vkCtx.physicalDevice, 
+	Buffer deviceLocalBuffer = createBuffer(vkCtx, 
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		sizeof(verticies),
-		vkCtx.queueFamIdx
+		sizeof(verticies)
 	);
 
 	//creating command buffer for transfer operation
@@ -208,4 +209,43 @@ int main(int argc, char **argv)
 	destroyGlobalContext(&vkCtx);
 
 	return 0;
+}
+
+void buildTriangleCommandBuffer(const SwapChain& swapChain, const PipelineState& pipelineState,
+	VkBuffer vBuffer, VkExtent2D windowExtent, const std::vector<VkCommandBuffer>& commandBuffers)
+{
+	for(uint32_t i = 0; i < commandBuffers.size(); i++)
+	{
+		VkCommandBufferBeginInfo cmdBuffBegInfo = {};
+		cmdBuffBegInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		cmdBuffBegInfo.pNext = nullptr;
+		cmdBuffBegInfo.flags = VK_FLAGS_NONE;
+		cmdBuffBegInfo.pInheritanceInfo = nullptr;
+
+		VkClearValue clearColor = {};
+		clearColor.color = {0.7f, 0.76f, 0.76f, 1.f};
+
+		VK_CALL(vkBeginCommandBuffer(commandBuffers[i], &cmdBuffBegInfo));
+		VkRenderPassBeginInfo renderPassBegInfo = {};
+		renderPassBegInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassBegInfo.pNext = nullptr;
+		renderPassBegInfo.renderPass = pipelineState.renderPass;
+		renderPassBegInfo.framebuffer = swapChain.runtime.frameBuffers[i];
+		renderPassBegInfo.renderArea.offset = {0, 0};
+		renderPassBegInfo.renderArea.extent = windowExtent;
+		renderPassBegInfo.clearValueCount = 1;
+		renderPassBegInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(commandBuffers[i], &renderPassBegInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineState.pipeline);
+			vkCmdSetViewport(commandBuffers[i], 0, 1, &pipelineState.viewport);
+			VkDeviceSize offsets = 0;
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, &vBuffer, &offsets);
+			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(commandBuffers[i]);
+
+		VK_CALL(vkEndCommandBuffer(commandBuffers[i]));
+	}	
 }

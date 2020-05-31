@@ -349,3 +349,30 @@ void destroyGlobalContext(VulkanGlobalContext* ctx)
 	vkDestroyDevice(ctx->logicalDevice, nullptr);
 	vkDestroyInstance(ctx->instance, nullptr);
 }
+
+VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat* out)
+{
+	assert(out);
+
+	VkFormat depthFmt = VK_FORMAT_UNDEFINED;
+	const VkFormat allDepthFormats[5] = {
+		VK_FORMAT_D16_UNORM,
+		VK_FORMAT_D16_UNORM_S8_UINT,
+	    VK_FORMAT_D24_UNORM_S8_UINT,
+	    VK_FORMAT_D32_SFLOAT_S8_UINT,
+		VK_FORMAT_D32_SFLOAT
+	};
+
+	for(const auto& format : allDepthFormats)
+	{
+		VkFormatProperties formatProps = {};
+		vkGetPhysicalDeviceFormatProperties(physicalDevice, format, &formatProps);
+		if(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+		{
+			*out = format;
+			return VK_TRUE;
+		}
+	}
+
+	return VK_FALSE;
+}

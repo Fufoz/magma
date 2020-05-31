@@ -12,8 +12,4 @@ void createCommandBuffer(VkDevice logicalDevice, VkCommandPool commandPool, VkCo
 
 void destroyCommandPool(VkDevice device, VkCommandPool cmdPool);
 
-////
-void buildTriangleCommandBuffer(const SwapChain& swapChain, const PipelineState& pipelineState,
-	VkBuffer vBuffer, VkExtent2D windowExtent, const std::vector<VkCommandBuffer>& commandBuffers);
-
 #endif

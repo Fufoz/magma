@@ -4,6 +4,7 @@
 #include <vk_loader.h>
 #include <vk_boilerplate.h>
 #include <logging.h>
+#include <input.h>
 #include <GLFW/glfw3.h>
 
 const char* glfwError()
@@ -36,6 +37,15 @@ const char** getRequiredSurfaceExtensions(uint32_t* surfaceExtCount)
 		return VK_FALSE;
 	}
 	return glfwGetRequiredInstanceExtensions(surfaceExtCount);
+}
+
+void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	 int keyState = glfwGetKey(window, GLFW_KEY_W);
+
+	if(key == GLFW_KEY_ESCAPE)
+		glfwSetWindowShouldClose(window, 1);
+	
 }
 
 VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, uint32_t height,
@@ -83,6 +93,9 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 	surface->surface = windowSurface;
 	surface->surfaceCaps = surfaceCapabilities;
 
+	initInput(surface->windowHandle);
+	
+
 	return VK_TRUE;
 }
 
@@ -108,4 +121,5 @@ void destroyPlatformWindow(const VulkanGlobalContext& vkCtx, WindowInfo* info)
 {
 	vkDestroySurfaceKHR(vkCtx.instance, info->surface, nullptr);
 	glfwDestroyWindow((GLFWwindow*)info->windowHandle);
+	glfwTerminate();
 }

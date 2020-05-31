@@ -22,4 +22,6 @@ VkSemaphore createSemaphore(VkDevice logicalDevice);
 
 VkFence createFence(VkDevice logicalDevice, bool signalled = false);
 
+VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat* out);
+
 #endif
