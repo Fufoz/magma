@@ -27,7 +27,8 @@ bool findRequiredMemoryTypeIndex(
 			}
 		}
 	}
-
+	
+	magma::log::error("Failed to find memory type index!");
 	return false;
 }
 
@@ -93,7 +94,7 @@ void destroyBuffer(VkDevice logicalDevice, Buffer* buffer)
 	buffer->bufferSize = 0;
 }
 
-VkResult copyDataToStagingBuffer(VkDevice logicalDevice, VkDeviceSize offset, const void* copyFrom, Buffer* buffer)
+VkResult copyDataToHostVisibleBuffer(VkDevice logicalDevice, VkDeviceSize offset, const void* copyFrom, Buffer* buffer)
 {
 	void* mappedArea = nullptr;
 	VK_CALL_RETURN(vkMapMemory(logicalDevice, buffer->backupMemory, offset, buffer->bufferSize, VK_FLAGS_NONE, &mappedArea));

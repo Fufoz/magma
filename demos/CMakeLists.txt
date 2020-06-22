@@ -5,5 +5,9 @@ macro(build_example exec_name)
 	install(TARGETS ${exec_name} RUNTIME DESTINATION ./)
 endmacro()
 
+macro(compile_shaders)
+
+endmacro()
+
 #build_example(triangle triangle.cc)
 build_example(flock flock.cc)

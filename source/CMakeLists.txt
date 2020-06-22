@@ -3,6 +3,7 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 list(APPEND Sources 
 	logging.cc
+	camera.cc
 	vk_dbg.cc
 	vk_loader.cc
 	vk_boilerplate.cc
@@ -23,4 +24,4 @@ endif()
 add_library(magma STATIC ${Sources})
 
 target_include_directories(magma PUBLIC ${Vulkan_INCLUDE_DIRS} ./)
-target_link_libraries(magma PUBLIC fmt volk glfw meshopt)
+target_link_libraries(magma PUBLIC fmt volk glfw meshopt stb_image)

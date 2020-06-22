@@ -4,7 +4,7 @@
 #include "vk_types.h"
 #include "vk_dbg.h"
 
-VkCommandPool createCommandPool(VulkanGlobalContext& vkCtx, VkCommandPoolCreateFlags commandPoolFlags = VK_FLAGS_NONE);
+VkCommandPool createCommandPool(VulkanGlobalContext& vkCtx, VkCommandPoolCreateFlags commandPoolFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
 void createCommandBuffers(VkDevice logicalDevice, VkCommandPool commandPool, uint32_t count, std::vector<VkCommandBuffer>& out);
 

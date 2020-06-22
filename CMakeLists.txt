@@ -9,9 +9,10 @@ endif()
 
 set(GLFW_INSTALL OFF)
 
+add_subdirectory(extern/stb_image)
+add_subdirectory(extern/meshopt)
 add_subdirectory(extern/volk)
 add_subdirectory(extern/glfw)
 add_subdirectory(extern/fmt)
-add_subdirectory(extern/meshopt)
 add_subdirectory(source)
 add_subdirectory(demos)

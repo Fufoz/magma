@@ -3,6 +3,7 @@
 
 #include "maths.h"
 #include "input.h"
+#include "camera.h"
 #include "logging.h"
 #include "host_timer.h"
 

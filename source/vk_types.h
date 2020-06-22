@@ -64,6 +64,15 @@ struct Buffer
 	VkDeviceMemory backupMemory;
 };
 
+struct Texture
+{
+	VkImage image;
+	VkImageView textureView;
+	VkImageLayout texturelayout;
+	VkSampler textureSampler;
+	VkDeviceSize textureSize;
+	VkDeviceMemory backupMemory;
+};
 
 const uint32_t MAX_VERTEX_INPUT_ATTRIB_DESCR = 10;
 const uint32_t MAX_VERTEX_INPUT_BINDING_DESCR = MAX_VERTEX_INPUT_ATTRIB_DESCR;

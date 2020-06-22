@@ -20,12 +20,14 @@ enum MouseBtn
 
 struct MousePos
 {
-	uint32_t x, y;
+	int x, y;
 };
 
 MousePos getMousePos();
+MousePos getDeltaMousePos();
 void initInput(void* windowHandle);
 bool isBtnPressed(KeyBoardBtn btn);
 bool isMouseBtnPressed(MouseBtn btn);
+void setCursorPos(void* windowHandle, int x, int y);
 
 #endif

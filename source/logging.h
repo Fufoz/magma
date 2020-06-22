@@ -3,6 +3,8 @@
 
 #include <fmt/format.h>
 
+#include "logging_misc.h"
+
 namespace magma
 {
 namespace log
@@ -18,8 +20,10 @@ namespace log
 	};
 	typedef uint32_t SeverityFlags;
 
-	void setSeverityMask(SeverityFlags mask);
+	void initLogging();
 	
+	void setSeverityMask(SeverityFlags mask);
+
 	void dump(const std::string& info, SeverityMask mask);
 	
 	template<typename... Args> void info(Args... args)

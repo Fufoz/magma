@@ -471,7 +471,7 @@ inline mat4x4 loadScale(const Vec3& vec)
 		vec.x, 0, 0, 0,
 		0, vec.y, 0, 0,
 		0, 0, vec.z, 0,
-		0, 0, 0, 1
+		0, 0, 0,     1
 	};
 }
 

@@ -51,6 +51,13 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, uint32_t height,
 	const char* title, WindowInfo* surface)
 {
+	auto errorCallback = [](int errorCode, const char* descr)
+	{
+		magma::log::error("GLFW: error! Code = {}, description: {}", errorCode, descr);
+		assert(!"WTF");
+	};
+	glfwSetErrorCallback(errorCallback);
+
 	///////////////////////////////////////////////
 	if(glfwInit() != GLFW_TRUE)
 	{
@@ -79,6 +86,7 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 		return VK_FALSE;
 	}
 	assert(window);
+	
 	//create OS specific window surface to render into
 	VkSurfaceKHR windowSurface = VK_NULL_HANDLE;
 	VK_CALL(glfwCreateWindowSurface(globalInfo.instance, window, nullptr, &windowSurface));
@@ -95,6 +103,9 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 
 	initInput(surface->windowHandle);
 	
+	glfwFocusWindow(window);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	glfwSetCursorPos(window, width/2.f, height/2.f);
 
 	return VK_TRUE;
 }

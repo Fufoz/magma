@@ -6,16 +6,51 @@
 	#include <windows.h>
 #endif
 
+#include <cstdlib>
+
 namespace magma
 {
 namespace log
 {
 
-	static SeverityFlags severityMask = 0;
+	static SeverityFlags severityMask = MASK_WARN|MASK_ERROR;
 	
 	void setSeverityMask(SeverityFlags mask)
 	{
 		severityMask |= mask;
+	}
+
+	void initLogging()
+	{
+		const char* filter = std::getenv("MAGMA_LOGGING");
+		if(filter)
+		{
+			if(strcmp(filter, "all") == 0)
+			{
+				severityMask = ~0u;
+			}
+			else if(strcmp(filter, "err") == 0)
+			{
+				severityMask = MASK_ERROR;
+			}
+			else if(strcmp(filter, "warn") == 0)
+			{
+				severityMask = MASK_ERROR|MASK_WARN;
+			}
+			else if(strcmp(filter, "info") == 0)
+			{
+				severityMask = MASK_ERROR|MASK_WARN|MASK_INFO;
+			}
+			else if(strcmp(filter, "debug") == 0)
+			{
+				severityMask = MASK_ERROR|MASK_WARN|MASK_INFO|MASK_DEBUG;
+			}
+			else
+			{
+				magma::log::warn("Unknown env variable for logging filter = {}", filter);
+				magma::log::warn("Available filters are: all, err, warn, info, debug");
+			}
+		}
 	}
 
 	const char* maskToStr(SeverityMask mask)
@@ -41,7 +76,8 @@ namespace log
 
 	Color logLvlToColor(SeverityMask mask)
 	{
-		switch(mask) {
+		switch(mask) 
+		{
 			case MASK_INFO : return  COLOR_WHITE;
 			case MASK_DEBUG : return COLOR_GREEN;
 			case MASK_WARN : return  COLOR_YELLOW;
@@ -75,7 +111,8 @@ namespace log
 
 	const char* logLvlToColor(SeverityMask mask)
 	{
-		switch(mask) {
+		switch(mask) 
+		{
 			case MASK_INFO : return  COLOR_WHITE;
 			case MASK_DEBUG : return COLOR_GREEN;
 			case MASK_WARN : return  COLOR_YELLOW;

@@ -8,7 +8,7 @@ void buildTriangleCommandBuffer(const SwapChain& swapChain, const PipelineState&
 
 int main(int argc, char **argv)
 {
-	magma::log::setSeverityMask(magma::log::MASK_ALL);
+	magma::log::initLogging();	
 	
 	std::vector<const char*> desiredExtensions = {
 		"VK_EXT_debug_utils"
@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 		sizeof(verticies)
 	);
-	VK_CALL(copyDataToStagingBuffer(vkCtx.logicalDevice, 0, &verticies, &stagingBuffer));
+	VK_CALL(copyDataToHostVisibleBuffer(vkCtx.logicalDevice, 0, &verticies, &stagingBuffer));
 
 	Buffer deviceLocalBuffer = createBuffer(vkCtx, 
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT,

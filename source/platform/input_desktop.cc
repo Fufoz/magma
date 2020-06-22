@@ -2,6 +2,7 @@
 #include <glfw/glfw3.h>
 
 #include <bitset>
+#include "logging.h"
 
 static int keyRemapTable[KeyBtnCount] = {
 	GLFW_KEY_A, GLFW_KEY_B, GLFW_KEY_C,
@@ -35,7 +36,7 @@ static std::bitset<GLFW_MOUSE_BUTTON_LAST> mouseState = {};
 void initInput(void* windowHandle)
 {
 	GLFWwindow* handle = (GLFWwindow*)windowHandle;
-
+	
 	auto keyEventCallback = [](GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
 		if(key == GLFW_KEY_ESCAPE)
@@ -70,7 +71,7 @@ void initInput(void* windowHandle)
 		mousePosition.x = int(x);
 		mousePosition.y = int(y);
 	};
-
+	
 	glfwSetKeyCallback(handle, keyEventCallback);
 	glfwSetMouseButtonCallback(handle, mouseButtonEventCallback);
 	glfwSetCursorPosCallback(handle, mouseHoverCallback);
@@ -81,6 +82,18 @@ MousePos getMousePos()
 	return mousePosition;
 }
 
+MousePos getDeltaMousePos()
+{
+	static MousePos previousMousePos = mousePosition;
+	MousePos currentMousePos = mousePosition;
+	MousePos delta = {
+		currentMousePos.x - previousMousePos.x,
+		currentMousePos.y - previousMousePos.y
+	};
+	previousMousePos = currentMousePos;
+	return delta;
+}
+
 bool isBtnPressed(KeyBoardBtn btn)
 {
 	return keyState[keyRemapTable[btn]];
@@ -89,6 +102,11 @@ bool isBtnPressed(KeyBoardBtn btn)
 bool isMouseBtnPressed(MouseBtn btn)
 {
 	return mouseState[mouseRemapTable[btn]];
+}
+
+void setCursorPos(void* windowHandle, int x, int y)
+{
+	glfwSetCursorPos((GLFWwindow*)windowHandle, x, y); 
 }
 
 

@@ -6,7 +6,7 @@ VkCommandPool createCommandPool(VulkanGlobalContext& vkCtx, VkCommandPoolCreateF
 	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
 	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
 	cmdPoolCreateInfo.pNext = nullptr;
-	cmdPoolCreateInfo.flags = VK_FLAGS_NONE;
+	cmdPoolCreateInfo.flags = commandPoolFlags;
 	cmdPoolCreateInfo.queueFamilyIndex = vkCtx.queueFamIdx;
 
 	VkCommandPool commandPool = VK_NULL_HANDLE;
