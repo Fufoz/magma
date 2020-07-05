@@ -9,6 +9,7 @@ struct VulkanGlobalContext
 	VkInstance instance;
 	VkDevice logicalDevice;
 	VkPhysicalDevice physicalDevice;
+	VkPhysicalDeviceProperties deviceProps;
 	VkDebugUtilsMessengerEXT debugCallback;
 	uint32_t queueFamIdx;
 	VkQueue graphicsQueue;
@@ -61,17 +62,23 @@ struct Buffer
 {
 	VkBuffer buffer;
 	VkDeviceSize bufferSize;
+	VkDeviceSize alignedSize;
+	VkDeviceMemory backupMemory;
+};
+
+struct ImageResource
+{
+	VkImage image;
+	VkImageView view;
+	VkImageLayout layout;
+	VkDeviceSize imageSize;
 	VkDeviceMemory backupMemory;
 };
 
 struct Texture
 {
-	VkImage image;
-	VkImageView textureView;
-	VkImageLayout texturelayout;
+	ImageResource imageInfo;
 	VkSampler textureSampler;
-	VkDeviceSize textureSize;
-	VkDeviceMemory backupMemory;
 };
 
 const uint32_t MAX_VERTEX_INPUT_ATTRIB_DESCR = 10;

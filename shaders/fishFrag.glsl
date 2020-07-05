@@ -1,16 +1,15 @@
 #version 450
 
 layout(location = 0) out vec4 outputColor;
-// layout(location = 2) in vec3 inFragColor;
-layout(location = 3) in vec3 inFragNormal;
-layout(location = 4) in vec2 inUV;
+layout(location = 5) in vec3 inFragNormal;
+layout(location = 6) in vec2 inUV;
 
 layout(push_constant) uniform ConstantBlock
 {
 	vec3 viewDir;
 }Light;
 
-layout (binding = 1) uniform sampler2D samplerColor;
+layout (binding = 2) uniform sampler2D samplerColor;
 
 void main()
 {

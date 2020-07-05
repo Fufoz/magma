@@ -326,6 +326,7 @@ VkBool32 initVulkanGlobalContext(
 		&queueFamilyIdx)
 	);
 	assert(queueFamilyIdx >= 0);
+
 	VkDevice logicalDevice = createLogicalDevice(physicalDevice, queueFamilyIdx);
 	loadDeviceFunctionPointers(logicalDevice);
 
@@ -333,13 +334,18 @@ VkBool32 initVulkanGlobalContext(
 	vkGetDeviceQueue(logicalDevice, queueFamilyIdx, 0, &graphicsQueue);
 	assert(graphicsQueue != VK_NULL_HANDLE);
 
+
+	VkPhysicalDeviceProperties deviceProps = {};
+	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProps);
+
 	generalInfo->instance = instance;
 	generalInfo->logicalDevice = logicalDevice;
 	generalInfo->physicalDevice = physicalDevice;
 	generalInfo->debugCallback = dbgCallback;
 	generalInfo->queueFamIdx = queueFamilyIdx;
 	generalInfo->graphicsQueue = graphicsQueue;
-
+	generalInfo->deviceProps = deviceProps;
+	
 	return VK_TRUE;
 }
 

@@ -633,6 +633,12 @@ inline mat4x4 operator*(const mat4x4& left, const mat4x4& right)
 	return result;
 }
 
+inline mat4x4& operator*=(mat4x4& left, const mat4x4& right)
+{
+	left = left * right;
+	return left;
+}
+
 inline Vec4 operator*(const Vec4& left, const mat4x4& right)
 {
 	Vec4 out = {};
@@ -802,6 +808,14 @@ inline Quat conjugate(const Quat& in)
 	return Quat{-in.x, -in.y, -in.z, in.w};
 }
 
+inline Quat fromVector(const Vec3& vec)
+{
+	Quat out = {};
+	out.complex = vec;
+	return out;
+}
+
+
 //A.K.A Hamilton product
 inline Quat operator*(const Quat& left, const Quat& right)
 {
@@ -809,6 +823,13 @@ inline Quat operator*(const Quat& left, const Quat& right)
 	out.complex = left.complex * right.w + right.complex * left.w + cross(left.complex, right.complex);
 	out.w = left.w * right.w - dotVec3(left.complex, right.complex);
 	return out;
+}
+
+//rotates vector p with quaternion
+// outputVec = quat * Quat(p) * conjugate(quat)
+inline Vec3 rotate(const Vec3& vec, const Quat& quat)
+{
+	return (quat * fromVector(vec) * conjugate(quat)).complex;
 }
 
 inline float lengthQuat(const Quat& q)
@@ -855,17 +876,21 @@ inline Quat sLerp(const Quat& first, const Quat& second, float amount)
 	Quat tmp = second;
 
 	//reverse one quat to get shortest arc in 4d
-	if(cosOmega < 0) {
+	if(cosOmega < 0) 
+	{
 		tmp = tmp * -1.f;
 		cosOmega = -cosOmega;
 	}
 
 	float k0;
 	float k1;
-	if(cosOmega > 0.9999f) {
+	if(cosOmega > 0.9999f) 
+	{
 		k0 = 1.f - amount;
 		k1 = amount;
-	} else {
+	} 
+	else 
+	{
 		float sinOmega = sqrt(1.f - cosOmega * cosOmega);
 		float omega = atan2f(sinOmega, cosOmega);
 		float sinOmegaInverted = 1.f / sinOmega;
@@ -903,7 +928,7 @@ inline mat4x4 quatToRotationMat(const Quat& quat)
 	out.p[4] = 2 * xy - 2 * wz;
 	out.p[6] = 2 * yz + 2 * wx;
 	out.p[8] = 2 * xz + 2 * wy;
-	out.p[9] = 2 * yz - 2 * wz;
+	out.p[9] = 2 * yz - 2 * wx;
 
 	return out;
 }
