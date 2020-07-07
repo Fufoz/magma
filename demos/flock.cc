@@ -31,6 +31,7 @@ int main(int argc, char** argv)
 
 	Mesh mesh = {};
 	Animation animation = {};
+	animation.playbackRate = 4.f;
 	if(!loadGLTF("objs/fish.gltf", &mesh, &animation))
 	{
 		return -1;

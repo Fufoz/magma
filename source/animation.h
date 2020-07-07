@@ -44,6 +44,7 @@ struct KeyFrame
 
 struct Animation
 {
+	float playbackRate;
 	float currentAnimTime;
 	std::vector<Joint> bindPose;
 	std::vector<KeyFrame> keyFrames;

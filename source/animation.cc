@@ -43,7 +43,7 @@ void generateGlobalJointTransforms(const Animation& animation, KeyFrame* keyFram
 
 void updateAnimation(Animation& animation, float frameTime, std::vector<mat4x4>& jointMatrices)
 {
-	animation.currentAnimTime += frameTime;
+	animation.currentAnimTime += frameTime * animation.playbackRate;
 	animation.currentAnimTime = fmod(animation.currentAnimTime, animation.keyFrames[animation.keyFrames.size() - 1].frameTime);
 
 	//perform binary search to find keyFrame that is less or equal to required frametime
