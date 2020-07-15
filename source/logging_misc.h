@@ -15,7 +15,7 @@ struct fmt::formatter<Vec2>
 	template <typename FormatContext>
   	auto format(const Vec2& vec, FormatContext& ctx) 
 	{
-		return format_to(ctx.out(), "[{};{}]", vec.x, vec.y);
+		return format_to(ctx.out(), "[{: f};{: f}]", vec.x, vec.y);
 	}
 };
 
@@ -30,7 +30,7 @@ struct fmt::formatter<Vec3>
 	template <typename FormatContext>
   	auto format(const Vec3& vec, FormatContext& ctx) 
 	{
-		return format_to(ctx.out(), "[{};{};{}]", vec.x, vec.y, vec.z);
+		return format_to(ctx.out(), "[{: f};{: f};{: f}]", vec.x, vec.y, vec.z);
 	}
 };
 
@@ -45,7 +45,37 @@ struct fmt::formatter<Vec4>
 	template <typename FormatContext>
   	auto format(const Vec4& vec, FormatContext& ctx) 
 	{
-		return format_to(ctx.out(), "[{};{};{};{}]", vec.x, vec.y, vec.z, vec.w);
+		return format_to(ctx.out(), "[{: f};{: f};{: f};{: f}]", vec.x, vec.y, vec.z, vec.w);
+	}
+};
+
+template<>
+struct fmt::formatter<Quat>
+{
+	constexpr auto parse(format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	template <typename FormatContext>
+  	auto format(const Quat& quat, FormatContext& ctx) 
+	{
+		return format_to(ctx.out(), "[{: f};{: f};{: f};{: f}]", quat.x, quat.y, quat.z, quat.w);
+	}
+};
+
+template<>
+struct fmt::formatter<mat4x4>
+{
+	constexpr auto parse(format_parse_context& ctx)
+	{
+		return ctx.begin();
+	}
+
+	template <typename FormatContext>
+  	auto format(const mat4x4& mat, FormatContext& ctx) 
+	{
+		return format_to(ctx.out(), "[mat4x4:\n {}\n {}\n {}\n {}]",mat.firstRow, mat.secondRow, mat.thirdRow, mat.fourthRow );
 	}
 };
 

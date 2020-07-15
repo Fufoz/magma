@@ -131,8 +131,8 @@ Buffer createBuffer(
 	bufferCreateInfo.size = size;
 	bufferCreateInfo.usage = usageFlags;
 	bufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-	bufferCreateInfo.queueFamilyIndexCount = 1;
-	bufferCreateInfo.pQueueFamilyIndices = &vkCtx.queueFamIdx;
+	// bufferCreateInfo.queueFamilyIndexCount = 1;
+	// bufferCreateInfo.pQueueFamilyIndices = &vkCtx.queueFamIdx;
 
 	VkBuffer bufferHandle = VK_NULL_HANDLE;
 	VK_CALL(vkCreateBuffer(vkCtx.logicalDevice, &bufferCreateInfo, nullptr, &bufferHandle)); 

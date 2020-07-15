@@ -2,6 +2,145 @@
 
 #include <memory>
 #include <vector>
+#include <random>
+
+//demo specific information
+struct InstanceData
+{
+	mat4x4 isntanceTransform;
+};
+const std::size_t instanceCount = 1;
+
+struct BoidTransform
+{
+	Quat orientation;
+	Vec3 position;
+	Vec3 direction;
+};
+
+struct BoidsGlobals
+{
+	float minDistance;//separation
+	float flockRadius;
+	float tankSize;
+};
+
+std::vector<BoidTransform> generateBoids(uint32_t numberOfBoids)
+{
+	const float tankSize = 5.f;
+	std::default_random_engine generator;
+	std::uniform_real_distribution<float> distribution(-tankSize, tankSize);
+	auto randomValue = [&]()
+	{
+		return distribution(generator);
+	};
+	
+	std::vector<BoidTransform> out = {};
+	Vec3 defaultDirection = {0.f, 0.f, 1.f};
+
+	for(uint32_t i = 0; i < numberOfBoids; i++)
+	{
+		BoidTransform transform = {};
+		Vec3 newDirection = normaliseVec3({randomValue(), randomValue(), randomValue()});
+		transform.direction = newDirection;
+		transform.position = {randomValue(), randomValue(), randomValue()};
+		transform.orientation = rotateFromTo(defaultDirection, newDirection);
+		out.push_back(transform);
+	}
+
+	return out;
+}
+
+//generate random boids
+//run compute to update direction && position
+//rotate mesh into direction and move it // vertex shader
+std::vector<mat4x4> 
+updateBoidsTransform(std::vector<BoidTransform>& boids, const std::vector<Vec3>& newTranslations)
+{
+	std::vector<mat4x4> modelTransform = {};
+	modelTransform.resize(boids.size());
+
+	for(uint32_t i = 0; i < boids.size(); i++)
+	{
+		Vec3 newForwardVector = normaliseVec3(newTranslations[i] - boids[i].position);
+		boids[i].orientation *= rotateFromTo(boids[i].direction, newForwardVector);
+		boids[i].direction = newForwardVector;
+		modelTransform[i] = quatToRotationMat(boids[i].orientation) * loadTranslation(boids[i].position) * loadTranslation(newTranslations[i]);
+		boids[i].position = newTranslations[i];
+	}
+
+	return modelTransform;
+}
+
+
+static void buildComputePipeline(const VulkanGlobalContext& vkCtx)
+{
+	Shader computeShader = {};
+	VK_CHECK(loadShader(vkCtx.logicalDevice, "shaders/boids.spv", VK_SHADER_STAGE_COMPUTE_BIT, &computeShader));
+
+	//TODO: use specialisation constants to set workgroupsize dynamically
+	
+	// VkSpecializationInfo specInfo = {};
+    // uint32_t                           mapEntryCount;
+    // const VkSpecializationMapEntry*    pMapEntries;
+    // size_t                             dataSize;
+    // const void*                        pData;
+
+
+	VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
+	shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfo.pNext = nullptr;
+	shaderStageCreateInfo.flags = VK_FLAGS_NONE;
+	shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+	shaderStageCreateInfo.module = computeShader.handle;
+	shaderStageCreateInfo.pName = "main";
+	shaderStageCreateInfo.pSpecializationInfo = nullptr;
+
+	VkDescriptorSetLayoutBinding descrSetLayoutBinding = {};
+    descrSetLayoutBinding.binding = 0;
+    descrSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descrSetLayoutBinding.descriptorCount = 1;
+    descrSetLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    descrSetLayoutBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo descrSetLayoutCreateInfo = {};
+    descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descrSetLayoutCreateInfo.pNext = nullptr;
+    descrSetLayoutCreateInfo.flags = VK_FLAGS_NONE;
+    descrSetLayoutCreateInfo.bindingCount = 1;
+    descrSetLayoutCreateInfo.pBindings = &descrSetLayoutBinding;
+
+	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+	VK_CALL(vkCreateDescriptorSetLayout(vkCtx.logicalDevice, &descrSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
+
+
+	VkPushConstantRange pushConstants = {};
+    pushConstants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    pushConstants.offset = 0;
+    pushConstants.size = sizeof(BoidsGlobals);
+
+	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
+    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutCreateInfo.pNext = nullptr;
+    pipelineLayoutCreateInfo.flags = VK_FLAGS_NONE;
+    pipelineLayoutCreateInfo.setLayoutCount = 1;
+    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+    pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstants;
+
+	VkPipelineLayout computePipeLayout = VK_NULL_HANDLE;
+	VK_CALL(vkCreatePipelineLayout(vkCtx.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &computePipeLayout));
+
+	VkComputePipelineCreateInfo computePipeCreateInfo = {};
+    computePipeCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    computePipeCreateInfo.pNext = nullptr;
+    computePipeCreateInfo.flags = VK_FLAGS_NONE;
+    computePipeCreateInfo.stage = shaderStageCreateInfo;
+    computePipeCreateInfo.layout = computePipeLayout;
+
+	VkPipeline computePipeline = VK_NULL_HANDLE;
+	VK_CALL(vkCreateComputePipelines(vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &computePipeCreateInfo, nullptr, &computePipeline));
+}
 
 int main(int argc, char** argv)
 {
@@ -37,20 +176,17 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	// if(!loadOBJ("objs/fish_rigging.obj", &mesh))
-	// {
-	// 	return -1;
-	// }
-
 	TextureInfo fishTexture = {};
 	if(!loadTexture("objs/fish.png", &fishTexture, false))
 	{
 		return -1;
 	}
 
+	buildComputePipeline(vkCtx);
+
 	//setup uniform  buffer and sampler object 
 	//letting hardware to know upfront what descriptor type and binding count ubo will have
-	VkDescriptorSetLayoutBinding layoutBindings[3] = {};
+	VkDescriptorSetLayoutBinding layoutBindings[4] = {};
 	//mvp
 	layoutBindings[0].binding = 0;
 	layoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -72,11 +208,17 @@ int main(int argc, char** argv)
 	layoutBindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	layoutBindings[2].pImmutableSamplers = nullptr;
 
+	//ssbo storing per-instance information
+	layoutBindings[3].binding = 3;
+	layoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	layoutBindings[3].descriptorCount = 1;
+	layoutBindings[3].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	layoutBindings[3].pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo = {};
 	descriptorSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 	descriptorSetLayoutInfo.pNext = nullptr;
-	descriptorSetLayoutInfo.bindingCount = 3;
+	descriptorSetLayoutInfo.bindingCount = 4;
 	descriptorSetLayoutInfo.pBindings = layoutBindings;
 
 	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
@@ -464,7 +606,7 @@ int main(int argc, char** argv)
 	descriptorPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 	descriptorPoolSizes[0].descriptorCount = 1;
 	descriptorPoolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-	descriptorPoolSizes[1].descriptorCount = 1;
+	descriptorPoolSizes[1].descriptorCount = 2;
 	descriptorPoolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	descriptorPoolSizes[2].descriptorCount = 1;
 
@@ -501,6 +643,12 @@ int main(int argc, char** argv)
 		swapChain.imageCount * sizeof(mat4x4) * animation.bindPose.size()
 	); 
 	
+	Buffer instanceMatrices = createBuffer(vkCtx,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		swapChain.imageCount * sizeof(mat4x4) * instanceCount
+	);
+
 	//write data to descriptor set
 	VkDescriptorBufferInfo descriptorBufferInfoMVP = {};
 	descriptorBufferInfoMVP.buffer = ubo.buffer;
@@ -511,6 +659,11 @@ int main(int argc, char** argv)
 	descriptorBufferInfoJoints.buffer = jointMatrices.buffer;
 	descriptorBufferInfoJoints.offset = 0;
 	descriptorBufferInfoJoints.range = jointMatrices.bufferSize;
+
+	VkDescriptorBufferInfo descriptorBufferInfoInstances = {};
+	descriptorBufferInfoInstances.buffer = instanceMatrices.buffer;
+	descriptorBufferInfoInstances.offset = 0;
+	descriptorBufferInfoInstances.range = instanceMatrices.bufferSize;
 	
 	VkDescriptorImageInfo descriptorImageInfo = {};
 	descriptorImageInfo.sampler = texture.textureSampler;
@@ -518,7 +671,7 @@ int main(int argc, char** argv)
 	descriptorImageInfo.imageLayout = texture.imageInfo.layout;
 
 
-	VkWriteDescriptorSet writeDescrSets[3] = {};
+	VkWriteDescriptorSet writeDescrSets[4] = {};
 	writeDescrSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 	writeDescrSets[0].pNext = nullptr;
 	writeDescrSets[0].dstSet = descriptorSet;
@@ -552,7 +705,18 @@ int main(int argc, char** argv)
 	writeDescrSets[2].pBufferInfo = nullptr;
 	writeDescrSets[2].pTexelBufferView = nullptr;
 
-	vkUpdateDescriptorSets(vkCtx.logicalDevice, 3, writeDescrSets, 0, nullptr);
+	writeDescrSets[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescrSets[3].pNext = nullptr;
+	writeDescrSets[3].dstSet = descriptorSet;
+	writeDescrSets[3].dstBinding = 3;
+	writeDescrSets[3].dstArrayElement = 0;
+	writeDescrSets[3].descriptorCount = 1;
+	writeDescrSets[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	writeDescrSets[3].pImageInfo = nullptr;
+	writeDescrSets[3].pBufferInfo = &descriptorBufferInfoInstances;
+	writeDescrSets[3].pTexelBufferView = nullptr;
+
+	vkUpdateDescriptorSets(vkCtx.logicalDevice, 4, writeDescrSets, 0, nullptr);
 
 
 	std::vector<VkCommandBuffer> cmdBuffers = {};
@@ -601,7 +765,7 @@ int main(int argc, char** argv)
 			VkDeviceSize offset = 0;
 			vkCmdBindVertexBuffers(cmdBuffers[index], 0, 1, &deviceLocalVertexBuffer.buffer, &offset);
 			vkCmdBindIndexBuffer(cmdBuffers[index], deviceLocalIndexBuffer.buffer, offset, VK_INDEX_TYPE_UINT32);
-			vkCmdDrawIndexed(cmdBuffers[index], mesh.indexBuffer.size(), 1, 0, 0, 0); 
+			vkCmdDrawIndexed(cmdBuffers[index], mesh.indexBuffer.size(), instanceCount, 0, 0, 0); 
 		vkCmdEndRenderPass(cmdBuffers[index]);
 
 		vkEndCommandBuffer(cmdBuffers[index]);
@@ -615,9 +779,10 @@ int main(int argc, char** argv)
 
 	std::vector<mat4x4> jointMats = {};
 	jointMats.resize(animation.bindPose.size());
+
 	mat4x4 perspective = perspectiveProjection(90.f, width/(float)height, 0.1f, 100.f);
 	mat4x4 scale = loadTranslation(Vec3{-0.5f, -0.5f, 0.f}) * loadScale(Vec3{0.5f, 0.5f, 0.5f});
-	Quat quat = quatFromAxisAndAngle(Vec3{0,1,0.f}, 0);
+	Quat quat = identityQuat();
 	mat4x4 rotation = quatToRotationMat(quat);
 	mat4x4 modelToWorldTransform = rotation * scale;
 	
@@ -629,11 +794,38 @@ int main(int argc, char** argv)
 	Transform mvp = {};
 	mvp.model = modelToWorldTransform;
 
+	std::vector<BoidTransform> boidTransforms = generateBoids(instanceCount);
+	//per isntance info
+	std::vector<mat4x4> instanceTransforms = {instanceCount, loadIdentity()};
+	
+	
+	for(uint32_t i = 0; i < instanceCount; i++)
+	{
+		instanceTransforms[i] *= quatToRotationMat(boidTransforms[i].orientation) * loadTranslation(boidTransforms[i].position);
+	}
+
+	Buffer boidsStateStagingBuffer = createBuffer(vkCtx, 
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		instanceCount * sizeof(BoidTransform));
+	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, boidTransforms.data(),
+		instanceCount * sizeof(BoidTransform), &boidsStateStagingBuffer)
+	);
+
+	Buffer boidsStateDeviceBuffer = createBuffer(vkCtx,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		instanceCount * sizeof(BoidTransform));
+	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, boidsStateStagingBuffer, &boidsStateDeviceBuffer));
+
+	// float angle = 0.f;
+	// const float radius = 3.f;
+
 	while(!windowShouldClose(windowInfo.windowHandle))
 	{
 		updateMessageQueue();
 		float deltaSec = timer.stopSec();
-		magma::log::info("Frame took {} ms", deltaSec);
+		// magma::log::info("Frame took {} ms", deltaSec);
 		timer.start();
 		fpsCameraUpdate(windowInfo, deltaSec, &camera);
 		mvp.viewProjection = camera.viewTransform * perspective;
@@ -654,13 +846,30 @@ int main(int argc, char** argv)
 			VK_NULL_HANDLE, &imageIndex
 		));
 
-		VkDeviceSize uboMVPBufferOffset = imageIndex * sizeof(Transform); 
+		VkDeviceSize uboMVPBufferOffset = imageIndex * sizeof(Transform);
 		VK_CALL(copyDataToHostVisibleBuffer(vkCtx, uboMVPBufferOffset, &mvp, sizeof(Transform), &ubo));
 
 		updateAnimation(animation, deltaSec, jointMats);
+		
 		VkDeviceSize uboJointBufferOffset = imageIndex * sizeof(mat4x4) * jointMats.size();
 		VK_CALL(copyDataToHostVisibleBuffer(vkCtx, uboJointBufferOffset, jointMats.data(), sizeof(mat4x4) * jointMats.size(), &jointMatrices));
-	
+
+		//update instance data
+		//move fish around circle
+		// Vec3 translationVector = {};
+		// translationVector.x = radius * cosf(toRad(angle));
+		// translationVector.z = radius * sinf(toRad(angle));
+		// auto& updatedTransforms = updateBoidsTransform(boidTransforms, {translationVector});
+		// for(uint32_t i = 0; i < updatedTransforms.size(); i++)
+		// {
+			// instanceTransforms[i] = updatedTransforms[i];
+			// magma::log::info("{}",instanceTransforms[i]);
+		// }
+
+		VkDeviceSize instanceOffset = imageIndex * sizeof(mat4x4) * instanceCount;
+		VK_CALL(copyDataToHostVisibleBuffer(vkCtx, instanceOffset, instanceTransforms.data(), sizeof(mat4x4) * instanceCount, &instanceMatrices));
+		// angle++;
+
 		recordCommandBufferAt(imageIndex);
 
 		VkSubmitInfo submitInfo = {};

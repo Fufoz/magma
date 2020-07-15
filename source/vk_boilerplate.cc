@@ -139,7 +139,7 @@ static VkInstance createInstance(std::vector<const char*>& desiredLayers, const 
 }
 
 //finds queue family index of the supplied physical device
-static uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFlags desiredFlags)
+static uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFlags desiredFlags, VkQueueFlags flagsToAvoid = 0)
 {
 	uint32_t queueFamPropsCount = 0;
 	//Reports properties of the queues of the specified physical device
@@ -152,13 +152,20 @@ static uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFla
 
 	for(uint32_t i = 0 ; i < queueFamPropsCount; i++) 
 	{
-		if(queueFamProps[i].queueCount > 0 && queueFamProps[i].queueFlags & desiredFlags) 
+		if(queueFamProps[i].queueCount > 0 &&
+			(queueFamProps[i].queueFlags & desiredFlags) &&
+			!(queueFamProps[i].queueFlags & flagsToAvoid) )
 		{
 			return i;
 		}
 	}
 
 	return VK_QUEUE_FAMILY_IGNORED;
+}
+
+static uint32_t getDedicatedComputeQueue(VkPhysicalDevice physicalDevice)
+{
+	return findQueueFamilyIndex(physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
 }
 
 static VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlags queueFlags, VkPhysicalDeviceType preferredGPUType, VkPhysicalDevice* physicalDevice, uint32_t* queueFamIdx)
@@ -207,7 +214,7 @@ static VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlag
 	return VK_FALSE;
 }
 
-static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIdx)
+static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkQueueFlags requestedQueueTypes)
 {
 	uint32_t deviceExtCount = {};
 	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtCount, nullptr);
@@ -239,22 +246,51 @@ static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, uint32_t qu
 			" selected physical device!");
 		return VK_NULL_HANDLE;
 	}
+
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos = {};
+	const float queuePriority = 1.f;
+
+	if(requestedQueueTypes & VK_QUEUE_GRAPHICS_BIT)
+	{
+		VkDeviceQueueCreateInfo queueCreateInfo = {};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.pNext = nullptr;
+		queueCreateInfo.flags = VK_FLAGS_NONE;
+		queueCreateInfo.queueFamilyIndex = findQueueFamilyIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT);
+		queueCreateInfo.queueCount = 1;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+		queueCreateInfos.push_back(queueCreateInfo);
+	}
+
+	if(requestedQueueTypes & VK_QUEUE_COMPUTE_BIT)
+	{
+		uint32_t computeQueueFamIndex = getDedicatedComputeQueue(physicalDevice);
+		//if there is no dedicated compute queue, just use the first one that has a compute flag set.
+		if(computeQueueFamIndex == VK_QUEUE_FAMILY_IGNORED)
+		{
+			computeQueueFamIndex = findQueueFamilyIndex(physicalDevice, VK_QUEUE_COMPUTE_BIT);
+		}
+
+		if(computeQueueFamIndex >= 0)
+		{
+			VkDeviceQueueCreateInfo queueCreateInfo = {};
+			queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+			queueCreateInfo.pNext = nullptr;
+			queueCreateInfo.flags = VK_FLAGS_NONE;
+			queueCreateInfo.queueFamilyIndex = (uint32_t)computeQueueFamIndex;
+			queueCreateInfo.queueCount = 1;
+			queueCreateInfo.pQueuePriorities = &queuePriority;
+			queueCreateInfos.push_back(queueCreateInfo);
+		}
+	}
 	
-	VkDeviceQueueCreateInfo queueCreateInfo = {};
-	float queuePriority = 1.f;
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.pNext = nullptr;
-	queueCreateInfo.flags = VK_FLAGS_NONE;
-	queueCreateInfo.queueFamilyIndex = (uint32_t)queueFamilyIdx;
-	queueCreateInfo.queueCount = 1;
-	queueCreateInfo.pQueuePriorities = &queuePriority;
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceCreateInfo.pNext = nullptr;
 	deviceCreateInfo.flags = VK_FLAGS_NONE;
-	deviceCreateInfo.queueCreateInfoCount = 1;
-	deviceCreateInfo.pQueueCreateInfos = &queueCreateInfo;
+	deviceCreateInfo.queueCreateInfoCount = queueCreateInfos.size();
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 	deviceCreateInfo.enabledLayerCount = 0;
 	deviceCreateInfo.ppEnabledLayerNames = nullptr;
 	deviceCreateInfo.enabledExtensionCount = deviceExtSize;
@@ -316,25 +352,41 @@ VkBool32 initVulkanGlobalContext(
 	
 	VkDebugUtilsMessengerEXT dbgCallback = registerDebugCallback(instance);
 	
-	uint32_t queueFamilyIdx = -1;
+	uint32_t graphicsQueueFamilyIdx = VK_QUEUE_FAMILY_IGNORED;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+	//we use graphics queue by default
 	VK_CHECK(pickQueueIndexAndPhysicalDevice(
 		instance,
 		VK_QUEUE_GRAPHICS_BIT,
 		VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
 		&physicalDevice,
-		&queueFamilyIdx)
+		&graphicsQueueFamilyIdx)
 	);
-	assert(queueFamilyIdx >= 0);
+	assert(graphicsQueueFamilyIdx >= 0);
 
-	VkDevice logicalDevice = createLogicalDevice(physicalDevice, queueFamilyIdx);
+	VkDevice logicalDevice = createLogicalDevice(
+		physicalDevice,
+		VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT
+	);
+
 	loadDeviceFunctionPointers(logicalDevice);
 
 	VkQueue graphicsQueue = VK_NULL_HANDLE;
-	vkGetDeviceQueue(logicalDevice, queueFamilyIdx, 0, &graphicsQueue);
+	vkGetDeviceQueue(logicalDevice, graphicsQueueFamilyIdx, 0, &graphicsQueue);
 	assert(graphicsQueue != VK_NULL_HANDLE);
-
-
+	
+	uint32_t computeQueueFamilyIndex = getDedicatedComputeQueue(physicalDevice);
+	VkQueue computeQueue = VK_NULL_HANDLE;
+	if(computeQueueFamilyIndex >=0)
+	{
+		vkGetDeviceQueue(logicalDevice, computeQueueFamilyIndex, 0, &computeQueue);
+		assert(computeQueue != VK_NULL_HANDLE);
+	}
+	else
+	{
+		computeQueue = graphicsQueue;
+	}
+	
 	VkPhysicalDeviceProperties deviceProps = {};
 	vkGetPhysicalDeviceProperties(physicalDevice, &deviceProps);
 
@@ -342,8 +394,10 @@ VkBool32 initVulkanGlobalContext(
 	generalInfo->logicalDevice = logicalDevice;
 	generalInfo->physicalDevice = physicalDevice;
 	generalInfo->debugCallback = dbgCallback;
-	generalInfo->queueFamIdx = queueFamilyIdx;
+	generalInfo->queueFamIdx = graphicsQueueFamilyIdx;
+	generalInfo->computeQueueFamIdx = computeQueueFamilyIndex;
 	generalInfo->graphicsQueue = graphicsQueue;
+	generalInfo->computeQueue = computeQueue;
 	generalInfo->deviceProps = deviceProps;
 	
 	return VK_TRUE;

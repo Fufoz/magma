@@ -12,7 +12,9 @@ struct VulkanGlobalContext
 	VkPhysicalDeviceProperties deviceProps;
 	VkDebugUtilsMessengerEXT debugCallback;
 	uint32_t queueFamIdx;
+	uint32_t computeQueueFamIdx;
 	VkQueue graphicsQueue;
+	VkQueue computeQueue;
 };
 
 struct WindowInfo
@@ -81,6 +83,7 @@ struct Texture
 	VkSampler textureSampler;
 };
 
+
 const uint32_t MAX_VERTEX_INPUT_ATTRIB_DESCR = 10;
 const uint32_t MAX_VERTEX_INPUT_BINDING_DESCR = MAX_VERTEX_INPUT_ATTRIB_DESCR;
 struct VertexBuffer
@@ -90,5 +93,7 @@ struct VertexBuffer
 	VkVertexInputAttributeDescription attrDescr[MAX_VERTEX_INPUT_ATTRIB_DESCR];
 	uint32_t attribCount;
 };
+
+
 
 #endif

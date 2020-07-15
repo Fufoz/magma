@@ -124,7 +124,6 @@ void updateAnimation(Animation& animation, float frameTime, std::vector<mat4x4>&
 	}
 
 	generateGlobalJointTransforms(animation, &interpolatedFrame);
-
-	return generateJointMatrices(interpolatedFrame.currentJointGlobalTransforms);
-
+	generateJointMatrices(interpolatedFrame.currentJointGlobalTransforms);
+	
 }

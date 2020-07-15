@@ -19,6 +19,10 @@ layout(std430, set = 0, binding = 1) readonly buffer JointMatrices {
 	mat4 jointMats[];
 };
 
+layout(std430, set = 0, binding = 3) readonly buffer InstanceInfos {
+	mat4 instanceTransforms[];
+};
+
 void main()
 {
 
@@ -29,7 +33,8 @@ void main()
 		weights.w * jointMats[int(jointIds.w)];
 
 	outUV = inUV;
-	outNormal =  normalize(inverse(transpose(mat3(ubo.model))) * inNormal);
-	gl_Position =  ubo.viewProjection * ubo.model * SkinMat * vec4(inVertexCoord, 1.0);
+	outNormal =  normalize(inverse(transpose(mat3(ubo.model * instanceTransforms[gl_InstanceIndex]))) * inNormal);
+	gl_Position =  ubo.viewProjection * ubo.model * instanceTransforms[gl_InstanceIndex] *
+		SkinMat * vec4(inVertexCoord, 1.0);
 
 }

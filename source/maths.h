@@ -168,6 +168,11 @@ inline float toRad(float degree)
 	return degree * M_PI / 180.f;
 }
 
+inline float toAngle(float radians)
+{
+	return radians * 180.f / M_PI;
+}
+
 inline Vec2 operator+(const Vec2& left, const Vec2& right)
 {
 	return Vec2{left.x + right.x, left.y + right.y};
@@ -825,6 +830,11 @@ inline Quat operator*(const Quat& left, const Quat& right)
 	return out;
 }
 
+inline Quat& operator*=(Quat& left, const Quat& right)
+{
+	left = left * right;
+	return left;
+}
 //rotates vector p with quaternion
 // outputVec = quat * Quat(p) * conjugate(quat)
 inline Vec3 rotate(const Vec3& vec, const Quat& quat)
@@ -853,6 +863,11 @@ inline Quat normalise(const Quat& q)
 inline Quat operator*(const Quat& left, float scalar)
 {    
 	return Quat { left.x * scalar, left.y * scalar, left.z * scalar, left.w * scalar};
+}
+
+inline Quat identityQuat()
+{
+	return Quat{0.f, 0.f, 0.f, 1.f};
 }
 
 inline Quat operator*(float scalar, const Quat& right)
@@ -904,6 +919,16 @@ inline Quat sLerp(const Quat& first, const Quat& second, float amount)
 	out.z = first.z * k0 + tmp.z * k1;
 	out.w = first.w * k0 + tmp.w * k1;
 	return out;
+}
+
+inline Quat rotateFromTo(const Vec3& from, const Vec3& to)
+{
+	Vec3 fromNormalised = normaliseVec3(from);
+	Vec3 toNormalised = normaliseVec3(to);
+
+	float angle = toAngle(acosf(dotVec3(fromNormalised, toNormalised)));
+	Vec3 axisOfRotation = normaliseVec3(cross(fromNormalised, toNormalised));
+	return quatFromAxisAndAngle(axisOfRotation, angle);
 }
 
 inline mat4x4 quatToRotationMat(const Quat& quat)
