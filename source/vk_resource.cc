@@ -219,7 +219,7 @@ VkResult copyDataToHostVisibleBuffer(const VulkanGlobalContext& vkCtx, VkDeviceS
 	return VK_SUCCESS;
 }
 
-VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, Buffer* deviceLocalBuffer)
+VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, Buffer* deviceLocalBuffer, VkQueue queue)
 {
 
 	VkCommandBufferAllocateInfo cmdBuffAllocInfo = {};
@@ -260,8 +260,8 @@ VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlob
 	queueSubmitInfo.pSignalSemaphores = nullptr;
 
 	VkFence fence = createFence(vkCtx.logicalDevice);
-
-	VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &queueSubmitInfo, fence));
+	VkQueue submitQueue = queue == VK_NULL_HANDLE ?  vkCtx.graphicsQueue : queue;
+	VK_CALL(vkQueueSubmit(submitQueue, 1, &queueSubmitInfo, fence));
 	VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX));
 	
 	vkDestroyFence(vkCtx.logicalDevice, fence, nullptr);

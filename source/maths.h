@@ -694,6 +694,11 @@ inline Vec3 operator*(const Vec3& left, const mat3x3& right)
 	return out;
 }
 
+inline Vec4 toVec4(const Vec3& in)
+{
+	return {in.x, in.y, in.z, 1.f};
+}
+
 inline void logMat4x4(const char* tag, const mat4x4& in)
 {
 	printf("-------------------%s--------------------\n",tag);
@@ -881,6 +886,14 @@ inline Quat quatFromAxisAndAngle(const Vec3& axis, float angle)
 	float radians = angle * M_PI / 180.f;
 	out.complex = axis * sinf(radians/2.f);
 	out.scalar = cosf(radians/2.f);
+	return out;
+}
+
+inline Vec4 axisAngleFromQuat(const Quat& quat)
+{
+	Vec4 out = {};
+	out.xyz = quat.complex / sqrt(1 - quat.w * quat.w);
+	out.w = 2 * acos(quat.w);
 	return out;
 }
 

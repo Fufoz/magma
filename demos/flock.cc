@@ -9,43 +9,56 @@ struct InstanceData
 {
 	mat4x4 isntanceTransform;
 };
-const std::size_t instanceCount = 1;
+
+const uint32_t INSTANCE_TRANSFORM_BINDING_POINT = 3;
 
 struct BoidTransform
 {
 	Quat orientation;
-	Vec3 position;
-	Vec3 direction;
+	Vec4 position;//keep it vec4 for glsl aligning purposes
+	Vec4 direction;
+	Vec4 up;
 };
 
 struct BoidsGlobals
 {
-	float minDistance;//separation
-	float flockRadius;
-	float tankSize;
-};
+	float minDistance = 1.f;//separation
+	float flockRadius = 1.f;
+	float tankSize = 25.f;
+	uint32_t boidsCount = 10;
+}boidsGlobals;
 
 std::vector<BoidTransform> generateBoids(uint32_t numberOfBoids)
 {
-	const float tankSize = 5.f;
 	std::default_random_engine generator;
-	std::uniform_real_distribution<float> distribution(-tankSize, tankSize);
+	std::uniform_real_distribution<float> distribution(-boidsGlobals.tankSize/2, boidsGlobals.tankSize/2);
 	auto randomValue = [&]()
 	{
 		return distribution(generator);
 	};
 	
-	std::vector<BoidTransform> out = {};
+	std::uniform_real_distribution<float> normDistr(0.f, 1.f);
+	auto randomNormalisedValue = [&]()
+	{
+		return distribution(generator);
+	};
+
+	Vec3 defaultUp = {0., 1.f, 0.f};
 	Vec3 defaultDirection = {0.f, 0.f, 1.f};
+	std::vector<BoidTransform> out = {};
 
 	for(uint32_t i = 0; i < numberOfBoids; i++)
 	{
 		BoidTransform transform = {};
-		Vec3 newDirection = normaliseVec3({randomValue(), randomValue(), randomValue()});
-		transform.direction = newDirection;
-		transform.position = {randomValue(), randomValue(), randomValue()};
+		Vec3 newDirection = normaliseVec3({randomValue(), randomValue(), randomNormalisedValue()});
+		// Vec3 newDirection = {-0.9, 0.9f, 0.9f};
+		transform.direction = toVec4(newDirection);
+		transform.position = {randomValue(), randomValue(), randomValue(), 1.0};
 		transform.orientation = rotateFromTo(defaultDirection, newDirection);
+		transform.up = toVec4(normaliseVec3(cross(newDirection, cross(defaultUp, newDirection))));
 		out.push_back(transform);
+		magma::log::info("dir = {} pos = {} orient = {} up {}",
+		transform.direction, transform.position, transform.orientation, transform.up);
 	}
 
 	return out;
@@ -62,29 +75,46 @@ updateBoidsTransform(std::vector<BoidTransform>& boids, const std::vector<Vec3>&
 
 	for(uint32_t i = 0; i < boids.size(); i++)
 	{
-		Vec3 newForwardVector = normaliseVec3(newTranslations[i] - boids[i].position);
-		boids[i].orientation *= rotateFromTo(boids[i].direction, newForwardVector);
-		boids[i].direction = newForwardVector;
-		modelTransform[i] = quatToRotationMat(boids[i].orientation) * loadTranslation(boids[i].position) * loadTranslation(newTranslations[i]);
-		boids[i].position = newTranslations[i];
+		Vec3 newForwardVector = normaliseVec3(newTranslations[i] - boids[i].position.xyz);
+		boids[i].orientation *= rotateFromTo(boids[i].direction.xyz, newForwardVector);
+		boids[i].direction = toVec4(newForwardVector);
+		modelTransform[i] = quatToRotationMat(boids[i].orientation) * loadTranslation(boids[i].position.xyz) * loadTranslation(newTranslations[i]);
+		boids[i].position = toVec4(newTranslations[i]);
 	}
 
 	return modelTransform;
 }
 
+struct ComputeData
+{
+	VkPipeline pipeline;
+	VkPipelineLayout pipelineLayout;
+	VkCommandPool commandPool;
+	VkCommandBuffer commandBuffer;
+	VkDescriptorSet descriptorSet;
+	Buffer instanceTransformsDeviceBuffer;
+	int workGroupSize;
+};
 
-static void buildComputePipeline(const VulkanGlobalContext& vkCtx)
+static ComputeData buildComputePipeline(
+	const VulkanGlobalContext&			vkCtx,
+	const std::vector<BoidTransform>& 	boidTransforms, 
+	const std::vector<mat4x4>&			instanceTransforms)
 {
 	Shader computeShader = {};
 	VK_CHECK(loadShader(vkCtx.logicalDevice, "shaders/boids.spv", VK_SHADER_STAGE_COMPUTE_BIT, &computeShader));
 
-	//TODO: use specialisation constants to set workgroupsize dynamically
-	
-	// VkSpecializationInfo specInfo = {};
-    // uint32_t                           mapEntryCount;
-    // const VkSpecializationMapEntry*    pMapEntries;
-    // size_t                             dataSize;
-    // const void*                        pData;
+	VkSpecializationMapEntry specMapEntry = {};
+    specMapEntry.constantID = 100;
+    specMapEntry.offset = 0;
+    specMapEntry.size = sizeof(int);
+
+	const int workGroupSize = 64;
+	VkSpecializationInfo specInfo = {};
+	specInfo.mapEntryCount = 1;
+	specInfo.pMapEntries = &specMapEntry;
+	specInfo.dataSize = sizeof(int);
+	specInfo.pData = &workGroupSize;
 
 
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
@@ -94,21 +124,27 @@ static void buildComputePipeline(const VulkanGlobalContext& vkCtx)
 	shaderStageCreateInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
 	shaderStageCreateInfo.module = computeShader.handle;
 	shaderStageCreateInfo.pName = "main";
-	shaderStageCreateInfo.pSpecializationInfo = nullptr;
+	shaderStageCreateInfo.pSpecializationInfo = &specInfo;
 
-	VkDescriptorSetLayoutBinding descrSetLayoutBinding = {};
-    descrSetLayoutBinding.binding = 0;
-    descrSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descrSetLayoutBinding.descriptorCount = 1;
-    descrSetLayoutBinding.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    descrSetLayoutBinding.pImmutableSamplers = nullptr;
+	VkDescriptorSetLayoutBinding descrSetLayoutBindings[2] = {};
+    descrSetLayoutBindings[0].binding = 0;
+    descrSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descrSetLayoutBindings[0].descriptorCount = 1;
+    descrSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    descrSetLayoutBindings[0].pImmutableSamplers = nullptr;
+
+    descrSetLayoutBindings[1].binding = 3;
+    descrSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descrSetLayoutBindings[1].descriptorCount = 1;
+    descrSetLayoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+    descrSetLayoutBindings[1].pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo descrSetLayoutCreateInfo = {};
     descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     descrSetLayoutCreateInfo.pNext = nullptr;
     descrSetLayoutCreateInfo.flags = VK_FLAGS_NONE;
-    descrSetLayoutCreateInfo.bindingCount = 1;
-    descrSetLayoutCreateInfo.pBindings = &descrSetLayoutBinding;
+    descrSetLayoutCreateInfo.bindingCount = 2;
+    descrSetLayoutCreateInfo.pBindings = descrSetLayoutBindings;
 
 	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDescriptorSetLayout(vkCtx.logicalDevice, &descrSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
@@ -140,6 +176,178 @@ static void buildComputePipeline(const VulkanGlobalContext& vkCtx)
 
 	VkPipeline computePipeline = VK_NULL_HANDLE;
 	VK_CALL(vkCreateComputePipelines(vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &computePipeCreateInfo, nullptr, &computePipeline));
+
+	VkDescriptorPoolSize poolSize = {};
+    poolSize.type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSize.descriptorCount = 2;
+
+	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
+    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descriptorPoolCreateInfo.pNext = nullptr;
+    descriptorPoolCreateInfo.maxSets = 2;
+    descriptorPoolCreateInfo.poolSizeCount = 1;
+    descriptorPoolCreateInfo.pPoolSizes = &poolSize;
+	
+	VkDescriptorPool descrPool = VK_NULL_HANDLE;
+	VK_CALL(vkCreateDescriptorPool(vkCtx.logicalDevice, &descriptorPoolCreateInfo, nullptr, &descrPool));
+	
+	VkDescriptorSetAllocateInfo descrSetAllocInfo = {};
+    descrSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descrSetAllocInfo.pNext = nullptr;
+    descrSetAllocInfo.descriptorPool = descrPool;
+    descrSetAllocInfo.descriptorSetCount = 1;
+    descrSetAllocInfo.pSetLayouts = &descriptorSetLayout;
+
+	VkDescriptorSet descrSet = VK_NULL_HANDLE;
+	VK_CALL(vkAllocateDescriptorSets(vkCtx.logicalDevice, &descrSetAllocInfo, &descrSet));
+
+
+	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
+	cmdPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	cmdPoolCreateInfo.pNext = nullptr;
+	cmdPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	cmdPoolCreateInfo.queueFamilyIndex = vkCtx.computeQueueFamIdx;
+
+	VkCommandPool commandPool = VK_NULL_HANDLE;
+	VK_CALL(vkCreateCommandPool(vkCtx.logicalDevice, &cmdPoolCreateInfo, nullptr, &commandPool));
+
+	Buffer boidsStateStagingBuffer = createBuffer(vkCtx, 
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		boidsGlobals.boidsCount * sizeof(BoidTransform));
+
+	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, boidTransforms.data(),
+		boidsGlobals.boidsCount * sizeof(BoidTransform), &boidsStateStagingBuffer)
+	);
+
+	Buffer boidsStateDeviceBuffer = createBuffer(vkCtx,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		boidsGlobals.boidsCount * sizeof(BoidTransform));
+
+	VK_CHECK(pushDataToDeviceLocalBuffer(commandPool, vkCtx, boidsStateStagingBuffer, &boidsStateDeviceBuffer, vkCtx.computeQueue));
+
+
+	Buffer stagingInstanceMatrices = createBuffer(vkCtx,
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		boidsGlobals.boidsCount * sizeof(mat4x4)
+	);
+	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, instanceTransforms.data(),
+		boidsGlobals.boidsCount * sizeof(mat4x4), &stagingInstanceMatrices)
+	);
+
+	Buffer instanceMatricesDeviceBuffer = createBuffer(vkCtx,
+		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		boidsGlobals.boidsCount * sizeof(mat4x4));
+
+	VK_CHECK(pushDataToDeviceLocalBuffer(commandPool, vkCtx, stagingInstanceMatrices, &instanceMatricesDeviceBuffer, vkCtx.computeQueue));
+
+	//write data to descriptor set
+	VkDescriptorBufferInfo descriptorBufferInfoBoidTransforms = {};
+	descriptorBufferInfoBoidTransforms.buffer = boidsStateDeviceBuffer.buffer;
+	descriptorBufferInfoBoidTransforms.offset = 0;
+	descriptorBufferInfoBoidTransforms.range = boidsStateDeviceBuffer.bufferSize;
+
+	VkDescriptorBufferInfo descriptorBufferInfoComputeInstanceTransforms = {};
+	descriptorBufferInfoComputeInstanceTransforms.buffer = instanceMatricesDeviceBuffer.buffer;
+	descriptorBufferInfoComputeInstanceTransforms.offset = 0;
+	descriptorBufferInfoComputeInstanceTransforms.range = instanceMatricesDeviceBuffer.bufferSize;
+
+	VkWriteDescriptorSet writeDescrSets[2] = {};
+	writeDescrSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescrSets[0].pNext = nullptr;
+	writeDescrSets[0].dstSet = descrSet;
+	writeDescrSets[0].dstBinding = 0;
+	writeDescrSets[0].dstArrayElement = 0;
+	writeDescrSets[0].descriptorCount = 1;
+	writeDescrSets[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	writeDescrSets[0].pImageInfo = nullptr;
+	writeDescrSets[0].pBufferInfo = &descriptorBufferInfoBoidTransforms;
+	writeDescrSets[0].pTexelBufferView = nullptr;
+
+	writeDescrSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescrSets[1].pNext = nullptr;
+	writeDescrSets[1].dstSet = descrSet;
+	writeDescrSets[1].dstBinding = 3;
+	writeDescrSets[1].dstArrayElement = 0;
+	writeDescrSets[1].descriptorCount = 1;
+	writeDescrSets[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	writeDescrSets[1].pImageInfo = nullptr;
+	writeDescrSets[1].pBufferInfo = &descriptorBufferInfoComputeInstanceTransforms;
+	writeDescrSets[1].pTexelBufferView = nullptr;
+
+	vkUpdateDescriptorSets(vkCtx.logicalDevice, 2, writeDescrSets, 0, nullptr);
+	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
+	createCommandBuffer(vkCtx.logicalDevice, commandPool, &cmdBuffer);
+
+	VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo);
+
+		// if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
+		// {
+		// 	VkBufferMemoryBarrier acquireBarrier = {};
+    	// 	acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    	// 	acquireBarrier.pNext = nullptr;
+    	// 	acquireBarrier.srcAccessMask = 0;
+    	// 	acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+    	// 	acquireBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
+    	// 	acquireBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+	    // 	acquireBarrier.buffer = instanceMatricesDeviceBuffer.buffer;
+	    // 	acquireBarrier.offset = 0;
+	    // 	acquireBarrier.size = instanceMatricesDeviceBuffer.bufferSize;
+
+		// 	vkCmdPipelineBarrier(cmdBuffer,
+		// 		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+		// 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		// 		0,
+		// 		0, nullptr,
+		// 		1, &acquireBarrier,
+		// 		0, nullptr
+		// 	);
+		// }
+
+		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
+		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeLayout, 0, 1, &descrSet, 0, nullptr);
+		vkCmdDispatch(cmdBuffer, boidsGlobals.boidsCount / workGroupSize + 1, 1, 1);
+		
+		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
+		{
+			VkBufferMemoryBarrier releaseBarrier = {};
+    		releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    		releaseBarrier.pNext = nullptr;
+    		releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+    		releaseBarrier.dstAccessMask = 0;
+    		releaseBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+    		releaseBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+	    	releaseBarrier.buffer = instanceMatricesDeviceBuffer.buffer;
+	    	releaseBarrier.offset = 0;
+	    	releaseBarrier.size = instanceMatricesDeviceBuffer.bufferSize;
+
+			vkCmdPipelineBarrier(cmdBuffer,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+				0,
+				0, nullptr,
+				1, &releaseBarrier,
+				0, nullptr
+			);
+		}
+
+	vkEndCommandBuffer(cmdBuffer);
+
+	ComputeData out = {};
+	out.pipeline = computePipeline;
+	out.pipelineLayout = computePipeLayout;
+	out.commandPool = commandPool;
+	out.commandBuffer = cmdBuffer;
+	out.descriptorSet = descrSet;
+	out.instanceTransformsDeviceBuffer = instanceMatricesDeviceBuffer;
+	out.workGroupSize = workGroupSize;
+	return out;
 }
 
 int main(int argc, char** argv)
@@ -181,8 +389,14 @@ int main(int argc, char** argv)
 	{
 		return -1;
 	}
+	std::vector<BoidTransform> boidTransforms = generateBoids(boidsGlobals.boidsCount);
+	std::vector<mat4x4> instanceTransforms = {boidsGlobals.boidsCount, loadIdentity()};
+	// for(uint32_t i = 0; i < boidsGlobals.boidsCount; i++)
+	// {
+	// 	instanceTransforms[i] *= quatToRotationMat(boidTransforms[i].orientation) * loadTranslation(boidTransforms[i].position);
+	// }
 
-	buildComputePipeline(vkCtx);
+	ComputeData computeData = buildComputePipeline(vkCtx, boidTransforms, instanceTransforms);
 
 	//setup uniform  buffer and sampler object 
 	//letting hardware to know upfront what descriptor type and binding count ubo will have
@@ -643,11 +857,11 @@ int main(int argc, char** argv)
 		swapChain.imageCount * sizeof(mat4x4) * animation.bindPose.size()
 	); 
 	
-	Buffer instanceMatrices = createBuffer(vkCtx,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		swapChain.imageCount * sizeof(mat4x4) * instanceCount
-	);
+	// Buffer instanceMatrices = createBuffer(vkCtx,
+		// VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+		// VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		// swapChain.imageCount * sizeof(mat4x4) * boidsGlobals.boidsCount
+	// );
 
 	//write data to descriptor set
 	VkDescriptorBufferInfo descriptorBufferInfoMVP = {};
@@ -661,10 +875,14 @@ int main(int argc, char** argv)
 	descriptorBufferInfoJoints.range = jointMatrices.bufferSize;
 
 	VkDescriptorBufferInfo descriptorBufferInfoInstances = {};
-	descriptorBufferInfoInstances.buffer = instanceMatrices.buffer;
+	// descriptorBufferInfoInstances.buffer = instanceMatrices.buffer;
+	// descriptorBufferInfoInstances.offset = 0;
+	// descriptorBufferInfoInstances.range = instanceMatrices.bufferSize;
+	descriptorBufferInfoInstances.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
 	descriptorBufferInfoInstances.offset = 0;
-	descriptorBufferInfoInstances.range = instanceMatrices.bufferSize;
-	
+	descriptorBufferInfoInstances.range = computeData.instanceTransformsDeviceBuffer.bufferSize;
+
+
 	VkDescriptorImageInfo descriptorImageInfo = {};
 	descriptorImageInfo.sampler = texture.textureSampler;
 	descriptorImageInfo.imageView = texture.imageInfo.view;
@@ -738,13 +956,59 @@ int main(int argc, char** argv)
 
 	HostTimer timer = {};
 	timer.start();
-
+	
 	auto recordCommandBufferAt = [&](uint32_t index)
 	{
+
 		VkCommandBufferBeginInfo beginInfo = {};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		vkBeginCommandBuffer(cmdBuffers[index], &beginInfo);
+
+		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
+		{
+			//acquire barrier to transition ownersip of ssbo buffer to the graphics queue
+			VkBufferMemoryBarrier acquireBarrier = {};
+    		acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    		acquireBarrier.pNext = nullptr;
+    		acquireBarrier.srcAccessMask = 0;
+    		acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    		acquireBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+    		acquireBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+	    	acquireBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+	    	acquireBarrier.offset = 0;
+	    	acquireBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
+
+			vkCmdPipelineBarrier(cmdBuffers[index],
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+				0,
+				0, nullptr,
+				1, &acquireBarrier,
+				0, nullptr
+			);
+		}
+
+		// //make sure writes to ssbo from compute shader are finished before vertex shader starts reading from it
+		// VkBufferMemoryBarrier writesFinishedBarrier = {};
+	    // writesFinishedBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+	    // writesFinishedBarrier.pNext = nullptr;
+	    // writesFinishedBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+	    // writesFinishedBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	    // writesFinishedBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+	    // writesFinishedBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+	    // writesFinishedBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+	    // writesFinishedBarrier.offset = 0;
+	    // writesFinishedBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
+
+		// vkCmdPipelineBarrier(cmdBuffers[index], 
+		// 	VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+		// 	VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+		// 	0,
+		// 	0, nullptr,
+		// 	1, &writesFinishedBarrier,
+		// 	0, nullptr
+		// );
 
 		VkRenderPassBeginInfo renderPassBeginInfo = {};
 		renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -765,8 +1029,32 @@ int main(int argc, char** argv)
 			VkDeviceSize offset = 0;
 			vkCmdBindVertexBuffers(cmdBuffers[index], 0, 1, &deviceLocalVertexBuffer.buffer, &offset);
 			vkCmdBindIndexBuffer(cmdBuffers[index], deviceLocalIndexBuffer.buffer, offset, VK_INDEX_TYPE_UINT32);
-			vkCmdDrawIndexed(cmdBuffers[index], mesh.indexBuffer.size(), instanceCount, 0, 0, 0); 
+			vkCmdDrawIndexed(cmdBuffers[index], mesh.indexBuffer.size(), boidsGlobals.boidsCount, 0, 0, 0); 
 		vkCmdEndRenderPass(cmdBuffers[index]);
+
+		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
+		{
+			//release barrier to transition ownersip of ssbo buffer back to the compute queue
+			VkBufferMemoryBarrier releaseBarrier = {};
+    		releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    		releaseBarrier.pNext = nullptr;
+    		releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    		releaseBarrier.dstAccessMask = 0;
+    		releaseBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx; 
+    		releaseBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+	    	releaseBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+	    	releaseBarrier.offset = 0;
+	    	releaseBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
+
+			vkCmdPipelineBarrier(cmdBuffers[index],
+				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				0,
+				0, nullptr,
+				1, &releaseBarrier,
+				0, nullptr
+			);
+		}
 
 		vkEndCommandBuffer(cmdBuffers[index]);
 	};
@@ -781,7 +1069,7 @@ int main(int argc, char** argv)
 	jointMats.resize(animation.bindPose.size());
 
 	mat4x4 perspective = perspectiveProjection(90.f, width/(float)height, 0.1f, 100.f);
-	mat4x4 scale = loadTranslation(Vec3{-0.5f, -0.5f, 0.f}) * loadScale(Vec3{0.5f, 0.5f, 0.5f});
+	mat4x4 scale = loadTranslation(Vec3{-0.5f, -0.5f, 0.f}) * loadScale(Vec3{0.1f, 0.1f, 0.1f});
 	Quat quat = identityQuat();
 	mat4x4 rotation = quatToRotationMat(quat);
 	mat4x4 modelToWorldTransform = rotation * scale;
@@ -794,32 +1082,83 @@ int main(int argc, char** argv)
 	Transform mvp = {};
 	mvp.model = modelToWorldTransform;
 
-	std::vector<BoidTransform> boidTransforms = generateBoids(instanceCount);
-	//per isntance info
-	std::vector<mat4x4> instanceTransforms = {instanceCount, loadIdentity()};
+
+	VkFence computeFence = createFence(vkCtx.logicalDevice);
+	VkSemaphore computeFinishedSemaphore = createSemaphore(vkCtx.logicalDevice);
+	VkSemaphore computeMayStartSemaphore = createSemaphore(vkCtx.logicalDevice);
+	//Signal the semaphore
+	VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.pNext = nullptr;
+    submitInfo.signalSemaphoreCount = 1;
+    submitInfo.pSignalSemaphores = &computeMayStartSemaphore;
+	VK_CALL(vkQueueSubmit(vkCtx.computeQueue, 1, &submitInfo, computeFence));
+	vkWaitForFences(vkCtx.logicalDevice, 1, &computeFence, VK_TRUE, UINT_MAX);
 	
-	
-	for(uint32_t i = 0; i < instanceCount; i++)
+	VkFence computeFinishedFence = createFence(vkCtx.logicalDevice);
+
+	auto recordComputeCommandBuffer = [&]()
 	{
-		instanceTransforms[i] *= quatToRotationMat(boidTransforms[i].orientation) * loadTranslation(boidTransforms[i].position);
-	}
+		VkCommandBufferBeginInfo commandBufferBeginInfo = {};
+		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-	Buffer boidsStateStagingBuffer = createBuffer(vkCtx, 
-		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		instanceCount * sizeof(BoidTransform));
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, boidTransforms.data(),
-		instanceCount * sizeof(BoidTransform), &boidsStateStagingBuffer)
-	);
+		vkBeginCommandBuffer(computeData.commandBuffer, &commandBufferBeginInfo);
 
-	Buffer boidsStateDeviceBuffer = createBuffer(vkCtx,
-		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-		instanceCount * sizeof(BoidTransform));
-	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, boidsStateStagingBuffer, &boidsStateDeviceBuffer));
+		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
+		{
+			VkBufferMemoryBarrier acquireBarrier = {};
+    		acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    		acquireBarrier.pNext = nullptr;
+    		acquireBarrier.srcAccessMask = 0;
+    		acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+    		acquireBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
+    		acquireBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+	    	acquireBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+	    	acquireBarrier.offset = 0;
+	    	acquireBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
 
-	// float angle = 0.f;
-	// const float radius = 3.f;
+			vkCmdPipelineBarrier(computeData.commandBuffer,
+				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				0,
+				0, nullptr,
+				1, &acquireBarrier,
+				0, nullptr
+			);
+		}
+
+		vkCmdBindPipeline(computeData.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computeData.pipeline);
+		vkCmdBindDescriptorSets(computeData.commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computeData.pipelineLayout, 0, 1, &computeData.descriptorSet, 0, nullptr);
+		vkCmdPushConstants(computeData.commandBuffer, computeData.pipelineLayout, 
+			VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(BoidsGlobals), &boidsGlobals);
+
+		vkCmdDispatch(computeData.commandBuffer, boidsGlobals.boidsCount / computeData.workGroupSize + 1, 1, 1);
+		
+		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
+		{
+			VkBufferMemoryBarrier releaseBarrier = {};
+    		releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    		releaseBarrier.pNext = nullptr;
+    		releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+    		releaseBarrier.dstAccessMask = 0;
+    		releaseBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+    		releaseBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+	    	releaseBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+	    	releaseBarrier.offset = 0;
+	    	releaseBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
+
+			vkCmdPipelineBarrier(computeData.commandBuffer,
+				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
+				0,
+				0, nullptr,
+				1, &releaseBarrier,
+				0, nullptr
+			);
+		}
+
+		vkEndCommandBuffer(computeData.commandBuffer);
+	};
 
 	while(!windowShouldClose(windowInfo.windowHandle))
 	{
@@ -830,7 +1169,20 @@ int main(int argc, char** argv)
 		fpsCameraUpdate(windowInfo, deltaSec, &camera);
 		mvp.viewProjection = camera.viewTransform * perspective;
 
-		uint32_t imageIndex = {};
+		VkPipelineStageFlags computeWaitDstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+		VkSubmitInfo computeQueueSumbitInfo = {};
+    	computeQueueSumbitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    	computeQueueSumbitInfo.pNext = nullptr;
+    	computeQueueSumbitInfo.waitSemaphoreCount = 1;
+    	computeQueueSumbitInfo.pWaitSemaphores = &computeMayStartSemaphore;
+    	computeQueueSumbitInfo.pWaitDstStageMask = &computeWaitDstStageMask;
+    	computeQueueSumbitInfo.commandBufferCount = 1;
+    	computeQueueSumbitInfo.pCommandBuffers = &computeData.commandBuffer;
+    	computeQueueSumbitInfo.signalSemaphoreCount = 1;
+    	computeQueueSumbitInfo.pSignalSemaphores = &computeFinishedSemaphore;
+
+		VK_CALL(vkQueueSubmit(vkCtx.computeQueue, 1, &computeQueueSumbitInfo, computeFinishedFence));
 
 		//wait on host side before we may start using same image that has already been used before
 		VK_CALL(vkWaitForFences(
@@ -840,6 +1192,7 @@ int main(int argc, char** argv)
 		));
 		VK_CALL(vkResetFences(vkCtx.logicalDevice, 1, &imageFences[syncIndex]));
 		
+		uint32_t imageIndex = {};		
 		VK_CALL(vkAcquireNextImageKHR(
 			vkCtx.logicalDevice, swapChain.swapchain,
 			UINT_MAX, imageAvailableSemaphores[syncIndex],
@@ -854,35 +1207,22 @@ int main(int argc, char** argv)
 		VkDeviceSize uboJointBufferOffset = imageIndex * sizeof(mat4x4) * jointMats.size();
 		VK_CALL(copyDataToHostVisibleBuffer(vkCtx, uboJointBufferOffset, jointMats.data(), sizeof(mat4x4) * jointMats.size(), &jointMatrices));
 
-		//update instance data
-		//move fish around circle
-		// Vec3 translationVector = {};
-		// translationVector.x = radius * cosf(toRad(angle));
-		// translationVector.z = radius * sinf(toRad(angle));
-		// auto& updatedTransforms = updateBoidsTransform(boidTransforms, {translationVector});
-		// for(uint32_t i = 0; i < updatedTransforms.size(); i++)
-		// {
-			// instanceTransforms[i] = updatedTransforms[i];
-			// magma::log::info("{}",instanceTransforms[i]);
-		// }
-
-		VkDeviceSize instanceOffset = imageIndex * sizeof(mat4x4) * instanceCount;
-		VK_CALL(copyDataToHostVisibleBuffer(vkCtx, instanceOffset, instanceTransforms.data(), sizeof(mat4x4) * instanceCount, &instanceMatrices));
-		// angle++;
-
 		recordCommandBufferAt(imageIndex);
 
+		VkSemaphore graphicsWaitSemaphores[2] = {computeFinishedSemaphore, imageAvailableSemaphores[syncIndex]};
+		VkSemaphore graphicsSignalSemaphores[2] = {computeMayStartSemaphore, imageMayPresentSemaphores[syncIndex]};
+		VkPipelineStageFlags graphicsWaitDstStages[2] = {VK_PIPELINE_STAGE_VERTEX_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+		
 		VkSubmitInfo submitInfo = {};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.pNext = nullptr;
-		submitInfo.waitSemaphoreCount = 1;
-		submitInfo.pWaitSemaphores = &imageAvailableSemaphores[syncIndex];
-		VkPipelineStageFlags dstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		submitInfo.pWaitDstStageMask = &dstStage;
+		submitInfo.waitSemaphoreCount = 2;
+		submitInfo.pWaitSemaphores = graphicsWaitSemaphores;
+		submitInfo.pWaitDstStageMask = graphicsWaitDstStages;
 		submitInfo.commandBufferCount = 1;
 		submitInfo.pCommandBuffers = &cmdBuffers[imageIndex];
-		submitInfo.signalSemaphoreCount = 1;
-		submitInfo.pSignalSemaphores = &imageMayPresentSemaphores[syncIndex];
+		submitInfo.signalSemaphoreCount = 2;
+		submitInfo.pSignalSemaphores = graphicsSignalSemaphores;
 		
 		//VkQueueInf
 		VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &submitInfo, imageFences[syncIndex]));
@@ -896,6 +1236,10 @@ int main(int argc, char** argv)
 		presentInfo.pSwapchains = &swapChain.swapchain;
 		presentInfo.pImageIndices = &imageIndex;
 		presentInfo.pResults = nullptr;
+		
+		vkWaitForFences(vkCtx.logicalDevice, 1, &computeFinishedFence, VK_TRUE, UINT_MAX);
+		vkResetFences(vkCtx.logicalDevice, 1, &computeFinishedFence);
+		recordComputeCommandBuffer();
 
 		VK_CALL(vkQueuePresentKHR(vkCtx.graphicsQueue, &presentInfo));
 		syncIndex = (syncIndex + 1) % swapChain.imageCount;

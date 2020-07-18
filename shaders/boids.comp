@@ -1,0 +1,127 @@
+#version 450
+
+struct BoidState
+{
+	vec4 orientation;
+	vec4 position;
+	vec4 direction;
+	vec4 up;
+};
+
+layout(push_constant) uniform BoidsCommon
+{
+	float minDistance;
+	float flockRadius;
+	float tankSize;
+	int   boidsCount;
+}Common;
+
+layout(std430, set = 0, binding = 0) buffer BoidsState {
+	BoidState states[];
+};
+
+layout(std430, set = 0, binding = 3) writeonly buffer InstanceInfos {
+	mat4 instanceTransforms[];
+};
+
+//rule 1 separation ( steer away from other boids if a distance to them is less than or equal to MIN_DISTANCE )
+//rule 2 alignment ( look approximately at the same direction as any other boids)
+//rule 3 cohesion ( steer to the center of mass of nearby fishes)
+// BoidState rule1(BoidState state)
+// {
+// 
+// }
+
+vec4 quatFromAxisAndAngle(vec3 axisOfRotation, float radians)
+{
+	vec4 quat;
+	quat.xyz = axisOfRotation * sin(radians/2.f);
+	quat.w = cos(radians/2.f);
+	return quat;
+}
+
+vec4 quatMultiply(vec4 left, vec4 right)
+{
+	vec4 outQuat;
+	outQuat.xyz = left.xyz * right.w + right.xyz * left.w + cross(left.xyz, right.xyz);
+	outQuat.w = left.w * right.w - dot(left.xyz, right.xyz);
+	return outQuat;
+}
+
+vec4 rotateFromTo(vec3 from, vec3 to)
+{
+	vec3 fromNormalised = normalize(from);
+	vec3 toNormalised = normalize(to);
+
+	float angleInRadians = acos(dot(fromNormalised, toNormalised));
+	vec3 axisOfRotation = normalize(cross(fromNormalised, toNormalised));
+	return quatFromAxisAndAngle(axisOfRotation, angleInRadians);
+}
+
+mat4 loadTranslation(vec3 translationVec)
+{
+	mat4 translationMat = mat4(1.0);
+	translationMat[3] = vec4(translationVec, 1.0);
+	return translationMat;
+}
+
+
+vec4 axisAngleFromQuat(vec4 quat)
+{
+	vec4 info;
+	info.xyz = quat.xyz / sqrt(1 - quat.w * quat.w);
+	info.w = 2 * acos(quat.w);
+	return info;
+}
+
+mat4 quatToRotationMat(vec4 quat)
+{
+	mat4 outputMat = mat4(1.0);
+
+	float xx = quat.x * quat.x;
+	float yy = quat.y * quat.y;
+	float zz = quat.z * quat.z;
+	float xy = quat.x * quat.y;
+	float xz = quat.x * quat.z;
+	float yz = quat.y * quat.z;
+	float wz = quat.w * quat.z;
+	float wy = quat.w * quat.y;
+	float wx = quat.w * quat.x;
+
+	outputMat[0].xyz = vec3(1 - 2 * yy - 2 * zz, 2 * xy + 2 * wz, 2 * xz - 2 * wy);
+	outputMat[1].xyz = vec3(2 * xy - 2 * wz, 1 - 2 * xx - 2 * zz, 2 * yz + 2 * wx);
+	outputMat[2].xyz = vec3(2 * xz + 2 * wy, 2 * yz - 2 * wx, 1 - 2 * xx - 2 * yy);
+
+	return outputMat;
+}
+
+layout(local_size_x_id = 100) in;
+
+void main()
+{	
+	uint gx = gl_GlobalInvocationID.x;
+	if(gx > Common.boidsCount)
+	{
+		return;
+	}
+
+	vec4 previousDirection = states[gx].direction;
+	vec4 previousPosition = states[gx].position;
+
+	//tank collision
+	if(abs(states[gx].position.x) >= Common.tankSize ||
+		abs(states[gx].position.y) >= Common.tankSize ||
+		abs(states[gx].position.z) >= Common.tankSize)
+	{//box collision
+		states[gx].direction = -previousDirection;
+	 	states[gx].orientation = quatMultiply(
+			quatFromAxisAndAngle(states[gx].up.xyz, radians(180)),
+			states[gx].orientation);
+
+	}
+
+	states[gx].position += 0.05 * states[gx].direction;
+	instanceTransforms[gx] = 
+		loadTranslation(states[gx].position.xyz) * quatToRotationMat(states[gx].orientation);
+	
+}
