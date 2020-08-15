@@ -175,9 +175,9 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 	VK_CHECK(loadShader(vkCtx.logicalDevice, "shaders/boids.spv", VK_SHADER_STAGE_COMPUTE_BIT, &computeShader));
 
 	VkSpecializationMapEntry specMapEntry = {};
-    specMapEntry.constantID = 100;
-    specMapEntry.offset = 0;
-    specMapEntry.size = sizeof(int);
+	specMapEntry.constantID = 100;
+	specMapEntry.offset = 0;
+	specMapEntry.size = sizeof(int);
 
 	const int workGroupSize = 64;
 	VkSpecializationInfo specInfo = {};
@@ -198,97 +198,97 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 
 	std::array<VkDescriptorSetLayoutBinding, 5> descrSetLayoutBindings = {};
 
-    descrSetLayoutBindings[0].binding = 0;
-    descrSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descrSetLayoutBindings[0].descriptorCount = 1;
-    descrSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    descrSetLayoutBindings[0].pImmutableSamplers = nullptr;
+	descrSetLayoutBindings[0].binding = 0;
+	descrSetLayoutBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descrSetLayoutBindings[0].descriptorCount = 1;
+	descrSetLayoutBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	descrSetLayoutBindings[0].pImmutableSamplers = nullptr;
 
-    descrSetLayoutBindings[1].binding = 1;
-    descrSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descrSetLayoutBindings[1].descriptorCount = 1;
-    descrSetLayoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    descrSetLayoutBindings[1].pImmutableSamplers = nullptr;
+	descrSetLayoutBindings[1].binding = 1;
+	descrSetLayoutBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descrSetLayoutBindings[1].descriptorCount = 1;
+	descrSetLayoutBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	descrSetLayoutBindings[1].pImmutableSamplers = nullptr;
 
-    descrSetLayoutBindings[2].binding = 2;
-    descrSetLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descrSetLayoutBindings[2].descriptorCount = 1;
-    descrSetLayoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    descrSetLayoutBindings[2].pImmutableSamplers = nullptr;
+	descrSetLayoutBindings[2].binding = 2;
+	descrSetLayoutBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descrSetLayoutBindings[2].descriptorCount = 1;
+	descrSetLayoutBindings[2].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	descrSetLayoutBindings[2].pImmutableSamplers = nullptr;
 
-    descrSetLayoutBindings[3].binding = 3;
-    descrSetLayoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descrSetLayoutBindings[3].descriptorCount = 1;
-    descrSetLayoutBindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    descrSetLayoutBindings[3].pImmutableSamplers = nullptr;
+	descrSetLayoutBindings[3].binding = 3;
+	descrSetLayoutBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descrSetLayoutBindings[3].descriptorCount = 1;
+	descrSetLayoutBindings[3].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	descrSetLayoutBindings[3].pImmutableSamplers = nullptr;
 
-    descrSetLayoutBindings[4].binding = 4;
-    descrSetLayoutBindings[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    descrSetLayoutBindings[4].descriptorCount = 1;
-    descrSetLayoutBindings[4].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    descrSetLayoutBindings[4].pImmutableSamplers = nullptr;
+	descrSetLayoutBindings[4].binding = 4;
+	descrSetLayoutBindings[4].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	descrSetLayoutBindings[4].descriptorCount = 1;
+	descrSetLayoutBindings[4].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	descrSetLayoutBindings[4].pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo descrSetLayoutCreateInfo = {};
-    descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descrSetLayoutCreateInfo.pNext = nullptr;
-    descrSetLayoutCreateInfo.flags = VK_FLAGS_NONE;
-    descrSetLayoutCreateInfo.bindingCount = descrSetLayoutBindings.size();
-    descrSetLayoutCreateInfo.pBindings = descrSetLayoutBindings.data();
+	descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descrSetLayoutCreateInfo.pNext = nullptr;
+	descrSetLayoutCreateInfo.flags = VK_FLAGS_NONE;
+	descrSetLayoutCreateInfo.bindingCount = descrSetLayoutBindings.size();
+	descrSetLayoutCreateInfo.pBindings = descrSetLayoutBindings.data();
 
 	VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDescriptorSetLayout(vkCtx.logicalDevice, &descrSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
 
 
 	VkPushConstantRange pushConstants = {};
-    pushConstants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
-    pushConstants.offset = 0;
-    pushConstants.size = sizeof(BoidsGlobals);
+	pushConstants.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+	pushConstants.offset = 0;
+	pushConstants.size = sizeof(BoidsGlobals);
 
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutCreateInfo.pNext = nullptr;
-    pipelineLayoutCreateInfo.flags = VK_FLAGS_NONE;
-    pipelineLayoutCreateInfo.setLayoutCount = 1;
-    pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
-    pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
-    pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstants;
+	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCreateInfo.pNext = nullptr;
+	pipelineLayoutCreateInfo.flags = VK_FLAGS_NONE;
+	pipelineLayoutCreateInfo.setLayoutCount = 1;
+	pipelineLayoutCreateInfo.pSetLayouts = &descriptorSetLayout;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = 1;
+	pipelineLayoutCreateInfo.pPushConstantRanges = &pushConstants;
 
 	VkPipelineLayout computePipeLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreatePipelineLayout(vkCtx.logicalDevice, &pipelineLayoutCreateInfo, nullptr, &computePipeLayout));
 
 	VkComputePipelineCreateInfo computePipeCreateInfo = {};
-    computePipeCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
-    computePipeCreateInfo.pNext = nullptr;
-    computePipeCreateInfo.flags = VK_FLAGS_NONE;
-    computePipeCreateInfo.stage = shaderStageCreateInfo;
-    computePipeCreateInfo.layout = computePipeLayout;
+	computePipeCreateInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+	computePipeCreateInfo.pNext = nullptr;
+	computePipeCreateInfo.flags = VK_FLAGS_NONE;
+	computePipeCreateInfo.stage = shaderStageCreateInfo;
+	computePipeCreateInfo.layout = computePipeLayout;
 
 	VkPipeline computePipeline = VK_NULL_HANDLE;
 	VK_CALL(vkCreateComputePipelines(vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &computePipeCreateInfo, nullptr, &computePipeline));
 
 	VkDescriptorPoolSize poolSizes[2] = {};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[0].descriptorCount = 4;
+	poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+	poolSizes[0].descriptorCount = 4;
 
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[1].descriptorCount = 1;
+	poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	poolSizes[1].descriptorCount = 1;
 
 	VkDescriptorPoolCreateInfo descriptorPoolCreateInfo = {};
-    descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descriptorPoolCreateInfo.pNext = nullptr;
-    descriptorPoolCreateInfo.maxSets = 5;
-    descriptorPoolCreateInfo.poolSizeCount = 2;
-    descriptorPoolCreateInfo.pPoolSizes = poolSizes;
+	descriptorPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	descriptorPoolCreateInfo.pNext = nullptr;
+	descriptorPoolCreateInfo.maxSets = 5;
+	descriptorPoolCreateInfo.poolSizeCount = 2;
+	descriptorPoolCreateInfo.pPoolSizes = poolSizes;
 	
 	VkDescriptorPool descrPool = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDescriptorPool(vkCtx.logicalDevice, &descriptorPoolCreateInfo, nullptr, &descrPool));
 	
 	VkDescriptorSetAllocateInfo descrSetAllocInfo = {};
-    descrSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descrSetAllocInfo.pNext = nullptr;
-    descrSetAllocInfo.descriptorPool = descrPool;
-    descrSetAllocInfo.descriptorSetCount = 1;
-    descrSetAllocInfo.pSetLayouts = &descriptorSetLayout;
+	descrSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descrSetAllocInfo.pNext = nullptr;
+	descrSetAllocInfo.descriptorPool = descrPool;
+	descrSetAllocInfo.descriptorSetCount = 1;
+	descrSetAllocInfo.pSetLayouts = &descriptorSetLayout;
 
 	VkDescriptorSet descrSet = VK_NULL_HANDLE;
 	VK_CALL(vkAllocateDescriptorSets(vkCtx.logicalDevice, &descrSetAllocInfo, &descrSet));
@@ -474,15 +474,15 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 		// if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
 		// {
 		// 	VkBufferMemoryBarrier acquireBarrier = {};
-    	// 	acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    	// 	acquireBarrier.pNext = nullptr;
-    	// 	acquireBarrier.srcAccessMask = 0;
-    	// 	acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    	// 	acquireBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
-    	// 	acquireBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-	    // 	acquireBarrier.buffer = instanceMatricesDeviceBuffer.buffer;
-	    // 	acquireBarrier.offset = 0;
-	    // 	acquireBarrier.size = instanceMatricesDeviceBuffer.bufferSize;
+		// 	acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+		// 	acquireBarrier.pNext = nullptr;
+		// 	acquireBarrier.srcAccessMask = 0;
+		// 	acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+		// 	acquireBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
+		// 	acquireBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+		// 	acquireBarrier.buffer = instanceMatricesDeviceBuffer.buffer;
+		// 	acquireBarrier.offset = 0;
+		// 	acquireBarrier.size = instanceMatricesDeviceBuffer.bufferSize;
 
 		// 	vkCmdPipelineBarrier(cmdBuffer,
 		// 		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
@@ -501,15 +501,15 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
 		{
 			VkBufferMemoryBarrier releaseBarrier = {};
-    		releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    		releaseBarrier.pNext = nullptr;
-    		releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    		releaseBarrier.dstAccessMask = 0;
-    		releaseBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-    		releaseBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
-	    	releaseBarrier.buffer = instanceMatricesDeviceBuffer.buffer;
-	    	releaseBarrier.offset = 0;
-	    	releaseBarrier.size = instanceMatricesDeviceBuffer.bufferSize;
+			releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			releaseBarrier.pNext = nullptr;
+			releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			releaseBarrier.dstAccessMask = 0;
+			releaseBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+			releaseBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+			releaseBarrier.buffer = instanceMatricesDeviceBuffer.buffer;
+			releaseBarrier.offset = 0;
+			releaseBarrier.size = instanceMatricesDeviceBuffer.bufferSize;
 
 			vkCmdPipelineBarrier(cmdBuffer,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -575,20 +575,20 @@ DebugPipeData createDebugPipeline(
 	shaderStageCreateInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/debugFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	
 	VkVertexInputBindingDescription bindingDescr = {};
-    bindingDescr.binding = 0;
-    bindingDescr.stride = sizeof(DebugInfo);
-    bindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	bindingDescr.binding = 0;
+	bindingDescr.stride = sizeof(DebugInfo);
+	bindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	
 	std::array<VkVertexInputAttributeDescription, 2> vertexAttribs = {};
-    vertexAttribs[0].location = 0;
-    vertexAttribs[0].binding = 0;
-    vertexAttribs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexAttribs[0].offset = offsetof(DebugInfo, linePoint);
+	vertexAttribs[0].location = 0;
+	vertexAttribs[0].binding = 0;
+	vertexAttribs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertexAttribs[0].offset = offsetof(DebugInfo, linePoint);
 
-    vertexAttribs[1].location = 1;
-    vertexAttribs[1].binding = 0;
-    vertexAttribs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexAttribs[1].offset = offsetof(DebugInfo, color);
+	vertexAttribs[1].location = 1;
+	vertexAttribs[1].binding = 0;
+	vertexAttribs[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+	vertexAttribs[1].offset = offsetof(DebugInfo, color);
 
 	VkPipelineVertexInputStateCreateInfo vertexInpuStateCreateInfo = 
 		fillVertexInputStateCreateInfo(&bindingDescr, 1, vertexAttribs.data(), vertexAttribs.size());
@@ -621,38 +621,38 @@ DebugPipeData createDebugPipeline(
 		fillDynamicStateCreateInfo(dynamicStates.data(), dynamicStates.size());
 
 	VkDescriptorSetLayoutBinding descrSetLayoutBinding = {};
-    descrSetLayoutBinding.binding = 0;
-    descrSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descrSetLayoutBinding.descriptorCount = 1;
-    descrSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    descrSetLayoutBinding.pImmutableSamplers = nullptr;
+	descrSetLayoutBinding.binding = 0;
+	descrSetLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descrSetLayoutBinding.descriptorCount = 1;
+	descrSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	descrSetLayoutBinding.pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo descrSetLayoutCreateInfo = {};
-    descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descrSetLayoutCreateInfo.bindingCount = 1;
-    descrSetLayoutCreateInfo.pBindings = &descrSetLayoutBinding;
+	descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descrSetLayoutCreateInfo.bindingCount = 1;
+	descrSetLayoutCreateInfo.pBindings = &descrSetLayoutBinding;
 
 	VkDescriptorSetLayout descrSetLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDescriptorSetLayout(vkCtx.logicalDevice, &descrSetLayoutCreateInfo, nullptr, &descrSetLayout));
 	VkPipelineLayout pipeLayout = createPipelineLayout(vkCtx.logicalDevice, &descrSetLayout, 1, nullptr, 0);
 
 	VkGraphicsPipelineCreateInfo debugPipeCreateInfo = {};
-    debugPipeCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    debugPipeCreateInfo.pNext = nullptr;
-    debugPipeCreateInfo.stageCount = 2;
-    debugPipeCreateInfo.pStages = shaderStageCreateInfos;
-    debugPipeCreateInfo.pVertexInputState = &vertexInpuStateCreateInfo;
-    debugPipeCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
-    debugPipeCreateInfo.pTessellationState = nullptr;
-    debugPipeCreateInfo.pViewportState = &viewportStateCreateInfo;
-    debugPipeCreateInfo.pRasterizationState = &rasterStateCreateInfo;
-    debugPipeCreateInfo.pMultisampleState = &msStateCreateInfo;
-    debugPipeCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
-    debugPipeCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
-    debugPipeCreateInfo.pDynamicState = &dynamicStateCreateInfo;
-    debugPipeCreateInfo.layout = pipeLayout;
-    debugPipeCreateInfo.renderPass = renderPass;
-    debugPipeCreateInfo.subpass = 0;
+	debugPipeCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	debugPipeCreateInfo.pNext = nullptr;
+	debugPipeCreateInfo.stageCount = 2;
+	debugPipeCreateInfo.pStages = shaderStageCreateInfos;
+	debugPipeCreateInfo.pVertexInputState = &vertexInpuStateCreateInfo;
+	debugPipeCreateInfo.pInputAssemblyState = &inputAssemblyStateCreateInfo;
+	debugPipeCreateInfo.pTessellationState = nullptr;
+	debugPipeCreateInfo.pViewportState = &viewportStateCreateInfo;
+	debugPipeCreateInfo.pRasterizationState = &rasterStateCreateInfo;
+	debugPipeCreateInfo.pMultisampleState = &msStateCreateInfo;
+	debugPipeCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+	debugPipeCreateInfo.pColorBlendState = &colorBlendStateCreateInfo;
+	debugPipeCreateInfo.pDynamicState = &dynamicStateCreateInfo;
+	debugPipeCreateInfo.layout = pipeLayout;
+	debugPipeCreateInfo.renderPass = renderPass;
+	debugPipeCreateInfo.subpass = 0;
 
 	VkPipeline debugPipeline = VK_NULL_HANDLE;
 	VK_CALL(vkCreateGraphicsPipelines(vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &debugPipeCreateInfo, nullptr, &debugPipeline));
@@ -663,34 +663,34 @@ DebugPipeData createDebugPipeline(
 	descrPoolSize.descriptorCount = 1; 
 
 	VkDescriptorPoolCreateInfo descrPoolCreateInfo = {};
-    descrPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descrPoolCreateInfo.maxSets = 1;
-    descrPoolCreateInfo.poolSizeCount = 1;
-    descrPoolCreateInfo.pPoolSizes = &descrPoolSize;
+	descrPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	descrPoolCreateInfo.maxSets = 1;
+	descrPoolCreateInfo.poolSizeCount = 1;
+	descrPoolCreateInfo.pPoolSizes = &descrPoolSize;
 
 	VkDescriptorPool descrPool = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDescriptorPool(vkCtx.logicalDevice, &descrPoolCreateInfo, nullptr, &descrPool));
 	
 	VkDescriptorSetAllocateInfo descrAllocateInfo = {};
-    descrAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descrAllocateInfo.descriptorPool = descrPool;
-    descrAllocateInfo.descriptorSetCount = 1;
-    descrAllocateInfo.pSetLayouts = &descrSetLayout;
+	descrAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descrAllocateInfo.descriptorPool = descrPool;
+	descrAllocateInfo.descriptorSetCount = 1;
+	descrAllocateInfo.pSetLayouts = &descrSetLayout;
 
 	VkDescriptorSet descrSet = VK_NULL_HANDLE;
 	VK_CALL(vkAllocateDescriptorSets(vkCtx.logicalDevice, &descrAllocateInfo, &descrSet));
 
 	
 	VkWriteDescriptorSet uboWriteDescrSet = {};
-    uboWriteDescrSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    uboWriteDescrSet.dstSet = descrSet;
-    uboWriteDescrSet.dstBinding = 0;
-    uboWriteDescrSet.dstArrayElement = 0;
-    uboWriteDescrSet.descriptorCount = 1;
-    uboWriteDescrSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboWriteDescrSet.pImageInfo = nullptr;
-    uboWriteDescrSet.pBufferInfo = &uboDescrBufferInfo;
-    uboWriteDescrSet.pTexelBufferView = nullptr;
+	uboWriteDescrSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	uboWriteDescrSet.dstSet = descrSet;
+	uboWriteDescrSet.dstBinding = 0;
+	uboWriteDescrSet.dstArrayElement = 0;
+	uboWriteDescrSet.descriptorCount = 1;
+	uboWriteDescrSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	uboWriteDescrSet.pImageInfo = nullptr;
+	uboWriteDescrSet.pBufferInfo = &uboDescrBufferInfo;
+	uboWriteDescrSet.pTexelBufferView = nullptr;
 
 	vkUpdateDescriptorSets(vkCtx.logicalDevice, 1, &uboWriteDescrSet, 0, nullptr);
 
@@ -1295,15 +1295,15 @@ int main(int argc, char** argv)
 		{
 			//acquire barrier to transition ownersip of ssbo buffer to the graphics queue
 			VkBufferMemoryBarrier acquireBarrier = {};
-    		acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    		acquireBarrier.pNext = nullptr;
-    		acquireBarrier.srcAccessMask = 0;
-    		acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    		acquireBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-    		acquireBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
-	    	acquireBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
-	    	acquireBarrier.offset = 0;
-	    	acquireBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
+			acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			acquireBarrier.pNext = nullptr;
+			acquireBarrier.srcAccessMask = 0;
+			acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			acquireBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+			acquireBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+			acquireBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+			acquireBarrier.offset = 0;
+			acquireBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
 
 			vkCmdPipelineBarrier(cmdBuffers[index],
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -1366,15 +1366,15 @@ int main(int argc, char** argv)
 		{
 			//release barrier to transition ownersip of ssbo buffer back to the compute queue
 			VkBufferMemoryBarrier releaseBarrier = {};
-    		releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    		releaseBarrier.pNext = nullptr;
-    		releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
-    		releaseBarrier.dstAccessMask = 0;
-    		releaseBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx; 
-    		releaseBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-	    	releaseBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
-	    	releaseBarrier.offset = 0;
-	    	releaseBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
+			releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			releaseBarrier.pNext = nullptr;
+			releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			releaseBarrier.dstAccessMask = 0;
+			releaseBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx; 
+			releaseBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+			releaseBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+			releaseBarrier.offset = 0;
+			releaseBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
 
 			vkCmdPipelineBarrier(cmdBuffers[index],
 				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
@@ -1386,15 +1386,15 @@ int main(int argc, char** argv)
 			);
 
 			VkBufferMemoryBarrier releaseDebugBarrier = {};
-    		releaseDebugBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    		releaseDebugBarrier.pNext = nullptr;
-    		releaseDebugBarrier.srcAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
-    		releaseDebugBarrier.dstAccessMask = 0;
-    		releaseDebugBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx; 
-    		releaseDebugBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-	    	releaseDebugBarrier.buffer = computeData.debugBuffer.buffer;
-	    	releaseDebugBarrier.offset = 0;
-	    	releaseDebugBarrier.size = computeData.debugBuffer.bufferSize;
+			releaseDebugBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			releaseDebugBarrier.pNext = nullptr;
+			releaseDebugBarrier.srcAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+			releaseDebugBarrier.dstAccessMask = 0;
+			releaseDebugBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx; 
+			releaseDebugBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+			releaseDebugBarrier.buffer = computeData.debugBuffer.buffer;
+			releaseDebugBarrier.offset = 0;
+			releaseDebugBarrier.size = computeData.debugBuffer.bufferSize;
 
 			vkCmdPipelineBarrier(cmdBuffers[index],
 				VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
@@ -1438,10 +1438,10 @@ int main(int argc, char** argv)
 	VkSemaphore computeMayStartSemaphore = createSemaphore(vkCtx.logicalDevice);
 	//Signal the semaphore
 	VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.pNext = nullptr;
-    submitInfo.signalSemaphoreCount = 1;
-    submitInfo.pSignalSemaphores = &computeMayStartSemaphore;
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.pNext = nullptr;
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &computeMayStartSemaphore;
 	VK_CALL(vkQueueSubmit(vkCtx.computeQueue, 1, &submitInfo, computeFence));
 	vkWaitForFences(vkCtx.logicalDevice, 1, &computeFence, VK_TRUE, UINT_MAX);
 	
@@ -1457,15 +1457,15 @@ int main(int argc, char** argv)
 		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
 		{
 			VkBufferMemoryBarrier acquireBarrier = {};
-    		acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    		acquireBarrier.pNext = nullptr;
-    		acquireBarrier.srcAccessMask = 0;
-    		acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    		acquireBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
-    		acquireBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-	    	acquireBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
-	    	acquireBarrier.offset = 0;
-	    	acquireBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
+			acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			acquireBarrier.pNext = nullptr;
+			acquireBarrier.srcAccessMask = 0;
+			acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			acquireBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
+			acquireBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+			acquireBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+			acquireBarrier.offset = 0;
+			acquireBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
 
 			vkCmdPipelineBarrier(computeData.commandBuffer,
 				VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
@@ -1477,15 +1477,15 @@ int main(int argc, char** argv)
 			);
 
 			VkBufferMemoryBarrier acquireDebugBarrier = {};
-    		acquireDebugBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    		acquireDebugBarrier.pNext = nullptr;
-    		acquireDebugBarrier.srcAccessMask = 0;
-    		acquireDebugBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    		acquireDebugBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
-    		acquireDebugBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-	    	acquireDebugBarrier.buffer = computeData.debugBuffer.buffer;
-	    	acquireDebugBarrier.offset = 0;
-	    	acquireDebugBarrier.size = computeData.debugBuffer.bufferSize;
+			acquireDebugBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			acquireDebugBarrier.pNext = nullptr;
+			acquireDebugBarrier.srcAccessMask = 0;
+			acquireDebugBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			acquireDebugBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
+			acquireDebugBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+			acquireDebugBarrier.buffer = computeData.debugBuffer.buffer;
+			acquireDebugBarrier.offset = 0;
+			acquireDebugBarrier.size = computeData.debugBuffer.bufferSize;
 
 			vkCmdPipelineBarrier(computeData.commandBuffer,
 				VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
@@ -1507,15 +1507,15 @@ int main(int argc, char** argv)
 		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
 		{
 			VkBufferMemoryBarrier releaseBarrier = {};
-    		releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    		releaseBarrier.pNext = nullptr;
-    		releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    		releaseBarrier.dstAccessMask = 0;
-    		releaseBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-    		releaseBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
-	    	releaseBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
-	    	releaseBarrier.offset = 0;
-	    	releaseBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
+			releaseBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			releaseBarrier.pNext = nullptr;
+			releaseBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			releaseBarrier.dstAccessMask = 0;
+			releaseBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+			releaseBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+			releaseBarrier.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
+			releaseBarrier.offset = 0;
+			releaseBarrier.size = computeData.instanceTransformsDeviceBuffer.bufferSize;
 
 			vkCmdPipelineBarrier(computeData.commandBuffer,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -1527,15 +1527,15 @@ int main(int argc, char** argv)
 			);
 
 			VkBufferMemoryBarrier releaseDebugBarrier = {};
-    		releaseDebugBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    		releaseDebugBarrier.pNext = nullptr;
-    		releaseDebugBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-    		releaseDebugBarrier.dstAccessMask = 0;
-    		releaseDebugBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-    		releaseDebugBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
-	    	releaseDebugBarrier.buffer = computeData.debugBuffer.buffer;
-	    	releaseDebugBarrier.offset = 0;
-	    	releaseDebugBarrier.size = computeData.debugBuffer.bufferSize;
+			releaseDebugBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+			releaseDebugBarrier.pNext = nullptr;
+			releaseDebugBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+			releaseDebugBarrier.dstAccessMask = 0;
+			releaseDebugBarrier.srcQueueFamilyIndex = vkCtx.computeQueueFamIdx;
+			releaseDebugBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+			releaseDebugBarrier.buffer = computeData.debugBuffer.buffer;
+			releaseDebugBarrier.offset = 0;
+			releaseDebugBarrier.size = computeData.debugBuffer.bufferSize;
 
 			vkCmdPipelineBarrier(computeData.commandBuffer,
 				VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -1563,15 +1563,15 @@ int main(int argc, char** argv)
 		VkPipelineStageFlags computeWaitDstStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
 		VkSubmitInfo computeQueueSumbitInfo = {};
-    	computeQueueSumbitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    	computeQueueSumbitInfo.pNext = nullptr;
-    	computeQueueSumbitInfo.waitSemaphoreCount = 1;
-    	computeQueueSumbitInfo.pWaitSemaphores = &computeMayStartSemaphore;
-    	computeQueueSumbitInfo.pWaitDstStageMask = &computeWaitDstStageMask;
-    	computeQueueSumbitInfo.commandBufferCount = 1;
-    	computeQueueSumbitInfo.pCommandBuffers = &computeData.commandBuffer;
-    	computeQueueSumbitInfo.signalSemaphoreCount = 1;
-    	computeQueueSumbitInfo.pSignalSemaphores = &computeFinishedSemaphore;
+		computeQueueSumbitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		computeQueueSumbitInfo.pNext = nullptr;
+		computeQueueSumbitInfo.waitSemaphoreCount = 1;
+		computeQueueSumbitInfo.pWaitSemaphores = &computeMayStartSemaphore;
+		computeQueueSumbitInfo.pWaitDstStageMask = &computeWaitDstStageMask;
+		computeQueueSumbitInfo.commandBufferCount = 1;
+		computeQueueSumbitInfo.pCommandBuffers = &computeData.commandBuffer;
+		computeQueueSumbitInfo.signalSemaphoreCount = 1;
+		computeQueueSumbitInfo.pSignalSemaphores = &computeFinishedSemaphore;
 
 		VK_CALL(vkQueueSubmit(vkCtx.computeQueue, 1, &computeQueueSumbitInfo, computeFinishedFence));
 

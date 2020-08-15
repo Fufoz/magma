@@ -260,11 +260,11 @@ VkPipelineShaderStageCreateInfo fillShaderStageCreateInfo(
 	VK_CHECK(loadShader(logicalDevice, shaderSource, shaderStage, &shader));
 	
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfo = {};
-    shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    shaderStageCreateInfo.stage = shaderStage;
-    shaderStageCreateInfo.module = shader.handle;
-    shaderStageCreateInfo.pName = "main";
-    shaderStageCreateInfo.pSpecializationInfo = nullptr;
+	shaderStageCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+	shaderStageCreateInfo.stage = shaderStage;
+	shaderStageCreateInfo.module = shader.handle;
+	shaderStageCreateInfo.pName = "main";
+	shaderStageCreateInfo.pSpecializationInfo = nullptr;
 
 	return shaderStageCreateInfo;
 }
@@ -277,10 +277,10 @@ VkPipelineVertexInputStateCreateInfo fillVertexInputStateCreateInfo(
 {
 	VkPipelineVertexInputStateCreateInfo vertexInpuStateCreateInfo = {};
 	vertexInpuStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInpuStateCreateInfo.vertexBindingDescriptionCount = bindingDescrCount;
-    vertexInpuStateCreateInfo.pVertexBindingDescriptions = bindingDescr;
-    vertexInpuStateCreateInfo.vertexAttributeDescriptionCount = attribDescrCount;
-    vertexInpuStateCreateInfo.pVertexAttributeDescriptions = vertexAttribDescr;
+	vertexInpuStateCreateInfo.vertexBindingDescriptionCount = bindingDescrCount;
+	vertexInpuStateCreateInfo.pVertexBindingDescriptions = bindingDescr;
+	vertexInpuStateCreateInfo.vertexAttributeDescriptionCount = attribDescrCount;
+	vertexInpuStateCreateInfo.pVertexAttributeDescriptions = vertexAttribDescr;
 	return vertexInpuStateCreateInfo;
 }
 
@@ -332,9 +332,9 @@ VkPipelineRasterizationStateCreateInfo fillRasterizationStateCreateInfo(
 VkPipelineInputAssemblyStateCreateInfo fillInputAssemblyCreateInfo(VkPrimitiveTopology primitiveTopology)
 {
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = {};
-    inputAssemblyCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-    inputAssemblyCreateInfo.topology = primitiveTopology;
-    inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;
+	inputAssemblyCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+	inputAssemblyCreateInfo.topology = primitiveTopology;
+	inputAssemblyCreateInfo.primitiveRestartEnable = VK_FALSE;
 	return inputAssemblyCreateInfo;
 }
 
@@ -383,8 +383,8 @@ VkPipelineColorBlendStateCreateInfo fillColorBlendStateCreateInfo(const VkPipeli
 VkPipelineDynamicStateCreateInfo fillDynamicStateCreateInfo(VkDynamicState* dynStates, uint32_t statesCount)
 {
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {};
-    dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    dynamicStateCreateInfo.dynamicStateCount = statesCount;
+	dynamicStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+	dynamicStateCreateInfo.dynamicStateCount = statesCount;
 	dynamicStateCreateInfo.pDynamicStates = dynStates;
 	
 	return dynamicStateCreateInfo;
@@ -398,11 +398,11 @@ VkPipelineLayout createPipelineLayout(
 	uint32_t 						pushConstantRangeCount)
 {
 	VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {};
-    pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutCreateInfo.setLayoutCount = descrSetLayoutCount;
-    pipelineLayoutCreateInfo.pSetLayouts = descrSetLayouts;
-    pipelineLayoutCreateInfo.pushConstantRangeCount = pushConstantRangeCount;
-    pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges;
+	pipelineLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutCreateInfo.setLayoutCount = descrSetLayoutCount;
+	pipelineLayoutCreateInfo.pSetLayouts = descrSetLayouts;
+	pipelineLayoutCreateInfo.pushConstantRangeCount = pushConstantRangeCount;
+	pipelineLayoutCreateInfo.pPushConstantRanges = pushConstantRanges;
 
 	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreatePipelineLayout(logicalDevice, &pipelineLayoutCreateInfo, nullptr, &pipelineLayout));

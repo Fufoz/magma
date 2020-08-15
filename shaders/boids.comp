@@ -158,10 +158,6 @@ vec3 findNonBlockingDirection(BoidState boid)
 
 		for(int i = 0; i < Common.spherePointsCount; i++)
 		{
-			// vec4 transformedRaySpherePoint = loadTranslation(boid.position.xyz) * spherePoints[i];
-			// Ray currentRay;
-			// currentRay.origin = transformedRayPosition;
-			// currentRay.direction = normalize(transformedRaySpherePoint.xyz - transformedRayPosition);
 			Ray currentRay;
 			currentRay.origin = boid.position.xyz;
 			currentRay.direction = spherePoints[i].xyz;
