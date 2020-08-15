@@ -561,7 +561,7 @@ inline mat4x4 inverse(const mat4x4& in)
 	float c1 = in.p[8] * in.p[14] - in.p[12] * in.p[10];
 	float c0 = in.p[8] * in.p[13] - in.p[12] * in.p[9];
 
-	float invDet = 1.f / (s0*c5 - s1*c4 + s2*c3 +s3*c2 - s4*c1 + s5*c0);
+	float invDet = 1.f / (s0*c5 - s1*c4 + s2*c3 + s3*c2 - s4*c1 + s5*c0);
 
 	mat4x4 out = {};
 	
@@ -592,8 +592,10 @@ inline mat4x4 transpose(const mat4x4& in)
 {
 	mat4x4 out = {};
 
-	for(uint8_t i = 0; i < 4; i++) {
-		for(uint8_t j = 0; j < 4; j++) {
+	for(uint8_t i = 0; i < 4; i++) 
+	{
+		for(uint8_t j = 0; j < 4; j++) 
+		{
 			out.p[j + i * 4] = in.p[j * 4 + i];
 		}
 	}
@@ -604,8 +606,10 @@ inline mat3x3 transpose(const mat3x3& in)
 {
 	mat3x3 out = {};
 
-	for(uint8_t i = 0; i < 3; i++) {
-		for(uint8_t j = 0; j < 3; j++) {
+	for(uint8_t i = 0; i < 3; i++) 
+	{
+		for(uint8_t j = 0; j < 3; j++) 
+		{
 			out.p[j + i * 3] = in.p[j * 3 + i];
 		}
 	}
@@ -616,8 +620,10 @@ inline void transposeInplace(mat4x4& in)
 {
 	mat4x4 tmp = in;
 
-	for(uint8_t i = 0; i < 4; i++) {
-		for(uint8_t j = 0; j < 4; j++) {
+	for(uint8_t i = 0; i < 4; i++) 
+	{
+		for(uint8_t j = 0; j < 4; j++) 
+		{
 			in.p[j + i * 4] = tmp.p[j * 4 + i];
 		}
 	}
@@ -628,13 +634,17 @@ inline mat4x4 operator*(const mat4x4& left, const mat4x4& right)
 	mat4x4 result = {};
 	const uint8_t stride = 4;
 
-	for(uint8_t i = 0; i < 4; i++) {
-		for(uint8_t j = 0; j < 4; j++) {
-			for(uint8_t k = 0; k < 4; k++) {
+	for(uint8_t i = 0; i < 4; i++) 
+	{
+		for(uint8_t j = 0; j < 4; j++) 
+		{
+			for(uint8_t k = 0; k < 4; k++) 
+			{
 				result.p[j + stride * i] += left.p[k + stride * i] * right.p[k * stride + j];
 			}
 		}
 	}
+	
 	return result;
 }
 
@@ -895,6 +905,14 @@ inline Vec4 axisAngleFromQuat(const Quat& quat)
 	out.xyz = quat.complex / sqrt(1 - quat.w * quat.w);
 	out.w = 2 * acos(quat.w);
 	return out;
+}
+
+inline float distanceBetweenPoints(const Vec3& first, const Vec3& second)
+{
+	float xdelta = second.x - first.x;
+	float ydelta = second.y - first.y;
+	float zdelta = second.z - first.z;
+	return sqrt(xdelta * xdelta + ydelta * ydelta + zdelta * zdelta);
 }
 
 //spherical linear interpolation

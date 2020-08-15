@@ -53,7 +53,6 @@ struct Shader
 
 struct PipelineState
 {
-	Shader shaders[2];
 	VkPipeline pipeline;
 	VkPipelineLayout pipelineLayout;
 	VkRenderPass renderPass;

@@ -1,5 +1,8 @@
 #version 450
 
+#include "quaternion.h.glsl"
+#include "debug.h.glsl"
+
 struct BoidState
 {
 	vec4 orientation;
@@ -8,21 +11,45 @@ struct BoidState
 	vec4 up;
 };
 
+struct Plane
+{
+	vec4 normal;
+	vec4 point;
+};
+
 layout(push_constant) uniform BoidsCommon
 {
 	float minDistance;
 	float flockRadius;
 	float tankSize;
+	float deltaTime;
 	int   boidsCount;
+	int   spherePointsCount;
 }Common;
 
 layout(std430, set = 0, binding = 0) buffer BoidsState {
 	BoidState states[];
 };
 
-layout(std430, set = 0, binding = 3) writeonly buffer InstanceInfos {
+//later gets passed to the vertex shader
+layout(std430, set = 0, binding = 1) writeonly buffer InstanceInfos {
 	mat4 instanceTransforms[];
 };
+
+layout(std430, set = 0, binding = 2) buffer SpherePoints {
+	vec4 spherePoints[];
+};
+
+layout(set = 0, binding = 3) uniform TankPlanes {
+	Plane planes[6];
+}tankPlanes;
+
+//later gets passed as input to debug vertex shader
+layout(std430, set = 0, binding = 4) writeonly buffer DebugVectors {
+	DebugInfo debugVectors[];
+};
+
+layout(local_size_x_id = 100) in;
 
 //rule 1 separation ( steer away from other boids if a distance to them is less than or equal to MIN_DISTANCE )
 //rule 2 alignment ( look approximately at the same direction as any other boids)
@@ -32,70 +59,174 @@ layout(std430, set = 0, binding = 3) writeonly buffer InstanceInfos {
 // 
 // }
 
-vec4 quatFromAxisAndAngle(vec3 axisOfRotation, float radians)
+// bool rayPlaneIntersect(vec4 ray)
+// {
+// 
+// }
+
+
+float distanceBetween(vec3 first, vec3 second)
 {
-	vec4 quat;
-	quat.xyz = axisOfRotation * sin(radians/2.f);
-	quat.w = cos(radians/2.f);
-	return quat;
+	float xdelta = second.x - first.x;
+	float ydelta = second.y - first.y;
+	float zdelta = second.z - first.z;
+
+	return sqrt(xdelta * xdelta + ydelta * ydelta + zdelta * zdelta);
 }
 
-vec4 quatMultiply(vec4 left, vec4 right)
+vec3 separation(BoidState currentBoid, uint currentBoidId)
 {
-	vec4 outQuat;
-	outQuat.xyz = left.xyz * right.w + right.xyz * left.w + cross(left.xyz, right.xyz);
-	outQuat.w = left.w * right.w - dot(left.xyz, right.xyz);
-	return outQuat;
+	vec3 shiftDir = vec3(0.0, 0.0, 0.0);
+	for(int i = 0; i < Common.boidsCount; i++)
+	{
+		if(i != currentBoidId)
+		{
+			if(distanceBetween(currentBoid.position.xyz, states[i].position.xyz) < Common.minDistance)
+			{
+				shiftDir += (currentBoid.position - states[i].position).xyz;
+			}
+		}
+	}
+
+	return shiftDir;
 }
 
-vec4 rotateFromTo(vec3 from, vec3 to)
+struct Ray
 {
-	vec3 fromNormalised = normalize(from);
-	vec3 toNormalised = normalize(to);
+	vec3 origin;
+	vec3 direction;
+};
 
-	float angleInRadians = acos(dot(fromNormalised, toNormalised));
-	vec3 axisOfRotation = normalize(cross(fromNormalised, toNormalised));
-	return quatFromAxisAndAngle(axisOfRotation, angleInRadians);
+bool rayPlaneIntersect(Ray ray, Plane plane, out float distance)
+{
+	float denominator = dot(ray.direction.xyz, plane.normal.xyz);
+	if(denominator > 0)
+	{
+		return false;
+	}
+
+	if(abs(denominator) < 0.001)
+	{
+		return false;
+	}
+
+	float nominator = dot((plane.point.xyz - ray.origin), plane.normal.xyz);
+	float tmin = nominator / denominator;
+	if(tmin < 0)
+	{
+		return false;
+	}
+
+	distance = tmin;
+	return true;
 }
 
-mat4 loadTranslation(vec3 translationVec)
+vec3 findNonBlockingDirection(BoidState boid)
 {
-	mat4 translationMat = mat4(1.0);
-	translationMat[3] = vec4(translationVec, 1.0);
-	return translationMat;
+	Ray forwardRay;
+	forwardRay.origin = boid.position.xyz;
+	forwardRay.direction = boid.direction.xyz;
+
+	Ray bestRay = forwardRay;
+	bool startSearchingDirection = false;
+	float largestUnobstructedDistance = 0;
+	int planeId = -1;
+
+	for(int j = 0; j < 6; j++)
+	{
+		float intersectionDistance;
+		if(rayPlaneIntersect(forwardRay, tankPlanes.planes[j], intersectionDistance))
+		{
+			if(intersectionDistance < Common.minDistance)
+			{
+				// largestUnobstructedDistance = intersectionDistance;
+				startSearchingDirection = true;
+				planeId = j;
+				break;
+			}
+		}
+	}
+
+	if(!startSearchingDirection)
+	{
+		return forwardRay.direction;
+	}
+	else
+	{
+		// float largestUnobstructedDistance = 0;	
+		vec3 transformedRayPosition = boid.position.xyz;
+
+		for(int i = 0; i < Common.spherePointsCount; i++)
+		{
+			// vec4 transformedRaySpherePoint = loadTranslation(boid.position.xyz) * spherePoints[i];
+			// Ray currentRay;
+			// currentRay.origin = transformedRayPosition;
+			// currentRay.direction = normalize(transformedRaySpherePoint.xyz - transformedRayPosition);
+			Ray currentRay;
+			currentRay.origin = boid.position.xyz;
+			currentRay.direction = spherePoints[i].xyz;
+
+			//discard rays that are behind fish forward direction
+			if(dot(forwardRay.direction, currentRay.direction) < 0)
+			{
+				continue;
+			}
+
+			//loop over each plane and find closest intersection distance
+			bool intersectionFound = false;
+			for(int j = 0; j < 6; j++)
+			{
+				float intersectionDistance;
+				if(rayPlaneIntersect(currentRay, tankPlanes.planes[j], intersectionDistance))
+				{
+					if(intersectionDistance > largestUnobstructedDistance && intersectionDistance < Common.minDistance)
+					// if(intersectionDistance > largestUnobstructedDistance)
+					{
+						largestUnobstructedDistance = intersectionDistance;
+						intersectionFound = true;
+					}
+				}
+			}
+
+			if(intersectionFound)
+			{
+				bestRay = currentRay;
+			}
+			else
+			{
+				return currentRay.direction;
+			}
+
+		}//loop
+	}
+
+	return bestRay.direction;
 }
 
-
-vec4 axisAngleFromQuat(vec4 quat)
+void fillDebugData(uint gx, vec3 nonBlockDir)
 {
-	vec4 info;
-	info.xyz = quat.xyz / sqrt(1 - quat.w * quat.w);
-	info.w = 2 * acos(quat.w);
-	return info;
+	vec4 upColor = vec4(1.0, 0.0, 0.0, 0.0);
+	vec4 forwardColor = vec4(0.0, 1.0, 0.0, 0.0);
+	vec4 nonBlockColor = vec4(0.494, 0.509, 0.925, 0.0);
+
+	float scaleCoeff = 4.f;
+
+	debugVectors[gx*6].linePoint = states[gx].position;
+	debugVectors[gx*6].color = upColor;
+	debugVectors[gx*6 + 1].linePoint = states[gx].position + 3*states[gx].up;
+	debugVectors[gx*6 + 1].color = upColor;
+
+	debugVectors[gx*6 + 2].linePoint = states[gx].position;
+	debugVectors[gx*6 + 2].color = forwardColor;
+	debugVectors[gx*6 + 3].linePoint = states[gx].position + 3*states[gx].direction;
+	debugVectors[gx*6 + 3].color = forwardColor;
+
+
+	debugVectors[gx*6 + 4].linePoint = states[gx].position;
+	debugVectors[gx*6 + 4].color = nonBlockColor;
+	debugVectors[gx*6 + 5].linePoint = states[gx].position + 3*vec4(nonBlockDir, 1.0);
+	debugVectors[gx*6 + 5].color = nonBlockColor;
 }
-
-mat4 quatToRotationMat(vec4 quat)
-{
-	mat4 outputMat = mat4(1.0);
-
-	float xx = quat.x * quat.x;
-	float yy = quat.y * quat.y;
-	float zz = quat.z * quat.z;
-	float xy = quat.x * quat.y;
-	float xz = quat.x * quat.z;
-	float yz = quat.y * quat.z;
-	float wz = quat.w * quat.z;
-	float wy = quat.w * quat.y;
-	float wx = quat.w * quat.x;
-
-	outputMat[0].xyz = vec3(1 - 2 * yy - 2 * zz, 2 * xy + 2 * wz, 2 * xz - 2 * wy);
-	outputMat[1].xyz = vec3(2 * xy - 2 * wz, 1 - 2 * xx - 2 * zz, 2 * yz + 2 * wx);
-	outputMat[2].xyz = vec3(2 * xz + 2 * wy, 2 * yz - 2 * wx, 1 - 2 * xx - 2 * yy);
-
-	return outputMat;
-}
-
-layout(local_size_x_id = 100) in;
 
 void main()
 {	
@@ -105,23 +236,25 @@ void main()
 		return;
 	}
 
-	vec4 previousDirection = states[gx].direction;
-	vec4 previousPosition = states[gx].position;
+	vec3 nonBlockingDir = findNonBlockingDirection(states[gx]);
+	vec3 shiftedDir = separation(states[gx], gx);
+	
+	vec3 previousDirection = states[gx].direction.xyz;
+	
+	states[gx].orientation = quatMultiply(rotateFromTo(previousDirection, nonBlockingDir), states[gx].orientation);
+	
+	mat4 rotMat = quatToRotationMat(rotateFromTo(previousDirection, nonBlockingDir));
+	
+	states[gx].direction = rotMat * vec4(states[gx].direction.xyz, 1.0);
+	states[gx].up = rotMat * states[gx].up;
+	states[gx].position += 0.05 * (states[gx].direction);
+	
+	//fill debug data
+	fillDebugData(gx, nonBlockingDir);
 
-	//tank collision
-	if(abs(states[gx].position.x) >= Common.tankSize ||
-		abs(states[gx].position.y) >= Common.tankSize ||
-		abs(states[gx].position.z) >= Common.tankSize)
-	{//box collision
-		states[gx].direction = -previousDirection;
-	 	states[gx].orientation = quatMultiply(
-			quatFromAxisAndAngle(states[gx].up.xyz, radians(180)),
-			states[gx].orientation);
-
-	}
-
-	states[gx].position += 0.05 * states[gx].direction;
+	
 	instanceTransforms[gx] = 
-		loadTranslation(states[gx].position.xyz) * quatToRotationMat(states[gx].orientation);
+		loadTranslation(states[gx].position.xyz) *
+		quatToRotationMat(states[gx].orientation);
 	
 }

@@ -284,6 +284,8 @@ static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkQueueFlag
 		}
 	}
 	
+	VkPhysicalDeviceFeatures deviceFeatures = {};
+	vkGetPhysicalDeviceFeatures(physicalDevice, &deviceFeatures);
 
 	VkDeviceCreateInfo deviceCreateInfo = {};
 	deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -295,7 +297,7 @@ static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkQueueFlag
 	deviceCreateInfo.ppEnabledLayerNames = nullptr;
 	deviceCreateInfo.enabledExtensionCount = deviceExtSize;
 	deviceCreateInfo.ppEnabledExtensionNames = desiredDeviceExtensions;
-	deviceCreateInfo.pEnabledFeatures = nullptr;
+	deviceCreateInfo.pEnabledFeatures = &deviceFeatures;
 
 	VkDevice logicalDevice = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDevice(physicalDevice, &deviceCreateInfo, nullptr, &logicalDevice));
@@ -399,7 +401,7 @@ VkBool32 initVulkanGlobalContext(
 	generalInfo->graphicsQueue = graphicsQueue;
 	generalInfo->computeQueue = computeQueue;
 	generalInfo->deviceProps = deviceProps;
-	
+	uint32_t pushConstantSize = deviceProps.limits.maxPushConstantsSize;
 	return VK_TRUE;
 }
 

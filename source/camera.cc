@@ -44,7 +44,6 @@ void fpsCameraUpdate(const WindowInfo& window, float deltaTime, FPSCamera* camer
 	if(isBtnPressed(KeyBoardBtn::LeftCtrl))
 		position -= cameraSpeed * Vec3{0.f, 1.f, 0.f};
 
-	//magma::log::debug("forward : {} {} {}", forward.x, forward.y, forward.z);
 	magma::log::debug("position: {}", position);
 
 	camera->viewTransform = lookAt(camera->position, camera->position + camera->direction);

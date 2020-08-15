@@ -14,8 +14,10 @@
 
 #include <meshoptimizer.h>
 
-#include "logging.h"
 #include <algorithm>
+
+#include "logging.h"
+
 bool loadTexture(const char* path, TextureInfo* out, bool flipImage)
 {
 	int twidth;
