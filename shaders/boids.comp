@@ -17,6 +17,12 @@ struct Plane
 	vec4 point;
 };
 
+struct Ray
+{
+	vec3 origin;
+	vec3 direction;
+};
+
 layout(push_constant) uniform BoidsCommon
 {
 	float minDistance;
@@ -91,11 +97,45 @@ vec3 separation(BoidState currentBoid, uint currentBoidId)
 	return shiftDir;
 }
 
-struct Ray
+float planeSDF(Plane plane, vec3 point)
 {
-	vec3 origin;
-	vec3 direction;
-};
+	return dot(point - plane.point.xyz, plane.normal.xyz);
+}
+
+bool sphereCast(Ray ray, float sphereRadius, float maxDistance, out float closestDistance)
+{
+	float t = 1.f;
+	float delta = 0.1f;
+
+	int planeCount = 6;
+	float minDistance = maxDistance;//max float
+	closestDistance = maxDistance;
+	while(t < maxDistance)
+	{
+		float sphereDelta = 0.f;
+		for(int i = 0; i < planeCount; i++)
+		{
+			float distance = planeSDF(tankPlanes.planes[i], ray.origin + ray.direction * (t));
+
+			if(distance > 0 && distance < minDistance)
+			{
+				minDistance = distance;
+				closestDistance = distance;
+				sphereDelta = distance;
+			}
+		}
+
+		t += max(delta, sphereDelta);
+	}
+
+	if(minDistance < sphereRadius)
+	{
+		return true;
+	}
+
+	return false;
+}
+
 
 bool rayPlaneIntersect(Ray ray, Plane plane, out float distance)
 {
@@ -121,79 +161,57 @@ bool rayPlaneIntersect(Ray ray, Plane plane, out float distance)
 	return true;
 }
 
+bool isAboutToCollide(BoidState boid)
+{
+	Ray forwardRay;
+	forwardRay.origin = boid.position.xyz;
+	forwardRay.direction = boid.direction.xyz;
+	float minDistance = 0.f;
+	return sphereCast(forwardRay, 3.f, Common.minDistance, minDistance);
+}
+
 vec3 findNonBlockingDirection(BoidState boid)
 {
 	Ray forwardRay;
 	forwardRay.origin = boid.position.xyz;
 	forwardRay.direction = boid.direction.xyz;
 
-	Ray bestRay = forwardRay;
-	bool startSearchingDirection = false;
+	vec3 transformedRayPosition = boid.position.xyz;
 	float largestUnobstructedDistance = 0;
-	int planeId = -1;
+	
+	Ray bestRay = forwardRay;
+	
+	mat4 rotMat = quatToRotationMat(boid.orientation);
+	float maxDistance = 0;
+	// int discardCount = 0;
 
-	for(int j = 0; j < 6; j++)
+	for(int i = 0; i < Common.spherePointsCount; i++)
 	{
-		float intersectionDistance;
-		if(rayPlaneIntersect(forwardRay, tankPlanes.planes[j], intersectionDistance))
+		Ray currentRay;
+		currentRay.origin = boid.position.xyz;
+		// currentRay.direction =  spherePoints[i].xyz;
+		currentRay.direction = (rotMat * spherePoints[i]).xyz;
+
+		//discard rays that are behind fish forward direction
+		if(dot(forwardRay.direction, currentRay.direction) < -0.5)
 		{
-			if(intersectionDistance < Common.minDistance)
-			{
-				// largestUnobstructedDistance = intersectionDistance;
-				startSearchingDirection = true;
-				planeId = j;
-				break;
-			}
+			// discardCount++;
+			continue;
 		}
-	}
-
-	if(!startSearchingDirection)
-	{
-		return forwardRay.direction;
-	}
-	else
-	{
-		// float largestUnobstructedDistance = 0;	
-		vec3 transformedRayPosition = boid.position.xyz;
-
-		for(int i = 0; i < Common.spherePointsCount; i++)
+	
+		float hitDistance = 0.f;
+		if(sphereCast(currentRay, 3.f, Common.minDistance, hitDistance))
 		{
-			Ray currentRay;
-			currentRay.origin = boid.position.xyz;
-			currentRay.direction = spherePoints[i].xyz;
-
-			//discard rays that are behind fish forward direction
-			if(dot(forwardRay.direction, currentRay.direction) < 0)
+			if(hitDistance > maxDistance)
 			{
-				continue;
-			}
-
-			//loop over each plane and find closest intersection distance
-			bool intersectionFound = false;
-			for(int j = 0; j < 6; j++)
-			{
-				float intersectionDistance;
-				if(rayPlaneIntersect(currentRay, tankPlanes.planes[j], intersectionDistance))
-				{
-					if(intersectionDistance > largestUnobstructedDistance && intersectionDistance < Common.minDistance)
-					// if(intersectionDistance > largestUnobstructedDistance)
-					{
-						largestUnobstructedDistance = intersectionDistance;
-						intersectionFound = true;
-					}
-				}
-			}
-
-			if(intersectionFound)
-			{
+				maxDistance = hitDistance;
 				bestRay = currentRay;
 			}
-			else
-			{
-				return currentRay.direction;
-			}
-
-		}//loop
+		}
+		else
+		{
+			return currentRay.direction;
+		}
 	}
 
 	return bestRay.direction;
@@ -205,22 +223,22 @@ void fillDebugData(uint gx, vec3 nonBlockDir)
 	vec4 forwardColor = vec4(0.0, 1.0, 0.0, 0.0);
 	vec4 nonBlockColor = vec4(0.494, 0.509, 0.925, 0.0);
 
-	float scaleCoeff = 4.f;
+	float scaleCoeff = 3.f;
 
 	debugVectors[gx*6].linePoint = states[gx].position;
 	debugVectors[gx*6].color = upColor;
-	debugVectors[gx*6 + 1].linePoint = states[gx].position + 3*states[gx].up;
+	debugVectors[gx*6 + 1].linePoint = states[gx].position + scaleCoeff*states[gx].up;
 	debugVectors[gx*6 + 1].color = upColor;
 
 	debugVectors[gx*6 + 2].linePoint = states[gx].position;
 	debugVectors[gx*6 + 2].color = forwardColor;
-	debugVectors[gx*6 + 3].linePoint = states[gx].position + 3*states[gx].direction;
+	debugVectors[gx*6 + 3].linePoint = states[gx].position + scaleCoeff*states[gx].direction;
 	debugVectors[gx*6 + 3].color = forwardColor;
 
 
 	debugVectors[gx*6 + 4].linePoint = states[gx].position;
 	debugVectors[gx*6 + 4].color = nonBlockColor;
-	debugVectors[gx*6 + 5].linePoint = states[gx].position + 3*vec4(nonBlockDir, 1.0);
+	debugVectors[gx*6 + 5].linePoint = states[gx].position + scaleCoeff*vec4(nonBlockDir, 1.0);
 	debugVectors[gx*6 + 5].color = nonBlockColor;
 }
 
@@ -231,26 +249,39 @@ void main()
 	{
 		return;
 	}
-
-	vec3 nonBlockingDir = findNonBlockingDirection(states[gx]);
-	vec3 shiftedDir = separation(states[gx], gx);
-	
 	vec3 previousDirection = states[gx].direction.xyz;
+	vec3 newDirection = previousDirection;
+	float step = 0.1f;
 	
-	states[gx].orientation = quatMultiply(rotateFromTo(previousDirection, nonBlockingDir), states[gx].orientation);
+	// if(abs(states[gx].position.x) > Common.tankSize /2.f ||
+	// 	abs(states[gx].position.y) > Common.tankSize /2.f ||
+	// 	abs(states[gx].position.z) > Common.tankSize /2.f) {
+
+	// 	step = 0.f;
+	// }
+
+	if(isAboutToCollide(states[gx]))
+	{
+		// if(newDirection.z < -0.99)
+		// 	step = 0.f;
+		vec3 nonBlockingDir = findNonBlockingDirection(states[gx]);
+		newDirection = previousDirection + 0.1 * (nonBlockingDir - previousDirection);
+	}
+
+	states[gx].orientation = quatMultiply(rotateFromTo(previousDirection, newDirection), states[gx].orientation);
 	
-	mat4 rotMat = quatToRotationMat(rotateFromTo(previousDirection, nonBlockingDir));
+	mat4 rotMat = quatToRotationMat(rotateFromTo(previousDirection, newDirection));
 	
 	states[gx].direction = rotMat * vec4(states[gx].direction.xyz, 1.0);
 	states[gx].up = rotMat * states[gx].up;
-	states[gx].position += 0.05 * (states[gx].direction);
+
+	states[gx].position += step * (states[gx].direction);
 	
-	//fill debug data
-	fillDebugData(gx, nonBlockingDir);
+	fillDebugData(gx, newDirection);
 
 	
 	instanceTransforms[gx] = 
 		loadTranslation(states[gx].position.xyz) *
 		quatToRotationMat(states[gx].orientation);
-	
+
 }

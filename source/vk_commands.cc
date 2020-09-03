@@ -1,6 +1,6 @@
 #include "vk_commands.h"
 
-VkCommandPool createCommandPool(VulkanGlobalContext& vkCtx, VkCommandPoolCreateFlags commandPoolFlags)
+VkCommandPool createCommandPool(const VulkanGlobalContext& vkCtx, VkCommandPoolCreateFlags commandPoolFlags)
 {
 	//creating command buffer for transfer operation
 	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};

@@ -29,14 +29,19 @@ vec4 rotateFromTo(vec3 from, vec3 to)
 	float angleInRadians = acos(dot(fromNormalised, toNormalised));
 
 	//if vectors are collinear
-	if(abs(angleInRadians) < 0.02)
+	if(abs(degrees(angleInRadians)) < 1)
 	{
 		return unitQuaternion();
 	}
-
-	vec3 axisOfRotation = normalize(cross(fromNormalised, toNormalised));
-
-	return quatFromAxisAndAngle(axisOfRotation, angleInRadians);
+	else if(abs(degrees(angleInRadians)) > 178)
+	{
+		return quatFromAxisAndAngle(vec3(0.f, 1.f, 0.f), angleInRadians);
+	}
+	else
+	{
+		vec3 axisOfRotation = normalize(cross(fromNormalised, toNormalised));
+		return quatFromAxisAndAngle(axisOfRotation, angleInRadians);
+	}
 }
 
 mat4 loadTranslation(vec3 translationVec)

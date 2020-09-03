@@ -958,8 +958,20 @@ inline Quat rotateFromTo(const Vec3& from, const Vec3& to)
 	Vec3 toNormalised = normaliseVec3(to);
 
 	float angle = toAngle(acosf(dotVec3(fromNormalised, toNormalised)));
-	Vec3 axisOfRotation = normaliseVec3(cross(fromNormalised, toNormalised));
-	return quatFromAxisAndAngle(axisOfRotation, angle);
+	if(std::abs(angle) < 1.f)
+	{
+		return identityQuat();
+	}
+	else if(std::abs(angle) > 179.f)
+	{
+		Vec3 axisOfRotation = {0.f, 1.f, 0.f};
+		return quatFromAxisAndAngle(axisOfRotation, angle); 
+	}
+	else
+	{
+		Vec3 axisOfRotation = normaliseVec3(cross(fromNormalised, toNormalised));
+		return quatFromAxisAndAngle(axisOfRotation, angle);
+	}
 }
 
 inline mat4x4 quatToRotationMat(const Quat& quat)

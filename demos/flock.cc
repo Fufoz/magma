@@ -35,9 +35,9 @@ struct BoidsGlobals
 {
 	float minDistance = 5.f;//separation
 	float flockRadius = 1.f;
-	float tankSize = 25.f;
+	float tankSize = 50.f;
 	float deltaTime = 0.f;
-	uint32_t boidsCount = 1;
+	uint32_t boidsCount = 100;
 	uint32_t spherePointsCount = 1000;
 }boidsGlobals;
 
@@ -69,7 +69,7 @@ std::vector<BoidTransform> generateBoids(uint32_t numberOfBoids)
 	{
 		BoidTransform transform = {};
 		Vec3 newDirection = normaliseVec3({randomValue(), randomValue(), randomNormalisedValue()});
-		// Vec3 newDirection = {-0.9, 0.9f, 0.9f};
+		// Vec3 newDirection = {0.f, 0.f, -1.f};
 		// Vec3 newDirection = defaultDirection;
 		transform.direction = toVec4(newDirection);
 		// transform.direction = toVec4(defaultDirection);
@@ -150,17 +150,96 @@ std::array<Plane, 6> generateTankPlanes()
 	return tankPlanes;
 }
 
+std::array<DebugInfo, 25> generateTankBorders()
+{
+	std::array<DebugInfo, 25> out = {};
+	const float sz = boidsGlobals.tankSize/2.f;
+	
+	out[0].linePoint  = {-sz, sz, -sz, 1.f};
+	out[1].linePoint  = {-sz, sz, sz, 1.f};
+	
+	out[2].linePoint  = {-sz, sz, -sz, 1.f};
+	out[3].linePoint  = {-sz, -sz, -sz, 1.f};
+	
+	out[4].linePoint  = {-sz, -sz, -sz, 1.f};
+	out[5].linePoint  = {-sz, -sz, sz, 1.f};
+
+	out[6].linePoint  = {-sz, -sz, sz, 1.f};
+	out[7].linePoint  = {-sz, sz, sz, 1.f};
+	
+	//right square
+	out[8].linePoint  = {sz, sz, -sz, 1.f};
+	out[9].linePoint  = {sz, sz, sz, 1.f};
+	
+	
+	out[10].linePoint  = {sz, sz, -sz, 1.f};
+	out[11].linePoint  = {sz, -sz, -sz, 1.f};
+	
+	out[12].linePoint = {sz, -sz, -sz, 1.f};
+	out[13].linePoint = {sz, -sz, sz, 1.f};
+	
+	out[14].linePoint = {sz, -sz, sz, 1.f};
+	out[15].linePoint = {sz, sz, sz, 1.f};
+	// 
+	
+	
+	out[16].linePoint = {-sz, sz, sz, 1.f};
+	out[17].linePoint = {sz, sz, sz, 1.f};
+	
+	
+	out[18].linePoint = {-sz, -sz, sz, 1.f};
+	out[19].linePoint = {sz, -sz, sz, 1.f};
+	
+	
+	
+	out[20].linePoint = {-sz, -sz, -sz, 1.f};
+	out[21].linePoint = {sz, -sz, -sz, 1.f};
+	
+	out[22].linePoint = {-sz, sz, -sz, 1.f};
+	out[23].linePoint = {sz, sz, -sz, 1.f};
+
+	out[0].color  = {1.f, 1.f, 1.f, 1.f}; 
+	out[1].color  = {1.f, 1.f, 1.f, 1.f};
+	out[2].color  = {1.f, 1.f, 1.f, 1.f};
+	out[3].color  = {1.f, 1.f, 1.f, 1.f}; 
+	out[4].color  = {1.f, 1.f, 1.f, 1.f}; 
+	out[5].color  = {1.f, 1.f, 1.f, 1.f}; 
+	out[4].color  = {1.f, 1.f, 1.f, 1.f}; 
+	out[5].color  = {1.f, 1.f, 1.f, 1.f};
+	out[6].color  = {1.f, 1.f, 1.f, 1.f};
+	out[7].color  = {1.f, 1.f, 1.f, 1.f};
+	out[8].color  = {1.f, 1.f, 1.f, 1.f};
+	out[9].color  = {1.f, 1.f, 1.f, 1.f}; 
+	out[10].color = {1.f, 1.f, 1.f, 1.f}; 
+	out[11].color = {1.f, 1.f, 1.f, 1.f};
+	out[12].color = {1.f, 1.f, 1.f, 1.f};
+	out[13].color = {1.f, 1.f, 1.f, 1.f};
+	out[14].color = {1.f, 1.f, 1.f, 1.f};
+	out[15].color = {1.f, 1.f, 1.f, 1.f};
+	out[16].color = {1.f, 1.f, 1.f, 1.f}; 
+	out[17].color = {1.f, 1.f, 1.f, 1.f};
+	out[18].color = {1.f, 1.f, 1.f, 1.f}; 
+	out[19].color = {1.f, 1.f, 1.f, 1.f}; 
+	out[20].color = {1.f, 1.f, 1.f, 1.f}; 
+	out[21].color = {1.f, 1.f, 1.f, 1.f};
+	out[22].color = {1.f, 1.f, 1.f, 1.f};
+	out[23].color = {1.f, 1.f, 1.f, 1.f};
+	out[24].color = {1.f, 1.f, 1.f, 1.f};
+
+	return out;
+}
+
 struct ComputeData
 {
-	VkPipeline pipeline;
-	VkPipelineLayout pipelineLayout;
-	VkCommandPool commandPool;
-	VkCommandBuffer commandBuffer;
-	VkDescriptorSet descriptorSet;
-	Buffer instanceTransformsDeviceBuffer;
-	Buffer debugBuffer;
-	uint32_t debugVertexCount;
-	int workGroupSize;
+	VkPipeline 			pipeline;
+	VkPipelineLayout 	pipelineLayout;
+	VkCommandPool 		commandPool;
+	VkCommandBuffer 	commandBuffer;
+	VkDescriptorSet 	descriptorSet;
+	Buffer 				instanceTransformsDeviceBuffer;
+	Buffer 				debugBuffer;
+	uint32_t 			debugVertexCount;
+	int 				workGroupSize;
 };
 
 
@@ -560,6 +639,7 @@ struct DebugPipeData
 	VkPipeline pipeline;
 	VkDescriptorSet descrSet;
 	VkPipelineLayout pipelineLayout;
+	Buffer tankBuffer;
 };
 
 DebugPipeData createDebugPipeline(
@@ -694,11 +774,31 @@ DebugPipeData createDebugPipeline(
 
 	vkUpdateDescriptorSets(vkCtx.logicalDevice, 1, &uboWriteDescrSet, 0, nullptr);
 
+
+	std::array<DebugInfo, 25> planes = generateTankBorders();
+	
+	Buffer hostTankBuffer = createBuffer(vkCtx, 
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		planes.size() * sizeof(DebugInfo)
+	);
+	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, planes.data(), hostTankBuffer.bufferSize, &hostTankBuffer));
+	
+	Buffer deviceTankBuffer = createBuffer(vkCtx, 
+		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		hostTankBuffer.bufferSize
+	);
+
+	VkCommandPool cmdPool = createCommandPool(vkCtx);
+	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, hostTankBuffer, &deviceTankBuffer));
+
 	// vkAllocateDescriptorSets()
 	DebugPipeData out = {};
 	out.pipeline = debugPipeline;
 	out.descrSet = descrSet;
 	out.pipelineLayout = pipeLayout;
+	out.tankBuffer = deviceTankBuffer;
 	return out;
 }
 
@@ -1360,6 +1460,9 @@ int main(int argc, char** argv)
 			vkCmdBindDescriptorSets(cmdBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, debugData.pipelineLayout, 0, 1, &debugData.descrSet, 0, nullptr);
 			vkCmdBindVertexBuffers(cmdBuffers[index], 0, 1, &computeData.debugBuffer.buffer, &offset);
 			vkCmdDraw(cmdBuffers[index], computeData.debugVertexCount, boidsGlobals.boidsCount, 0, 0);
+			vkCmdBindVertexBuffers(cmdBuffers[index], 0, 1, &debugData.tankBuffer.buffer, &offset);
+			vkCmdDraw(cmdBuffers[index], 24, 1, 0, 0);
+
 		vkCmdEndRenderPass(cmdBuffers[index]);
 
 		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
