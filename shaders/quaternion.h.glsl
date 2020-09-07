@@ -29,7 +29,7 @@ vec4 rotateFromTo(vec3 from, vec3 to)
 	float angleInRadians = acos(dot(fromNormalised, toNormalised));
 
 	//if vectors are collinear
-	if(abs(degrees(angleInRadians)) < 1)
+	if(abs(degrees(angleInRadians)) < 2)
 	{
 		return unitQuaternion();
 	}

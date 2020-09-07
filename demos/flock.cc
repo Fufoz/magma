@@ -33,11 +33,11 @@ struct DebugInfo
 
 struct BoidsGlobals
 {
-	float minDistance = 5.f;//separation
-	float flockRadius = 1.f;
-	float tankSize = 50.f;
-	float deltaTime = 0.f;
-	uint32_t boidsCount = 100;
+	float    minDistance = 5.f;//separation
+	float    flockRadius = 1.f;
+	float    tankSize = 25.f;
+	float    deltaTime = 0.f;
+	uint32_t boidsCount = 25;
 	uint32_t spherePointsCount = 1000;
 }boidsGlobals;
 
@@ -45,11 +45,31 @@ static_assert(sizeof(BoidsGlobals) <= 128,
 	"Push constant block is larger than minimum API supported size of 128 bytes"
 );
 
+struct ComputeData
+{
+	VkPipeline        pipeline;
+	VkPipelineLayout  pipelineLayout;
+	VkCommandPool     commandPool;
+	VkCommandBuffer   commandBuffer;
+	VkDescriptorSet   descriptorSet;
+	Buffer            instanceTransformsDeviceBuffer;
+	Buffer            debugBuffer;
+	uint32_t          debugVertexCount;
+	int               workGroupSize;
+};
+
+struct DebugPipeData
+{
+	VkPipeline       pipeline;
+	VkDescriptorSet  descrSet;
+	VkPipelineLayout pipelineLayout;
+	Buffer           tankBuffer;
+};
 
 std::vector<BoidTransform> generateBoids(uint32_t numberOfBoids)
 {
 	std::default_random_engine generator;
-	std::uniform_real_distribution<float> distribution(-boidsGlobals.tankSize/2, boidsGlobals.tankSize/2);
+	std::uniform_real_distribution<float> distribution(-boidsGlobals.tankSize/2.f + 2.f, boidsGlobals.tankSize/2.f - 2.f);
 	auto randomValue = [&]()
 	{
 		return distribution(generator);
@@ -73,7 +93,7 @@ std::vector<BoidTransform> generateBoids(uint32_t numberOfBoids)
 		// Vec3 newDirection = defaultDirection;
 		transform.direction = toVec4(newDirection);
 		// transform.direction = toVec4(defaultDirection);
-		// transform.position = {randomValue(), randomValue(), randomValue(), 1.0};
+		transform.position = {randomValue(), randomValue(), randomValue(), 1.0};
 		transform.orientation = rotateFromTo(defaultDirection, newDirection);
 		transform.up = toVec4(normaliseVec3(cross(newDirection, cross(defaultUp, newDirection))));
 		// transform.position = {0.f, 0.f, boidsGlobals.tankSize / 2.f - 1.f};
@@ -180,9 +200,7 @@ std::array<DebugInfo, 25> generateTankBorders()
 	
 	out[14].linePoint = {sz, -sz, sz, 1.f};
 	out[15].linePoint = {sz, sz, sz, 1.f};
-	// 
-	
-	
+
 	out[16].linePoint = {-sz, sz, sz, 1.f};
 	out[17].linePoint = {sz, sz, sz, 1.f};
 	
@@ -228,20 +246,6 @@ std::array<DebugInfo, 25> generateTankBorders()
 
 	return out;
 }
-
-struct ComputeData
-{
-	VkPipeline 			pipeline;
-	VkPipelineLayout 	pipelineLayout;
-	VkCommandPool 		commandPool;
-	VkCommandBuffer 	commandBuffer;
-	VkDescriptorSet 	descriptorSet;
-	Buffer 				instanceTransformsDeviceBuffer;
-	Buffer 				debugBuffer;
-	uint32_t 			debugVertexCount;
-	int 				workGroupSize;
-};
-
 
 static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 {
@@ -633,14 +637,6 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 	out.debugVertexCount = 6 * boidsGlobals.boidsCount;
 	return out;
 }
-
-struct DebugPipeData
-{
-	VkPipeline pipeline;
-	VkDescriptorSet descrSet;
-	VkPipelineLayout pipelineLayout;
-	Buffer tankBuffer;
-};
 
 DebugPipeData createDebugPipeline(
 	const VulkanGlobalContext& 		vkCtx,

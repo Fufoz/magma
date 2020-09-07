@@ -8,4 +8,7 @@ Magma is a polygon for graphics test projects using Vulkan API.
 This example demonstrates a skeletal animation. Model of a fish and accompanying
 skinned data is loaded from a gltf file. This data later gets passed to the vertex
 shader to compute a final skin matrix.
+![](/images/fish.gif)
+
+Besides skeletal animation of a fish, this example also demonstrates boids simulation using many fishes that moves in a school-like behaivour.
 
