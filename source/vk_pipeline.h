@@ -2,36 +2,22 @@
 #define VK_PIPELINE_H
 #include "vk_types.h"
 
-VkBool32 configureGraphicsPipe(SwapChain& swapChain,
-	VulkanGlobalContext& vkCtx,
-	VertexBuffer& vertexInfo,
-	VkExtent2D windowExtent,
-	PipelineState* state);
+VkBool32 configureGraphicsPipe(SwapChain& swapChain, VulkanGlobalContext& vkCtx,
+	VertexBuffer& vertexInfo, VkExtent2D windowExtent, PipelineState* state);
 
 void destroyPipeline(const VulkanGlobalContext& ctx, PipelineState* pipeline);
 
-
-VkPipelineShaderStageCreateInfo fillShaderStageCreateInfo(
-	const VkDevice 			logicalDevice,
- 	const char* 			shaderSource,
-	VkShaderStageFlagBits 	shaderStage);
+VkPipelineShaderStageCreateInfo fillShaderStageCreateInfo(const VkDevice logicalDevice,
+ 	const char* shaderSource, VkShaderStageFlagBits shaderStage);
 
 VkPipelineVertexInputStateCreateInfo fillVertexInputStateCreateInfo(
-	const VkVertexInputBindingDescription* 		bindingDescr,
-	uint32_t 									bindingDescrCount,
-	const VkVertexInputAttributeDescription* 	vertexAttribDescr,
-	uint32_t 									attribDescrCount);
+	const VkVertexInputBindingDescription* bindingDescr, uint32_t bindingDescrCount,
+	const VkVertexInputAttributeDescription* vertexAttribDescr, uint32_t attribDescrCount);
 
-VkPipelineLayout createPipelineLayout(
-	VkDevice						logicalDevice,
-	const VkDescriptorSetLayout* 	descrSetLayouts,
-	uint32_t 						descrSetLayoutCount,
-	const VkPushConstantRange* 		pushConstantRanges,
-	uint32_t 						pushConstantRangeCount);
+VkPipelineLayout createPipelineLayout(VkDevice logicalDevice, const VkDescriptorSetLayout* descrSetLayouts,
+	uint32_t descrSetLayoutCount, const VkPushConstantRange* pushConstantRanges, uint32_t pushConstantRangeCount);
 
-VkPipelineRasterizationStateCreateInfo fillRasterizationStateCreateInfo(
-	VkCullModeFlags cullMode,
-	VkFrontFace 	frontFaceWindingOrder);
+VkPipelineRasterizationStateCreateInfo fillRasterizationStateCreateInfo(VkCullModeFlags cullMode, VkFrontFace frontFaceWindingOrder);
 
 VkViewport createViewPort(VkExtent2D windowExtent);
 

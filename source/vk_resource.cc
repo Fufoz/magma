@@ -3,6 +3,8 @@
 #include "vk_boilerplate.h"
 #include "vk_commands.h"
 
+#include <array>
+
 static VkImageAspectFlags imageAspectFromUsage(VkImageUsageFlags usageFlags)
 {
 	VkImageAspectFlags aspectFlags = {};
@@ -289,8 +291,6 @@ VkBool32 pushTextureToDeviceLocalImage(VkCommandPool commandPool, const VulkanGl
 
 	VkBufferImageCopy copyRegion = {};
 	copyRegion.bufferOffset = 0;
-	// copyRegion.bufferRowLength = fishTexture.width;
-	// copyRegion.bufferImageHeight = fishTexture.height;
 	copyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 	copyRegion.imageSubresource.mipLevel = 0;
 	copyRegion.imageSubresource.baseArrayLayer = 0;
@@ -368,4 +368,174 @@ VkBool32 pushTextureToDeviceLocalImage(VkCommandPool commandPool, const VulkanGl
 	vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, 1, &cmdBuff);
 	
 	return VK_TRUE;
+}
+
+ImageResource createCubemapImage(const VulkanGlobalContext& vkCtx, VkExtent3D imageExtent, VkFormat imageFormat, VkImageUsageFlags usageFlags, VkImageLayout initialLayout)
+{
+	VkImageCreateInfo imageCreateInfo = {};
+	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageCreateInfo.pNext = nullptr;
+	imageCreateInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+	imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageCreateInfo.format = imageFormat;
+	imageCreateInfo.extent = imageExtent;
+	imageCreateInfo.mipLevels = 1;
+	imageCreateInfo.arrayLayers = 6;
+	imageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+	imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+	imageCreateInfo.usage = usageFlags;
+	imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageCreateInfo.queueFamilyIndexCount = 1;
+	imageCreateInfo.pQueueFamilyIndices = &vkCtx.queueFamIdx;
+	imageCreateInfo.initialLayout = initialLayout;
+
+	VkImage image = VK_NULL_HANDLE;
+	VK_CALL(vkCreateImage(vkCtx.logicalDevice, &imageCreateInfo, nullptr, &image));
+
+	VkMemoryRequirements memRequirements = {};
+	vkGetImageMemoryRequirements(vkCtx.logicalDevice, image, &memRequirements);
+	VkPhysicalDeviceMemoryProperties deviceMemProps = {};
+	vkGetPhysicalDeviceMemoryProperties(vkCtx.physicalDevice, &deviceMemProps);
+
+	uint32_t preferredMemTypeIndex = -1;
+	findRequiredMemoryTypeIndex(vkCtx.physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &preferredMemTypeIndex);
+
+	VkMemoryAllocateInfo memAllocInfo = {};
+	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	memAllocInfo.pNext = nullptr;
+	memAllocInfo.allocationSize = memRequirements.size;
+	memAllocInfo.memoryTypeIndex = preferredMemTypeIndex;
+
+	VkDeviceMemory imageMemory = {};
+	VK_CALL(vkAllocateMemory(vkCtx.logicalDevice, &memAllocInfo, nullptr, &imageMemory));
+
+	VK_CALL(vkBindImageMemory(vkCtx.logicalDevice, image, imageMemory, 0));
+
+	VkImageViewCreateInfo imageViewCreateInfo = {};
+	imageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	imageViewCreateInfo.pNext = nullptr;
+	imageViewCreateInfo.flags = VK_FLAGS_NONE;
+	imageViewCreateInfo.image = image;
+	imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
+	imageViewCreateInfo.format = imageFormat;
+	imageViewCreateInfo.subresourceRange.aspectMask = imageAspectFromUsage(usageFlags);
+	imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+	imageViewCreateInfo.subresourceRange.levelCount = 1;
+	imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+	imageViewCreateInfo.subresourceRange.layerCount = 6;
+
+	VkImageView imageView = VK_NULL_HANDLE;
+	VK_CALL(vkCreateImageView(vkCtx.logicalDevice, &imageViewCreateInfo, nullptr, &imageView));
+	
+	ImageResource imageResource = {};
+	imageResource.image = image;
+	imageResource.view = imageView;
+	imageResource.layout = initialLayout;
+	imageResource.imageSize = memAllocInfo.allocationSize;
+	imageResource.backupMemory = imageMemory;
+
+	return imageResource;
+}
+
+VkBool32 pushCubemapTextureToDeviceLocalImage(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, VkExtent3D imageExtent, std::size_t planeStride, ImageResource* textureResource)
+{
+	assert(textureResource);
+
+	VkCommandBuffer cmdBuff = VK_NULL_HANDLE;
+	//1.recording transfer commands into command buffer
+	createCommandBuffer(vkCtx.logicalDevice, commandPool, &cmdBuff);
+
+	VkCommandBufferBeginInfo cmdBuffBegInfo = {};
+	cmdBuffBegInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cmdBuffBegInfo.pNext = nullptr;
+	cmdBuffBegInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+	cmdBuffBegInfo.pInheritanceInfo = nullptr;
+
+	vkBeginCommandBuffer(cmdBuff, &cmdBuffBegInfo);
+
+	std::array<VkBufferImageCopy, 6> copyRegions = {};
+	
+	std::size_t bufferOffset = 0; 
+	for(std::size_t i = 0; i < copyRegions.size(); i++)
+	{
+		copyRegions[i].bufferOffset = bufferOffset;
+		copyRegions[i].imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		copyRegions[i].imageSubresource.mipLevel = 0;
+		copyRegions[i].imageSubresource.baseArrayLayer = i;
+		copyRegions[i].imageSubresource.layerCount = 1;
+		copyRegions[i].imageOffset = {0, 0, 0};
+		copyRegions[i].imageExtent = imageExtent;
+		bufferOffset += planeStride;
+	}
+
+	//issue a barrier to transition our newly created texture from undefined layout to DST_OPTIMAL
+	VkImageMemoryBarrier imageMemBarrier = {};
+	imageMemBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	imageMemBarrier.pNext = nullptr;
+	imageMemBarrier.srcAccessMask = 0;
+	imageMemBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	imageMemBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageMemBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	imageMemBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
+	imageMemBarrier.dstQueueFamilyIndex = vkCtx.queueFamIdx;
+	imageMemBarrier.image = textureResource->image;
+	imageMemBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	imageMemBarrier.subresourceRange.baseMipLevel = 0;
+	imageMemBarrier.subresourceRange.levelCount = 1;
+	imageMemBarrier.subresourceRange.baseArrayLayer = 0;
+	imageMemBarrier.subresourceRange.layerCount = 6;
+
+	vkCmdPipelineBarrier(
+		cmdBuff, 
+		VK_PIPELINE_STAGE_HOST_BIT,
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &imageMemBarrier
+	);
+
+	vkCmdCopyBufferToImage(cmdBuff, stagingBuffer.buffer, textureResource->image,
+		VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, copyRegions.size(), copyRegions.data());
+
+	//issue another barrier
+	//transfer texture layout to the shader layout so it can be sampled
+	imageMemBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+	imageMemBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	imageMemBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+	imageMemBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	
+	vkCmdPipelineBarrier(
+		cmdBuff, 
+		VK_PIPELINE_STAGE_TRANSFER_BIT,
+		VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+		0,
+		0, nullptr,
+		0, nullptr,
+		1, &imageMemBarrier
+	);
+	
+	vkEndCommandBuffer(cmdBuff);
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.pNext = nullptr;
+	submitInfo.waitSemaphoreCount = 0;
+	submitInfo.pWaitSemaphores = nullptr;
+	submitInfo.pWaitDstStageMask = nullptr;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuff;
+	submitInfo.signalSemaphoreCount = 0;
+	submitInfo.pSignalSemaphores = nullptr;
+
+	//submit transfer command into queue
+	VkFence textureTransferredFence = createFence(vkCtx.logicalDevice);
+	VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &submitInfo, textureTransferredFence));
+	VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &textureTransferredFence, VK_TRUE, UINT64_MAX));
+	
+	//cleanup
+	vkDestroyFence(vkCtx.logicalDevice, textureTransferredFence, nullptr);
+	vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, 1, &cmdBuff);
+	
+	return VK_TRUE;	
 }

@@ -702,6 +702,7 @@ DebugPipeData createDebugPipeline(
 	descrSetLayoutBinding.descriptorCount = 1;
 	descrSetLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 	descrSetLayoutBinding.pImmutableSamplers = nullptr;
+	
 
 	VkDescriptorSetLayoutCreateInfo descrSetLayoutCreateInfo = {};
 	descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -798,6 +799,311 @@ DebugPipeData createDebugPipeline(
 	return out;
 }
 
+struct SkyBoxPipeData
+{
+	VkPipeline pipeline;
+	VkPipelineLayout pipeLayout;
+	VkDescriptorSet descrSet;
+	Buffer gpuVertexBuffer;
+	Buffer gpuIndexBuffer;
+	ImageResource gpuCubeMap;
+	std::array<unsigned long, 12 * 3> indices;
+};
+
+bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInfo,
+	const std::array<const char*, 6>& planes, VkRenderPass renderPass, VkCommandPool cmdPool, const VkDescriptorBufferInfo& uboDescrBufferInfo, SkyBoxPipeData* out)
+{
+
+	VkVertexInputBindingDescription bindingDescr = {};
+	bindingDescr.binding = 0;
+    bindingDescr.stride = sizeof(Vec3);
+    bindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	
+	VkVertexInputAttributeDescription attribDescr = {};
+    attribDescr.location = 0;
+    attribDescr.binding = 0;
+    attribDescr.format = VK_FORMAT_R32G32B32_SFLOAT;
+    attribDescr.offset = 0;
+
+	VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
+		fillVertexInputStateCreateInfo(&bindingDescr, 1, &attribDescr, 1);
+
+	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = 
+		fillInputAssemblyCreateInfo();
+	
+	VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
+		fillViewportStateCreateInfo(createViewPort(windowInfo.windowExtent), {{0,0}, windowInfo.windowExtent});
+
+	VkPipelineRasterizationStateCreateInfo rasterStateCreateInfo = 
+		fillRasterizationStateCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+	
+	VkPipelineMultisampleStateCreateInfo msStateCreateInfo = 
+		fillMultisampleStateCreateInfo();
+
+	VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = 
+		fillDepthStencilStateCreateInfo(VK_COMPARE_OP_LESS_OR_EQUAL);
+
+	VkPipelineColorBlendAttachmentState blendAttachmentState = {};
+	blendAttachmentState.colorWriteMask = 0xf;
+	blendAttachmentState.blendEnable = VK_FALSE;
+
+	VkPipelineColorBlendStateCreateInfo colorBlendState = fillColorBlendStateCreateInfo(blendAttachmentState);
+
+	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageInfos = {};
+	shaderStageInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/skyboxVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStageInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/skyboxFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+
+	VkDynamicState dynState = VK_DYNAMIC_STATE_VIEWPORT;
+	VkPipelineDynamicStateCreateInfo dynStateCreateInfo = fillDynamicStateCreateInfo(&dynState, 1);
+
+	std::array<VkDescriptorSetLayoutBinding, 2> descrSetLayoutBinding = {};
+    descrSetLayoutBinding[0].binding = 0;
+    descrSetLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descrSetLayoutBinding[0].descriptorCount = 1;
+    descrSetLayoutBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    descrSetLayoutBinding[0].pImmutableSamplers = nullptr;
+
+    descrSetLayoutBinding[1].binding = 1;
+    descrSetLayoutBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descrSetLayoutBinding[1].descriptorCount = 1;
+    descrSetLayoutBinding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    descrSetLayoutBinding[1].pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutCreateInfo descrSetLayoutCreateInfo = {};
+    descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    descrSetLayoutCreateInfo.bindingCount = descrSetLayoutBinding.size();
+    descrSetLayoutCreateInfo.pBindings = descrSetLayoutBinding.data();
+
+	VkDescriptorSetLayout descrSetLayout = VK_NULL_HANDLE;
+	VK_CALL(vkCreateDescriptorSetLayout(vkCtx.logicalDevice, &descrSetLayoutCreateInfo, nullptr, &descrSetLayout));
+
+	VkPipelineLayoutCreateInfo pipeLayoutCreateInfo = {};
+    pipeLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipeLayoutCreateInfo.setLayoutCount = 1;
+    pipeLayoutCreateInfo.pSetLayouts = &descrSetLayout;
+	
+	VkPipelineLayout pipeLayout = VK_NULL_HANDLE;
+	VK_CALL(vkCreatePipelineLayout(vkCtx.logicalDevice, &pipeLayoutCreateInfo, nullptr, &pipeLayout));
+
+	VkGraphicsPipelineCreateInfo graphicsPipeCreateInfo = {};
+	graphicsPipeCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+	graphicsPipeCreateInfo.pNext = nullptr;
+	graphicsPipeCreateInfo.flags = VK_FLAGS_NONE;
+	graphicsPipeCreateInfo.stageCount = shaderStageInfos.size();
+	graphicsPipeCreateInfo.pStages = shaderStageInfos.data();
+	graphicsPipeCreateInfo.pVertexInputState = &vertexInputStateCreateInfo;
+	graphicsPipeCreateInfo.pInputAssemblyState = &inputAssemblyCreateInfo;
+	graphicsPipeCreateInfo.pTessellationState = nullptr;
+	graphicsPipeCreateInfo.pViewportState = &viewportStateCreateInfo;
+	graphicsPipeCreateInfo.pRasterizationState = &rasterStateCreateInfo;
+	graphicsPipeCreateInfo.pMultisampleState = &msStateCreateInfo;
+	graphicsPipeCreateInfo.pDepthStencilState = &depthStencilStateCreateInfo;
+	graphicsPipeCreateInfo.pColorBlendState = &colorBlendState;
+	graphicsPipeCreateInfo.pDynamicState = &dynStateCreateInfo;
+	graphicsPipeCreateInfo.layout = pipeLayout;
+	graphicsPipeCreateInfo.renderPass = renderPass;
+	graphicsPipeCreateInfo.subpass = 0;
+
+	VkPipeline graphicsPipe = VK_NULL_HANDLE;
+	VK_CALL(vkCreateGraphicsPipelines(vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &graphicsPipeCreateInfo, nullptr, &graphicsPipe));
+
+	std::array<Vec3, 8> cubeVertices =
+	{
+		Vec3{ 1.f, -1.f,  1.f},
+		Vec3{ 1.f, -1.f, -1.f},
+		Vec3{-1.f, -1.f, -1.f},
+		Vec3{-1.f, -1.f,  1.f},
+		Vec3{ 1.f,  1.f,  1.f},
+		Vec3{ 1.f,  1.f, -1.f},
+		Vec3{-1.f,  1.f, -1.f},
+		Vec3{-1.f,  1.f,  1.f}
+	};
+	Vec3 scale = {boidsGlobals.tankSize * 10, boidsGlobals.tankSize * 10, boidsGlobals.tankSize* 10};
+	auto& mat = loadScale(scale);
+	for(auto& vertex : cubeVertices)
+	{
+		vertex *= mat;
+	}
+
+	std::array<unsigned long, 12 * 3> indices = {
+		//bottom
+		0,1,3,
+		1,2,3,
+		//top
+		5,4,6,
+		4,7,6,
+		//sides
+		4,5,0,
+		0,5,1,
+		2,5,6,
+		2,1,5,
+		3,6,7,
+		3,2,6,
+		3,4,0,
+		3,7,4
+	};
+
+	//transfer cube geom to gpu
+	Buffer vertexBuffer = createBuffer(
+		vkCtx, 
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		cubeVertices.size() * sizeof(Vec3)
+	);
+
+	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, cubeVertices.data(), vertexBuffer.bufferSize, &vertexBuffer));
+
+	Buffer gpuVertexBuffer = createBuffer(
+		vkCtx,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		vertexBuffer.bufferSize
+	);
+
+	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, vertexBuffer, &gpuVertexBuffer));
+
+	//transfer cube geom indices to gpu
+	Buffer indexBuffer = createBuffer(
+		vkCtx, 
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+		indices.size() * sizeof(Vec3)
+	);
+
+	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, indices.data(), indexBuffer.bufferSize, &indexBuffer));
+
+	Buffer gpuIndexBuffer = createBuffer(
+		vkCtx,
+		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+		indexBuffer.bufferSize
+	);
+
+	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, indexBuffer, &gpuIndexBuffer));
+
+
+	//copy texture data to gpu
+	VkSamplerCreateInfo samplerCreateInfo = {};
+    samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+    samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+    samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+    samplerCreateInfo.mipLodBias = 0.f;
+    samplerCreateInfo.anisotropyEnable = VK_FALSE;
+    samplerCreateInfo.maxAnisotropy = 1.f;
+    samplerCreateInfo.compareEnable = VK_FALSE;
+    samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
+    samplerCreateInfo.minLod = 0.f;
+    samplerCreateInfo.maxLod = 1.f;
+    samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+
+	VkSampler sampler = VK_NULL_HANDLE;
+	VK_CALL(vkCreateSampler(vkCtx.logicalDevice, &samplerCreateInfo, nullptr, &sampler));
+
+
+	bool planesAreLoaded = true;
+	std::array<TextureInfo, 6> textures = {};
+
+	planesAreLoaded &= loadTexture(planes[0], &textures[0]);
+
+	const std::size_t planeStride = textures[0].extent.width * textures[0].extent.height * textures[0].numc;
+	const std::size_t cubemapSize = textures.size() * planeStride;
+
+	std::vector<uint8_t> hostPtr = {};
+	hostPtr.resize(cubemapSize);
+	uint8_t* dstPtr = hostPtr.data();
+	
+	VkExtent3D planeExtent = textures[0].extent;
+	
+	for(uint32_t i = 0; i < planes.size(); i++)
+	{
+		planesAreLoaded &= loadTexture(planes[i], &textures[i], false);
+		memcpy(dstPtr, textures[i].data, planeStride);
+		dstPtr += planeStride;
+	}
+
+	if(!planesAreLoaded)
+	{
+		return false;
+	}
+
+	//creating big-ass staging buffer
+	Buffer stagingCubeMapBuffer = createBuffer(
+		vkCtx, 
+		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+		cubemapSize
+	);
+	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, hostPtr.data(), cubemapSize, &stagingCubeMapBuffer));
+
+	// createResourceImage
+	ImageResource cubemapGpuImage = createCubemapImage(
+		vkCtx,
+		textures[0].extent, textures[0].format,
+		VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT
+	);
+	VK_CHECK(pushCubemapTextureToDeviceLocalImage(cmdPool, vkCtx, stagingCubeMapBuffer, planeExtent, planeStride, &cubemapGpuImage));
+
+	//updating descriptor sets
+	std::array<VkDescriptorPoolSize, 2> descrPoolSizes = {};
+    descrPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descrPoolSizes[0].descriptorCount = 1;
+    descrPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    descrPoolSizes[1].descriptorCount = 1;
+
+	VkDescriptorPoolCreateInfo descrPoolCreateInfo = {};
+    descrPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    descrPoolCreateInfo.maxSets = 1;
+    descrPoolCreateInfo.poolSizeCount = descrPoolSizes.size();
+    descrPoolCreateInfo.pPoolSizes = descrPoolSizes.data();
+
+	VkDescriptorPool descrPool = VK_NULL_HANDLE;
+	VK_CALL(vkCreateDescriptorPool(vkCtx.logicalDevice, &descrPoolCreateInfo, nullptr, &descrPool));
+
+	VkDescriptorSetAllocateInfo descrSetAllocInfo = {};
+    descrSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    descrSetAllocInfo.descriptorPool = descrPool;
+    descrSetAllocInfo.descriptorSetCount = 1;
+    descrSetAllocInfo.pSetLayouts = &descrSetLayout;
+
+	VkDescriptorSet descrSet = VK_NULL_HANDLE;
+	VK_CALL(vkAllocateDescriptorSets(vkCtx.logicalDevice, &descrSetAllocInfo, &descrSet));
+	
+	std::array<VkWriteDescriptorSet, 2> writeDescrSets = {};
+    writeDescrSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescrSets[0].dstSet = descrSet;
+    writeDescrSets[0].dstBinding = 0;
+    writeDescrSets[0].dstArrayElement = 0;
+    writeDescrSets[0].descriptorCount = 1;
+    writeDescrSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    writeDescrSets[0].pBufferInfo = &uboDescrBufferInfo;
+
+    VkDescriptorImageInfo descrImageInfo = {};
+	descrImageInfo.sampler = sampler;
+    descrImageInfo.imageView = cubemapGpuImage.view;
+    descrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	writeDescrSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescrSets[1].dstSet = descrSet;
+    writeDescrSets[1].dstBinding = 1;
+    writeDescrSets[1].dstArrayElement = 0;
+    writeDescrSets[1].descriptorCount = 1;
+    writeDescrSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writeDescrSets[1].pImageInfo = &descrImageInfo;
+	vkUpdateDescriptorSets(vkCtx.logicalDevice, writeDescrSets.size(), writeDescrSets.data(), 0, nullptr);
+	
+	out->pipeline = graphicsPipe;
+	out->pipeLayout = pipeLayout;
+	out->descrSet = descrSet;
+	out->gpuVertexBuffer = gpuVertexBuffer;
+	out->gpuIndexBuffer = gpuIndexBuffer;
+	out->gpuCubeMap = cubemapGpuImage;
+	out->indices = indices;
+	return true;
+}
 
 int main(int argc, char** argv)
 {
@@ -829,13 +1135,13 @@ int main(int argc, char** argv)
 	Mesh mesh = {};
 	Animation animation = {};
 	animation.playbackRate = 4.f;
-	if(!loadGLTF("objs/fish.gltf", &mesh, &animation))
+	if(!loadGLTF("resources/fish.gltf", &mesh, &animation))
 	{
 		return -1;
 	}
 
 	TextureInfo fishTexture = {};
-	if(!loadTexture("objs/fish.png", &fishTexture, false))
+	if(!loadTexture("resources/fish.png", &fishTexture, false))
 	{
 		return -1;
 	}
@@ -1361,7 +1667,24 @@ int main(int argc, char** argv)
 	createCommandBuffers(vkCtx.logicalDevice, cmdPool, swapChain.imageCount, cmdBuffers);
 	
 	DebugPipeData debugData = createDebugPipeline(vkCtx, windowInfo, swapChain, renderPass, descriptorBufferInfoMVP);
+	
+	std::array<const char*, 6> planes = 
+	{
+		"resources/negx.png",
+		"resources/posx.png",
+		"resources/negy.png",
+		"resources/posy.png",
+		"resources/negz.png",
+		"resources/posz.png",
+	};
 
+	SkyBoxPipeData skyboxPipeData = {};
+	if(!prepareSkyBox(vkCtx, windowInfo, planes, renderPass, cmdPool, descriptorBufferInfoMVP, &skyboxPipeData))
+	{
+		return false;
+	}
+	
+	
 	//set clear color for depth and color attachments with LOAD_OP_CLEAR values in it
 	VkClearValue clearValues[2] = {};
 	clearValues[0].color = {0.654f, 0.984f, 0.968f, 1.f};
@@ -1450,7 +1773,8 @@ int main(int argc, char** argv)
 			vkCmdBindVertexBuffers(cmdBuffers[index], 0, 1, &deviceLocalVertexBuffer.buffer, &offset);
 			vkCmdBindIndexBuffer(cmdBuffers[index], deviceLocalIndexBuffer.buffer, offset, VK_INDEX_TYPE_UINT32);
 			vkCmdDrawIndexed(cmdBuffers[index], mesh.indexBuffer.size(), boidsGlobals.boidsCount, 0, 0, 0); 
-		
+
+			//debug commands
 			vkCmdBindPipeline(cmdBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, debugData.pipeline);
 			vkCmdSetLineWidth(cmdBuffers[index], 5.f);
 			vkCmdBindDescriptorSets(cmdBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, debugData.pipelineLayout, 0, 1, &debugData.descrSet, 0, nullptr);
@@ -1458,6 +1782,15 @@ int main(int argc, char** argv)
 			vkCmdDraw(cmdBuffers[index], computeData.debugVertexCount, boidsGlobals.boidsCount, 0, 0);
 			vkCmdBindVertexBuffers(cmdBuffers[index], 0, 1, &debugData.tankBuffer.buffer, &offset);
 			vkCmdDraw(cmdBuffers[index], 24, 1, 0, 0);
+
+
+			//skybox commands
+			vkCmdBindPipeline(cmdBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipeData.pipeline);
+			vkCmdBindDescriptorSets(cmdBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipeData.pipeLayout, 0, 1, &skyboxPipeData.descrSet, 0, nullptr);
+			vkCmdBindVertexBuffers(cmdBuffers[index], 0, 1, &skyboxPipeData.gpuVertexBuffer.buffer, &offset);
+			vkCmdBindIndexBuffer(cmdBuffers[index], skyboxPipeData.gpuIndexBuffer.buffer, offset, VK_INDEX_TYPE_UINT32);
+			vkCmdDrawIndexed(cmdBuffers[index], skyboxPipeData.indices.size(), 1, 0, 0, 0);
+
 
 		vkCmdEndRenderPass(cmdBuffers[index]);
 
