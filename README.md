@@ -15,5 +15,9 @@ shader to compute a final skin matrix.
 </p>
 
 ### Boids
-Besides skeletal animation of a fish this example also demonstrates boids simulation using many fishes that moves in a school-like behaivour.
-The rules for simulating scools of fish were taken from Craig Reynolds boids [paper](https://cs.stanford.edu/people/eroberts/courses/soco/projects/2008-09/modeling-natural-systems/boids.html)
+Boids sample demonstrates boids simulation using many fishes that moves in a school-like behaivour. 
+The rules for simulating scools of fish were taken from Craig Reynolds boids [paper](https://cs.stanford.edu/people/eroberts/courses/soco/projects/2008-09/modeling-natural-systems/boids.html).
+Beside these rules boids also avoid collision with virtual tank borders via sphere tracing technique in order to find the most unobstructed direction.
+<p align="center">
+  <img src="/images/boidsComp.gif" />
+</p>
