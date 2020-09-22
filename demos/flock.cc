@@ -97,7 +97,6 @@ std::vector<BoidTransform> generateBoids(uint32_t numberOfBoids)
 		transform.orientation = rotateFromTo(defaultDirection, newDirection);
 		transform.up = toVec4(normaliseVec3(cross(newDirection, cross(defaultUp, newDirection))));
 		// transform.position = {0.f, 0.f, boidsGlobals.tankSize / 2.f - 1.f};
-// mat4x4 a = quatToRotationMat(transform.orientation);
 		out.push_back(transform);
 		magma::log::info("dir = {} pos = {} orient = {} up {}",
 		transform.direction, transform.position, transform.orientation, transform.up);
@@ -207,8 +206,6 @@ std::array<DebugInfo, 25> generateTankBorders()
 	
 	out[18].linePoint = {-sz, -sz, sz, 1.f};
 	out[19].linePoint = {sz, -sz, sz, 1.f};
-	
-	
 	
 	out[20].linePoint = {-sz, -sz, -sz, 1.f};
 	out[21].linePoint = {sz, -sz, -sz, 1.f};
