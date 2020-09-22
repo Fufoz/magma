@@ -816,14 +816,14 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 
 	VkVertexInputBindingDescription bindingDescr = {};
 	bindingDescr.binding = 0;
-    bindingDescr.stride = sizeof(Vec3);
-    bindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+	bindingDescr.stride = sizeof(Vec3);
+	bindingDescr.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 	
 	VkVertexInputAttributeDescription attribDescr = {};
-    attribDescr.location = 0;
-    attribDescr.binding = 0;
-    attribDescr.format = VK_FORMAT_R32G32B32_SFLOAT;
-    attribDescr.offset = 0;
+	attribDescr.location = 0;
+	attribDescr.binding = 0;
+	attribDescr.format = VK_FORMAT_R32G32B32_SFLOAT;
+	attribDescr.offset = 0;
 
 	VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
 		fillVertexInputStateCreateInfo(&bindingDescr, 1, &attribDescr, 1);
@@ -857,30 +857,30 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 	VkPipelineDynamicStateCreateInfo dynStateCreateInfo = fillDynamicStateCreateInfo(&dynState, 1);
 
 	std::array<VkDescriptorSetLayoutBinding, 2> descrSetLayoutBinding = {};
-    descrSetLayoutBinding[0].binding = 0;
-    descrSetLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descrSetLayoutBinding[0].descriptorCount = 1;
-    descrSetLayoutBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-    descrSetLayoutBinding[0].pImmutableSamplers = nullptr;
+	descrSetLayoutBinding[0].binding = 0;
+	descrSetLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descrSetLayoutBinding[0].descriptorCount = 1;
+	descrSetLayoutBinding[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	descrSetLayoutBinding[0].pImmutableSamplers = nullptr;
 
-    descrSetLayoutBinding[1].binding = 1;
-    descrSetLayoutBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descrSetLayoutBinding[1].descriptorCount = 1;
-    descrSetLayoutBinding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    descrSetLayoutBinding[1].pImmutableSamplers = nullptr;
+	descrSetLayoutBinding[1].binding = 1;
+	descrSetLayoutBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descrSetLayoutBinding[1].descriptorCount = 1;
+	descrSetLayoutBinding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	descrSetLayoutBinding[1].pImmutableSamplers = nullptr;
 
 	VkDescriptorSetLayoutCreateInfo descrSetLayoutCreateInfo = {};
-    descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    descrSetLayoutCreateInfo.bindingCount = descrSetLayoutBinding.size();
-    descrSetLayoutCreateInfo.pBindings = descrSetLayoutBinding.data();
+	descrSetLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descrSetLayoutCreateInfo.bindingCount = descrSetLayoutBinding.size();
+	descrSetLayoutCreateInfo.pBindings = descrSetLayoutBinding.data();
 
 	VkDescriptorSetLayout descrSetLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDescriptorSetLayout(vkCtx.logicalDevice, &descrSetLayoutCreateInfo, nullptr, &descrSetLayout));
 
 	VkPipelineLayoutCreateInfo pipeLayoutCreateInfo = {};
-    pipeLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipeLayoutCreateInfo.setLayoutCount = 1;
-    pipeLayoutCreateInfo.pSetLayouts = &descrSetLayout;
+	pipeLayoutCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipeLayoutCreateInfo.setLayoutCount = 1;
+	pipeLayoutCreateInfo.pSetLayouts = &descrSetLayout;
 	
 	VkPipelineLayout pipeLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreatePipelineLayout(vkCtx.logicalDevice, &pipeLayoutCreateInfo, nullptr, &pipeLayout));
@@ -984,21 +984,21 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 
 	//copy texture data to gpu
 	VkSamplerCreateInfo samplerCreateInfo = {};
-    samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-    samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-    samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    samplerCreateInfo.mipLodBias = 0.f;
-    samplerCreateInfo.anisotropyEnable = VK_FALSE;
-    samplerCreateInfo.maxAnisotropy = 1.f;
-    samplerCreateInfo.compareEnable = VK_FALSE;
-    samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
-    samplerCreateInfo.minLod = 0.f;
-    samplerCreateInfo.maxLod = 1.f;
-    samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
+	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.mipLodBias = 0.f;
+	samplerCreateInfo.anisotropyEnable = VK_FALSE;
+	samplerCreateInfo.maxAnisotropy = 1.f;
+	samplerCreateInfo.compareEnable = VK_FALSE;
+	samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
+	samplerCreateInfo.minLod = 0.f;
+	samplerCreateInfo.maxLod = 1.f;
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
 
 	VkSampler sampler = VK_NULL_HANDLE;
 	VK_CALL(vkCreateSampler(vkCtx.logicalDevice, &samplerCreateInfo, nullptr, &sampler));
@@ -1049,50 +1049,50 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 
 	//updating descriptor sets
 	std::array<VkDescriptorPoolSize, 2> descrPoolSizes = {};
-    descrPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descrPoolSizes[0].descriptorCount = 1;
-    descrPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    descrPoolSizes[1].descriptorCount = 1;
+	descrPoolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	descrPoolSizes[0].descriptorCount = 1;
+	descrPoolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descrPoolSizes[1].descriptorCount = 1;
 
 	VkDescriptorPoolCreateInfo descrPoolCreateInfo = {};
-    descrPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    descrPoolCreateInfo.maxSets = 1;
-    descrPoolCreateInfo.poolSizeCount = descrPoolSizes.size();
-    descrPoolCreateInfo.pPoolSizes = descrPoolSizes.data();
+	descrPoolCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	descrPoolCreateInfo.maxSets = 1;
+	descrPoolCreateInfo.poolSizeCount = descrPoolSizes.size();
+	descrPoolCreateInfo.pPoolSizes = descrPoolSizes.data();
 
 	VkDescriptorPool descrPool = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDescriptorPool(vkCtx.logicalDevice, &descrPoolCreateInfo, nullptr, &descrPool));
 
 	VkDescriptorSetAllocateInfo descrSetAllocInfo = {};
-    descrSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    descrSetAllocInfo.descriptorPool = descrPool;
-    descrSetAllocInfo.descriptorSetCount = 1;
-    descrSetAllocInfo.pSetLayouts = &descrSetLayout;
+	descrSetAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	descrSetAllocInfo.descriptorPool = descrPool;
+	descrSetAllocInfo.descriptorSetCount = 1;
+	descrSetAllocInfo.pSetLayouts = &descrSetLayout;
 
 	VkDescriptorSet descrSet = VK_NULL_HANDLE;
 	VK_CALL(vkAllocateDescriptorSets(vkCtx.logicalDevice, &descrSetAllocInfo, &descrSet));
 	
 	std::array<VkWriteDescriptorSet, 2> writeDescrSets = {};
-    writeDescrSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescrSets[0].dstSet = descrSet;
-    writeDescrSets[0].dstBinding = 0;
-    writeDescrSets[0].dstArrayElement = 0;
-    writeDescrSets[0].descriptorCount = 1;
-    writeDescrSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    writeDescrSets[0].pBufferInfo = &uboDescrBufferInfo;
+	writeDescrSets[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	writeDescrSets[0].dstSet = descrSet;
+	writeDescrSets[0].dstBinding = 0;
+	writeDescrSets[0].dstArrayElement = 0;
+	writeDescrSets[0].descriptorCount = 1;
+	writeDescrSets[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	writeDescrSets[0].pBufferInfo = &uboDescrBufferInfo;
 
-    VkDescriptorImageInfo descrImageInfo = {};
+	VkDescriptorImageInfo descrImageInfo = {};
 	descrImageInfo.sampler = sampler;
-    descrImageInfo.imageView = cubemapGpuImage.view;
-    descrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	descrImageInfo.imageView = cubemapGpuImage.view;
+	descrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	writeDescrSets[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeDescrSets[1].dstSet = descrSet;
-    writeDescrSets[1].dstBinding = 1;
-    writeDescrSets[1].dstArrayElement = 0;
-    writeDescrSets[1].descriptorCount = 1;
-    writeDescrSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    writeDescrSets[1].pImageInfo = &descrImageInfo;
+	writeDescrSets[1].dstSet = descrSet;
+	writeDescrSets[1].dstBinding = 1;
+	writeDescrSets[1].dstArrayElement = 0;
+	writeDescrSets[1].descriptorCount = 1;
+	writeDescrSets[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	writeDescrSets[1].pImageInfo = &descrImageInfo;
 	vkUpdateDescriptorSets(vkCtx.logicalDevice, writeDescrSets.size(), writeDescrSets.data(), 0, nullptr);
 	
 	out->pipeline = graphicsPipe;

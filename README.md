@@ -10,5 +10,5 @@ skinned data is loaded from a gltf file. This data later gets passed to the vert
 shader to compute a final skin matrix.
 ![](/images/fish.gif)
 
-Besides skeletal animation of a fish, this example also demonstrates boids simulation using many fishes that moves in a school-like behaivour.
-
+Besides skeletal animation of a fish this example also demonstrates boids simulation using many fishes that moves in a school-like behaivour.
+The rules for simulating scools of fish were taken from Craig Reynolds boids [paper](https://cs.stanford.edu/people/eroberts/courses/soco/projects/2008-09/modeling-natural-systems/boids.html)
