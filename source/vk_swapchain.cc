@@ -31,7 +31,7 @@ static VkPresentModeKHR queryPresentMode(VkSurfaceKHR windowSurface, VkPhysicalD
 	//query for available surface presentation mode
 	uint32_t presentModeCount = {};
 	VK_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, windowSurface, &presentModeCount, nullptr));
-	VkPresentModeKHR presentModes[VK_PRESENT_MODE_RANGE_SIZE_KHR];
+	VkPresentModeKHR presentModes[16];//shouldn't be more than 16 present modes..
 	VK_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, windowSurface, &presentModeCount, presentModes));
 	VkPresentModeKHR selectedPresentMode = VK_PRESENT_MODE_FIFO_KHR;//should exist anyway
 	

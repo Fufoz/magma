@@ -95,7 +95,10 @@ static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
 	return debugMessenger;
 }
 
-static VkInstance createInstance(std::vector<const char*>& desiredLayers, const std::vector<const char*>& desiredExtensions)
+static VkInstance createInstance(
+	const std::vector<const char*>& desiredLayers,
+	const std::vector<const char*>& desiredExtensions,
+	bool hasDebugUtilsExt)
 {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -123,10 +126,12 @@ static VkInstance createInstance(std::vector<const char*>& desiredLayers, const 
 	debugUtilsMessengerCreateInfo.pfnUserCallback = instanceDebugCallback;
 	debugUtilsMessengerCreateInfo.pUserData = nullptr;
 
-
 	VkInstanceCreateInfo instanceCreateInfo = {};
 	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instanceCreateInfo.pNext = &debugUtilsMessengerCreateInfo;
+	if(hasDebugUtilsExt)
+	{
+		instanceCreateInfo.pNext = &debugUtilsMessengerCreateInfo;
+	}
 	instanceCreateInfo.flags = 0;
 	instanceCreateInfo.pApplicationInfo = &appInfo;
 	instanceCreateInfo.enabledLayerCount = desiredLayers.size();
@@ -330,13 +335,23 @@ VkFence createFence(VkDevice logicalDevice, bool signalled)
 }
 
 VkBool32 initVulkanGlobalContext(
-	std::vector<const char*>& desiredLayers,
-	std::vector<const char*>& desiredExtensions,
+	std::vector<const char*> desiredLayers,
+	std::vector<const char*> desiredExtensions,
 	VulkanGlobalContext* generalInfo)
 {
 	assert(generalInfo);
 	
 	VK_CALL(locateAndInitVulkan());
+
+	bool hasDebugUtilsExt = false;
+	for(auto&& extension : desiredExtensions)
+	{
+		if(!strcmp(extension, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+		{
+			hasDebugUtilsExt = true;
+			break;
+		}
+	}
 
 	uint32_t requiredExtCount = {};
 	const char** requiredExtStrings = getRequiredSurfaceExtensions(&requiredExtCount);
@@ -348,12 +363,16 @@ VkBool32 initVulkanGlobalContext(
 
 	VK_CHECK(requestLayersAndExtensions(desiredExtensions, desiredLayers));
 	
-	VkInstance instance = createInstance(desiredLayers, desiredExtensions);
+	VkInstance instance = createInstance(desiredLayers, desiredExtensions, hasDebugUtilsExt);
 
 	loadInstanceFunctionPointers(instance);
-	
-	VkDebugUtilsMessengerEXT dbgCallback = registerDebugCallback(instance);
-	
+
+	VkDebugUtilsMessengerEXT dbgCallback = VK_NULL_HANDLE;
+	if(hasDebugUtilsExt)
+	{
+		dbgCallback = registerDebugCallback(instance);
+	}
+
 	uint32_t graphicsQueueFamilyIdx = VK_QUEUE_FAMILY_IGNORED;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	//we use graphics queue by default
@@ -401,13 +420,18 @@ VkBool32 initVulkanGlobalContext(
 	generalInfo->graphicsQueue = graphicsQueue;
 	generalInfo->computeQueue = computeQueue;
 	generalInfo->deviceProps = deviceProps;
+	generalInfo->hasDebugUtilsExtension = hasDebugUtilsExt;
 	uint32_t pushConstantSize = deviceProps.limits.maxPushConstantsSize;
 	return VK_TRUE;
 }
 
 void destroyGlobalContext(VulkanGlobalContext* ctx)
 {
-	vkDestroyDebugUtilsMessengerEXT(ctx->instance, ctx->debugCallback, nullptr);
+	if(ctx->hasDebugUtilsExtension)
+	{
+		vkDestroyDebugUtilsMessengerEXT(ctx->instance, ctx->debugCallback, nullptr);
+	}
+
 	vkDestroyDevice(ctx->logicalDevice, nullptr);
 	vkDestroyInstance(ctx->instance, nullptr);
 }

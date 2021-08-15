@@ -90,7 +90,7 @@ bool loadGLTF(const char* path, Mesh* geom, Animation* animation)
 	}
 	
 	//find first node, containing actual mesh data
-	auto& meshNode = std::find_if(gltfModel.nodes.begin(), gltfModel.nodes.end(),
+	auto meshNode = std::find_if(gltfModel.nodes.begin(), gltfModel.nodes.end(),
 		[](tinygltf::Node& node) {return node.mesh >= 0;}
 	);
 

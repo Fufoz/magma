@@ -7,4 +7,5 @@ endmacro()
 
 
 #build_example(triangle triangle.cc)
-build_example(flock flock.cc)
+# build_example(flock flock.cc)
+build_example(fluid_sim fluid_sim.cc)

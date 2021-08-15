@@ -10,8 +10,8 @@
 
 
 VkBool32 initVulkanGlobalContext(
-	std::vector<const char*>& desiredLayers,
-	std::vector<const char*>& desiredExtensions,
+	std::vector<const char*> desiredLayers,
+	std::vector<const char*> desiredExtensions,
 	VulkanGlobalContext* generalInfo
 );
 
