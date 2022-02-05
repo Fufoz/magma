@@ -9,7 +9,7 @@
 #include <platform/platform.h>
 
 
-VkBool32 initVulkanGlobalContext(
+bool initVulkanGlobalContext(
 	std::vector<const char*> desiredLayers,
 	std::vector<const char*> desiredExtensions,
 	VulkanGlobalContext* generalInfo

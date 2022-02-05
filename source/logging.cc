@@ -37,11 +37,11 @@ namespace log
 			{
 				severityMask = MASK_ERROR|MASK_WARN;
 			}
-			else if(strcmp(filter, "info") == 0)
-			{
-				severityMask = MASK_ERROR|MASK_WARN|MASK_INFO;
-			}
 			else if(strcmp(filter, "debug") == 0)
+			{
+				severityMask = MASK_ERROR|MASK_WARN|MASK_DEBUG;
+			}
+			else if(strcmp(filter, "info") == 0)
 			{
 				severityMask = MASK_ERROR|MASK_WARN|MASK_INFO|MASK_DEBUG;
 			}

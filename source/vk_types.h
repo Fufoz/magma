@@ -74,6 +74,7 @@ struct ImageResource
 	VkImage image;
 	VkImageView view;
 	VkImageLayout layout;
+	VkFormat format;
 	VkDeviceSize imageSize;
 	VkDeviceMemory backupMemory;
 };

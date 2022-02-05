@@ -96,7 +96,23 @@ int main(int argc, char **argv)
 
 	configureGraphicsPipe(swapChain, vkCtx, vbuff, windowInfo.windowExtent, &pipelineState);
 	buildFrameBuffers(vkCtx.logicalDevice, pipelineState, windowInfo.windowExtent, &swapChain);
+	auto build_frame_buffers = [&]()
+	{
+		for(std::size_t i = 0; i < swapChain.imageCount; i++)
+		{
+			VkFramebufferCreateInfo frameCreateInfo = {};
+			frameCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			frameCreateInfo.renderPass = pipelineState.renderPass;
+			frameCreateInfo.attachmentCount = 1;
+			frameCreateInfo.pAttachments = &swapChain.runtime.imageViews[i];
+			frameCreateInfo.width = windowInfo.windowExtent.width;
+			frameCreateInfo.height = windowInfo.windowExtent.height;
+			frameCreateInfo.layers = 1;
 
+			vkCreateFramebuffer(vkCtx.logicalDevice, &frameCreateInfo, nullptr, &swapChain.runtime.frameBuffers[i]);
+		}
+	};
+	
 	//build command buffer for each swapchain image
 	std::vector<VkCommandBuffer> commandBuffers = {};
 	createCommandBuffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
@@ -116,7 +132,7 @@ int main(int argc, char **argv)
 		vkDestroyPipeline(vkCtx.logicalDevice, pipelineState.pipeline, nullptr);
 		pipelineState.pipeline = VK_NULL_HANDLE;
 		configureGraphicsPipe(swapChain, vkCtx, vbuff, windowInfo.windowExtent, &pipelineState);
-		buildFrameBuffers(vkCtx.logicalDevice, pipelineState, windowInfo.windowExtent, &swapChain);
+		build_frame_buffers();
 		vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, commandBuffers.size(), commandBuffers.data());
 		createCommandBuffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
 		buildTriangleCommandBuffer(swapChain, pipelineState, deviceLocalBuffer.buffer, windowInfo.windowExtent, commandBuffers);

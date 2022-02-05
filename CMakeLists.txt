@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+project(magma)
+
 if (WIN32)
 	#list(APPEND CMAKE_CXX_FLAGS "/MP")
 	set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)

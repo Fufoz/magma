@@ -37,7 +37,9 @@ ImageResource createResourceImage(const VulkanGlobalContext& vkCtx, VkExtent3D i
 	imageCreateInfo.queueFamilyIndexCount = 1;
 	imageCreateInfo.pQueueFamilyIndices = &vkCtx.queueFamIdx;
 	imageCreateInfo.initialLayout = initialLayout;
-
+	
+	VkFormatProperties formatProps = {};
+	vkGetPhysicalDeviceFormatProperties(vkCtx.physicalDevice, imageFormat, &formatProps);
 	VkImage image = VK_NULL_HANDLE;
 	VK_CALL(vkCreateImage(vkCtx.logicalDevice, &imageCreateInfo, nullptr, &image));
 
@@ -82,10 +84,38 @@ ImageResource createResourceImage(const VulkanGlobalContext& vkCtx, VkExtent3D i
 	imageResource.layout = initialLayout;
 	imageResource.imageSize = memAllocInfo.allocationSize;
 	imageResource.backupMemory = imageMemory;
-
+	imageResource.format = imageFormat;
 	return imageResource;
 }
 
+
+VkSampler createDefaultSampler(VkDevice logicalDevice, bool* status)
+{
+	VkSamplerCreateInfo samplerCreateInfo = {};
+	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
+	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+	samplerCreateInfo.mipLodBias = 0.f;
+	samplerCreateInfo.anisotropyEnable = VK_FALSE;
+	samplerCreateInfo.compareEnable = VK_FALSE;
+	samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
+	samplerCreateInfo.minLod = 0.f;
+	samplerCreateInfo.maxLod = 1.f;
+	samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK;
+	samplerCreateInfo.unnormalizedCoordinates = VK_FALSE;
+	
+	VkSampler sampler = VK_NULL_HANDLE;
+	auto result = vkCreateSampler(logicalDevice, &samplerCreateInfo, nullptr, &sampler);
+	if(status)
+	{
+		*status = !result;
+	}
+	return sampler;
+}
 
 bool findRequiredMemoryTypeIndex(
 	VkPhysicalDevice 		physicalDevice,
@@ -367,6 +397,7 @@ VkBool32 pushTextureToDeviceLocalImage(VkCommandPool commandPool, const VulkanGl
 	vkDestroyFence(vkCtx.logicalDevice, textureTransferredFence, nullptr);
 	vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, 1, &cmdBuff);
 	
+	textureResource->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 	return VK_TRUE;
 }
 

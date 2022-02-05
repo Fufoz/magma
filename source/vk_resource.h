@@ -9,6 +9,8 @@ VkImage createImage(const VulkanGlobalContext& vkCtx, VkExtent3D imageExtent, Vk
 
 ImageResource createResourceImage(const VulkanGlobalContext& vkCtx, VkExtent3D imageExtent, VkFormat imageFormat, VkImageUsageFlags usageFlags, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 
+VkSampler createDefaultSampler(VkDevice logicalDevice, bool* status = nullptr);
+
 ImageResource createCubemapImage(const VulkanGlobalContext& vkCtx, VkExtent3D imageExtent, VkFormat imageFormat, VkImageUsageFlags usageFlags, VkImageLayout initialLayout = VK_IMAGE_LAYOUT_UNDEFINED);
 
 Buffer createBuffer(const VulkanGlobalContext& vkCtx, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags requiredMemProperties, std::size_t size);

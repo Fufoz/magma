@@ -26,25 +26,35 @@ static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desir
 	std::vector<VkExtensionProperties> extensions = {};
 	extensions.resize(extCount); 
 	vkEnumerateInstanceExtensionProperties(nullptr, &extCount, extensions.data());
+	
 	magma::log::debug("Desired Extensions:");
 	for(auto& extension : desiredExtensions)
+	{
 		magma::log::debug("\t Extension: {}", extension);
+	}
 
 	magma::log::debug("Extensions:");
 	for(auto& extension : extensions)
+	{
 		magma::log::debug("\t Extension: {}", extension.extensionName);
+	}
 
 	//make sure that requested extensions are exposed by the vulkan loader
 	uint32_t extFound = {};
 	for(auto& desiredExt : desiredExtensions)
 	{
+		bool extFoundd = false;
 		for(auto& extension : extensions)
 		{
 			if(!strcmp(desiredExt, extension.extensionName))
 			{
 				extFound++;
+				extFoundd = true;
+				break;
 			}
 		}
+		if(!extFoundd)
+			magma::log::error("Failed to find desired extension = {}", desiredExt);
 	}
 
 	uint32_t layerCount = {};
@@ -52,6 +62,13 @@ static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desir
 	std::vector<VkLayerProperties> layers = {};
 	layers.resize(layerCount); 
 	vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+
+	magma::log::debug("Desired Layers:");
+	for(auto& desiredLayer : desiredLayers)
+	{
+		magma::log::debug("\t Layer: {}", desiredLayer);
+	}
+
 	magma::log::debug("Layers:");
 	for(auto& layer : layers)
 	{
@@ -63,13 +80,18 @@ static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desir
 	uint32_t layersFound = {};
 	for(auto& desiredLayer : desiredLayers)
 	{
+		bool layerFound = false;
 		for(auto& layer : layers)
 		{
 			if(!strcmp(desiredLayer, layer.layerName))
 			{
 				layersFound++;
+				layerFound = true;
+				break;
 			}
 		}
+		if(!layerFound)
+			magma::log::error("Failed to find desired layer = {}",desiredLayer);
 	}
 
 	return (extFound == desiredExtensions.size()) && (layersFound == desiredLayers.size()) ? VK_TRUE : VK_FALSE; 
@@ -87,7 +109,7 @@ static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
 	debugUtilsMessengerCreateInfo.messageType = 
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	debugUtilsMessengerCreateInfo.pfnUserCallback = runtimeDebugCallback;
+	debugUtilsMessengerCreateInfo.pfnUserCallback = debugCallback;
 	debugUtilsMessengerCreateInfo.pUserData = nullptr;
 
 	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
@@ -123,7 +145,7 @@ static VkInstance createInstance(
 		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	debugUtilsMessengerCreateInfo.pfnUserCallback = instanceDebugCallback;
+	debugUtilsMessengerCreateInfo.pfnUserCallback = debugCallback;
 	debugUtilsMessengerCreateInfo.pUserData = nullptr;
 
 	VkInstanceCreateInfo instanceCreateInfo = {};
@@ -334,14 +356,14 @@ VkFence createFence(VkDevice logicalDevice, bool signalled)
 	return fence;
 }
 
-VkBool32 initVulkanGlobalContext(
+bool initVulkanGlobalContext(
 	std::vector<const char*> desiredLayers,
 	std::vector<const char*> desiredExtensions,
 	VulkanGlobalContext* generalInfo)
 {
 	assert(generalInfo);
 	
-	VK_CALL(locateAndInitVulkan());
+	VK_CALL_RETURN_BOOL(locateAndInitVulkan());
 
 	bool hasDebugUtilsExt = false;
 	for(auto&& extension : desiredExtensions)
@@ -422,7 +444,7 @@ VkBool32 initVulkanGlobalContext(
 	generalInfo->deviceProps = deviceProps;
 	generalInfo->hasDebugUtilsExtension = hasDebugUtilsExt;
 	uint32_t pushConstantSize = deviceProps.limits.maxPushConstantsSize;
-	return VK_TRUE;
+	return true;
 }
 
 void destroyGlobalContext(VulkanGlobalContext* ctx)
