@@ -186,12 +186,12 @@ struct Fluid
 		std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageCI = {};
 		shaderStageCI[0] = fillShaderStageCreateInfo(
 			ctx->logicalDevice,
-			"shaders/fluid_cube_vert.spv",
+			"shaders/spv/fluid_cube_vert.spv",
 			VK_SHADER_STAGE_VERTEX_BIT
 		);
 		shaderStageCI[1] = fillShaderStageCreateInfo(
 			ctx->logicalDevice,
-			"shaders/fluid_advect_quantity.spv",
+			"shaders/spv/fluid_advect_quantity.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		);
 
@@ -281,13 +281,21 @@ struct Fluid
 
 
 
-		// creating jacobi solver pipeline
+		// creating jacobi solver pipelines
 
-		std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShaders = {};
-		jacobiShaders[0] = shaderStageCI[0];
-		jacobiShaders[1] = fillShaderStageCreateInfo(
+		std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShadersVisc = {};
+		jacobiShadersVisc[0] = shaderStageCI[0];
+		jacobiShadersVisc[1] = fillShaderStageCreateInfo(
 			ctx->logicalDevice,
-			"shaders/fluid_jacobi_solver.spv",
+			"shaders/spv/fluid_jacobi_solver.spv",
+			VK_SHADER_STAGE_FRAGMENT_BIT
+		);
+
+		std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShadersPressure = {};
+		jacobiShadersPressure[0] = shaderStageCI[0];
+		jacobiShadersPressure[1] = fillShaderStageCreateInfo(
+			ctx->logicalDevice,
+			"shaders/spv/fluid_jacobi_solver_pressure.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		);
 
@@ -350,19 +358,24 @@ struct Fluid
 		VkRenderPass jacobiRenderPass = VK_NULL_HANDLE;
 		vkCreateRenderPass(ctx->logicalDevice, &jacobiRenderPassCI, nullptr, &jacobiRenderPass);
 		
-		pipesCreateInfo[PIPE_JACOBI_SOLVER] = commonPipeStateInfo;
-		pipesCreateInfo[PIPE_JACOBI_SOLVER].stageCount = jacobiShaders.size();
-		pipesCreateInfo[PIPE_JACOBI_SOLVER].pStages = jacobiShaders.data();
-		pipesCreateInfo[PIPE_JACOBI_SOLVER].layout = jacobiPipeLayout;
-		pipesCreateInfo[PIPE_JACOBI_SOLVER].renderPass = jacobiRenderPass;
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_VISCOCITY] = commonPipeStateInfo;
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_VISCOCITY].stageCount = jacobiShadersVisc.size();
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_VISCOCITY].pStages = jacobiShadersVisc.data();
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_VISCOCITY].layout = jacobiPipeLayout;
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_VISCOCITY].renderPass = jacobiRenderPass;
 
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_PRESSURE] = commonPipeStateInfo;
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_PRESSURE].stageCount = jacobiShadersPressure.size();
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_PRESSURE].pStages = jacobiShadersPressure.data();
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_PRESSURE].layout = jacobiPipeLayout;
+		pipesCreateInfo[PIPE_JACOBI_SOLVER_PRESSURE].renderPass = jacobiRenderPass;
 		
 		// creating force pipeline
 		std::array<VkPipelineShaderStageCreateInfo, 2> forceShaders = {};
 		forceShaders[0] = shaderStageCI[0];
 		forceShaders[1] = fillShaderStageCreateInfo(
 			ctx->logicalDevice,
-			"shaders/fluid_apply_force.spv",
+			"shaders/spv/fluid_apply_force.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		);
 
@@ -452,7 +465,7 @@ struct Fluid
 		divShaders[0] = shaderStageCI[0];
 		divShaders[1] = fillShaderStageCreateInfo(
 			ctx->logicalDevice,
-			"shaders/fluid_project_divergence.spv",
+			"shaders/spv/fluid_project_divergence.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		);
 
@@ -543,7 +556,7 @@ struct Fluid
 		projectShaders[0] = shaderStageCI[0];
 		projectShaders[1] = fillShaderStageCreateInfo(
 			ctx->logicalDevice,
-			"shaders/fluid_project_gradient_subtract.spv",
+			"shaders/spv/fluid_project_gradient_subtract.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		);
 
@@ -639,7 +652,7 @@ struct Fluid
 		presentShaders[0] = shaderStageCI[0];
 		presentShaders[1] = fillShaderStageCreateInfo(
 			ctx->logicalDevice,
-			"shaders/fluid_ink_present.spv",
+			"shaders/spv/fluid_ink_present.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		);
 
@@ -724,21 +737,24 @@ struct Fluid
 		pipesCreateInfo[PIPE_GRADIENT_SUBTRACT].renderPass = projectRenderPass;
 
 		descrSetLayouts[PIPE_ADVECTION] = advectDescrSetLayout;
-		descrSetLayouts[PIPE_JACOBI_SOLVER] = jacobiDescrSetLayout;
+		descrSetLayouts[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiDescrSetLayout;
+		descrSetLayouts[PIPE_JACOBI_SOLVER_PRESSURE] = jacobiDescrSetLayout;
 		descrSetLayouts[PIPE_EXTERNAL_FORCES] = forceDescrSetLayout;
 		descrSetLayouts[PIPE_DIVERGENCE] = divDescrSetLayout;
 		descrSetLayouts[PIPE_GRADIENT_SUBTRACT] = projectDescrSetLayout;
 		descrSetLayouts[PIPE_PRESENT] = presentDescrSetLayout;
 
 		pipeLayouts[PIPE_ADVECTION] = advectPipeLayout;
-		pipeLayouts[PIPE_JACOBI_SOLVER] = jacobiPipeLayout;
+		pipeLayouts[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiPipeLayout;
+		pipeLayouts[PIPE_JACOBI_SOLVER_PRESSURE] = jacobiPipeLayout;
 		pipeLayouts[PIPE_EXTERNAL_FORCES] = forcePipeLayout;
 		pipeLayouts[PIPE_DIVERGENCE] = divPipeLayout;
 		pipeLayouts[PIPE_GRADIENT_SUBTRACT] = projectPipeLayout;
 		pipeLayouts[PIPE_PRESENT] = presentPipeLayout;
 
 		renderPasses[PIPE_ADVECTION] = advectRenderPass;
-		renderPasses[PIPE_JACOBI_SOLVER] = jacobiRenderPass;
+		renderPasses[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiRenderPass;
+		renderPasses[PIPE_JACOBI_SOLVER_PRESSURE] = jacobiRenderPass;
 		renderPasses[PIPE_EXTERNAL_FORCES] = forceRenderPass;
 		renderPasses[PIPE_DIVERGENCE] = divRenderPass;
 		renderPasses[PIPE_GRADIENT_SUBTRACT] = projectRenderPass;
@@ -782,12 +798,13 @@ struct Fluid
 
 		VkDescriptorSetLayout layouts[DSI_INDEX_COUNT] = {
 			descrSetLayouts[PIPE_ADVECTION],//advect_vel1
-			descrSetLayouts[PIPE_JACOBI_SOLVER],//visc1
-			descrSetLayouts[PIPE_JACOBI_SOLVER],//visc2
+			descrSetLayouts[PIPE_JACOBI_SOLVER_VISCOCITY],//visc1
+			descrSetLayouts[PIPE_JACOBI_SOLVER_VISCOCITY],//visc2
 			descrSetLayouts[PIPE_EXTERNAL_FORCES],//forces
+			descrSetLayouts[PIPE_EXTERNAL_FORCES], //color forces
 			descrSetLayouts[PIPE_DIVERGENCE],//project_div
-			descrSetLayouts[PIPE_JACOBI_SOLVER],//project_pressure_1
-			descrSetLayouts[PIPE_JACOBI_SOLVER],//project_pressure_2
+			descrSetLayouts[PIPE_JACOBI_SOLVER_PRESSURE],//project_pressure_1
+			descrSetLayouts[PIPE_JACOBI_SOLVER_PRESSURE],//project_pressure_2
 			descrSetLayouts[PIPE_GRADIENT_SUBTRACT],//project_grad_sub
 			descrSetLayouts[PIPE_ADVECTION],//advect_col1
 			descrSetLayouts[PIPE_PRESENT] //final present
@@ -993,7 +1010,7 @@ struct Fluid
 		);
 	}
 	
-	void update_forces_descr_set(int imageIndex, int textureIndex)
+	void update_forces_descr_set(int imageIndex, int textureIndex, int descrSetIndex)
 	{
 		VkWriteDescriptorSet forceWriteDescrSet = {}; 
 		VkDescriptorImageInfo forceImageInfo = {};
@@ -1002,7 +1019,7 @@ struct Fluid
 		forceImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 		forceWriteDescrSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-		forceWriteDescrSet.dstSet = descrSetsPerFrame[imageIndex][DSI_FORCES];
+		forceWriteDescrSet.dstSet = descrSetsPerFrame[imageIndex][descrSetIndex];
 		forceWriteDescrSet.dstBinding = 0;
 		forceWriteDescrSet.dstArrayElement = 0;
 		forceWriteDescrSet.descriptorCount = 1;
@@ -1109,7 +1126,7 @@ struct Fluid
 		frameBuffers[RT_PRESSURE_FIRST] = create_frame_buffer(
 			ctx->logicalDevice,
 			simTextures[RT_PRESSURE_FIRST].view,
-			renderPasses[PIPE_JACOBI_SOLVER],
+			renderPasses[PIPE_JACOBI_SOLVER_PRESSURE],
 			window->windowExtent.width,
 			window->windowExtent.height
 		);
@@ -1117,7 +1134,7 @@ struct Fluid
 		frameBuffers[RT_PRESSURE_SECOND] = create_frame_buffer(
 			ctx->logicalDevice,
 			simTextures[RT_PRESSURE_SECOND].view,
-			renderPasses[PIPE_JACOBI_SOLVER],
+			renderPasses[PIPE_JACOBI_SOLVER_PRESSURE],
 			window->windowExtent.width,
 			window->windowExtent.height
 		);
@@ -1170,6 +1187,56 @@ struct Fluid
 		);
 	}
 
+	void clear_pressure_texture(VkCommandBuffer commandBuffer, int textureIndex)
+	{
+
+		VkClearColorValue clearColor = {};
+		clearColor.float32[0] = 0.f;
+		clearColor.float32[0] = 0.f;
+		clearColor.float32[0] = 0.f;
+		clearColor.float32[0] = 0.f;
+
+		VkImageSubresourceRange range = {};
+		range.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		range.baseMipLevel = 0;
+		range.levelCount = 1;
+		range.baseArrayLayer = 0;
+		range.layerCount = 1;
+		
+		insert_image_memory_barrier(
+			commandBuffer,
+			simTextures[textureIndex].image,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			0,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			simTextures[textureIndex].layout,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+		);
+
+		vkCmdClearColorImage(
+			commandBuffer,
+			simTextures[textureIndex].image,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			&clearColor,
+			1,
+			&range
+		);
+
+		insert_image_memory_barrier(
+			commandBuffer,
+			simTextures[textureIndex].image,
+			VK_PIPELINE_STAGE_TRANSFER_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			VK_ACCESS_TRANSFER_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
+
+		simTextures[textureIndex].layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	}
+
 	void cmd_begin_debug_label(VkCommandBuffer commandBuffer, const char* labelName, Vec4 color)
 	{
 		if(ctx->hasDebugUtilsExtension)
@@ -1205,13 +1272,14 @@ struct Fluid
 			"RT_COLOR_FIRST",
 			"RT_COLOR_SECOND"
 		};
-		
+
 		const char* DescrSetNames[DSI_INDEX_COUNT] = 
 		{
 			"DSI_ADVECT_VELOCITY",
 			"DSI_VISCOCITY_1",
 			"DSI_VISCOCITY_2",
 			"DSI_FORCES",
+			"DSI_FORCES_COLOR",
 			"DSI_DIVERGENCE",
 			"DSI_PRESSURE_1",
 			"DSI_PRESSURE_2",
@@ -1222,16 +1290,13 @@ struct Fluid
 
 		for(std::size_t textureIndex = 0; textureIndex < simTextures.size(); textureIndex++)
 		{
-			if(ctx->hasDebugUtilsExtension)
-			{
 				VkDebugUtilsObjectNameInfoEXT debugTextureInfo = {};
 				debugTextureInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
 				debugTextureInfo.objectType = VK_OBJECT_TYPE_IMAGE;
 				debugTextureInfo.objectHandle = (uint64_t)simTextures[textureIndex].image;
 				debugTextureInfo.pObjectName = RenderTargetNames[textureIndex];
-				
+								
 				vkSetDebugUtilsObjectNameEXT(ctx->logicalDevice, &debugTextureInfo);
-			}
 		}
 
 		for(std::size_t imageIndex = 0; imageIndex < SWAPCHAIN_IMAGE_COUNT; imageIndex++)
@@ -1287,8 +1352,8 @@ struct Fluid
 
 	void record_command_buffer(
 		int commandBufferIndex,
-		int intputVelocityTextureIndex,
-		int intputColorTextureIndex,
+		int inputVelocityTextureIndex,
+		int inputColorTextureIndex,
 		int* outputVelocityTextureIndex,
 		int* outputColorTextureIndex)
 	{
@@ -1303,10 +1368,11 @@ struct Fluid
 
 		vkBeginCommandBuffer(commandBuffers[commandBufferIndex], &cmdBuffBeginInfo);
 
-		update_advect_velocity_descriptor_set(commandBufferIndex, intputVelocityTextureIndex);
-		int advectVelocityRenderTarget = intputVelocityTextureIndex == RT_VELOCITY_FIRST ? 
+		update_advect_velocity_descriptor_set(commandBufferIndex, inputVelocityTextureIndex);
+		int advectVelocityRenderTarget = inputVelocityTextureIndex == RT_VELOCITY_FIRST ? 
 			RT_VELOCITY_SECOND : RT_VELOCITY_FIRST;
 		{
+
 			cmd_begin_debug_label(commandBuffers[commandBufferIndex], "advect velocity pass", {0.713f, 0.921f, 0.556f, 1.f});
 
 			VkRenderPassBeginInfo advectPassBeginInfo = {};
@@ -1361,23 +1427,21 @@ struct Fluid
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
-		// UPDATE: i don't think we need explicitly specify transition barriers here,
-		//  because render pass specifies it for us:
-		// initialLayout = shader_read --> during = color_attachment --> final = shader_read
-		// UPDATE: i'm probably wrong
-		
+
+
+		// TODO: removing viscocity pass makes fluid to behave weird and glitchy for some reason
 		//viscocity pass
 		update_viscocity_descr_set(commandBufferIndex, advectVelocityRenderTarget);
 		int viscPassRenderTarget = advectVelocityRenderTarget == RT_VELOCITY_FIRST ? 
 			RT_VELOCITY_SECOND : RT_VELOCITY_FIRST;
-		cmd_begin_debug_label(commandBuffers[commandBufferIndex], "viscocity pass",{0.854f, 0.556f, 0.921f, 1.f});
+		cmd_begin_debug_label(commandBuffers[commandBufferIndex], "viscocity pass", {0.854f, 0.556f, 0.921f, 1.f});
 
 		for(std::size_t i = 0; i < jacobiIterations; i++)
 		{
-			
+
 			VkRenderPassBeginInfo viscPassBeginInfo = {};
 			viscPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			viscPassBeginInfo.renderPass = renderPasses[PIPE_JACOBI_SOLVER];
+			viscPassBeginInfo.renderPass = renderPasses[PIPE_JACOBI_SOLVER_VISCOCITY];
 			viscPassBeginInfo.framebuffer = frameBuffers[viscPassRenderTarget];
 			viscPassBeginInfo.renderArea.offset = {0, 0};
 			viscPassBeginInfo.renderArea.extent = windowExtent;
@@ -1386,16 +1450,15 @@ struct Fluid
 
 			vkCmdBeginRenderPass(commandBuffers[commandBufferIndex], &viscPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[PIPE_JACOBI_SOLVER]);
+			vkCmdBindPipeline(commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[PIPE_JACOBI_SOLVER_VISCOCITY]);
 
 			int descriptorSetIndex = viscPassRenderTarget == RT_VELOCITY_FIRST ? DSI_VISCOCITY_2 : DSI_VISCOCITY_1;
 
 			vkCmdBindDescriptorSets(
 				commandBuffers[commandBufferIndex],
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeLayouts[PIPE_JACOBI_SOLVER],
+				pipeLayouts[PIPE_JACOBI_SOLVER_VISCOCITY],
 				0, 1, &descrSetsPerFrame[commandBufferIndex][descriptorSetIndex],
-				// &descrSetsPerFrame[commandBufferIndex][viscPassRenderTarget == RT_VELOCITY_FIRST ? DSI_VISCOCITY_1 : DSI_VISCOCITY_2],
 				0, nullptr
 			);
 
@@ -1405,9 +1468,10 @@ struct Fluid
 			SolverConstants solverConstants = {};
 			solverConstants.alpha = (dx * dx) / (kv * timeStep);
 			solverConstants.beta = 4 + solverConstants.alpha;
+			solverConstants.texelSize = dx;
 			vkCmdPushConstants(
 				commandBuffers[commandBufferIndex],
-				pipeLayouts[PIPE_JACOBI_SOLVER],
+				pipeLayouts[PIPE_JACOBI_SOLVER_VISCOCITY],
 				VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(SolverConstants), &solverConstants
 			);
@@ -1435,16 +1499,16 @@ struct Fluid
 
 		RenderTarget forcePassRenderTarget = viscPassRenderTarget == RT_VELOCITY_FIRST ? 
 			RT_VELOCITY_FIRST: RT_VELOCITY_SECOND;
+		update_forces_descr_set(commandBufferIndex, viscPassRenderTarget == RT_VELOCITY_FIRST ? 
+			RT_VELOCITY_SECOND: RT_VELOCITY_FIRST, DSI_FORCES);
 
-		update_forces_descr_set(
-			commandBufferIndex, 
-			forcePassRenderTarget == RT_VELOCITY_FIRST ?
-				RT_VELOCITY_SECOND : RT_VELOCITY_FIRST
-		);
+		// update_forces_descr_set(commandBufferIndex, advectVelocityRenderTarget, DSI_FORCES);
+		// RenderTarget forcePassRenderTarget = advectVelocityRenderTarget == RT_VELOCITY_FIRST ? 
+		// 	RT_VELOCITY_SECOND : RT_VELOCITY_FIRST;
 		
-		//force pass
+		//force velocity pass
 		{
-			cmd_begin_debug_label(commandBuffers[commandBufferIndex], "Force pass", {0.254f, 0.329f, 0.847f, 1.f});
+			cmd_begin_debug_label(commandBuffers[commandBufferIndex], "Force velocity pass", {0.254f, 0.329f, 0.847f, 1.f});
 			VkRenderPassBeginInfo forcePassBeginInfo = {};
 			forcePassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 			forcePassBeginInfo.renderPass = renderPasses[PIPE_EXTERNAL_FORCES];
@@ -1472,15 +1536,18 @@ struct Fluid
 			
 			
 			ForceConstants forceConsts = {};
-			forceConsts.impulseRadius = 1.f;
+			forceConsts.impulseRadius = 0.025f;
 
 			static bool isMouseBeingDragged = false;
-			static MousePos prevMousePos = {};
+			static Vec2 prevMousePos = {};
 
 			if(isMouseBtnPressed(MouseBtn::LeftBtn) && !isMouseBeingDragged)
 			{
 				isMouseBeingDragged = true;
-				prevMousePos = getMousePos();
+				auto pos = getMousePos();
+				prevMousePos.x = (float)pos.x * dx;
+				prevMousePos.y = (float)pos.y * dx;
+				// magma::log::error("prev = {} {}", prevMousePos.x, prevMousePos.y);
 			}
 			else if(!isMouseBtnPressed(MouseBtn::LeftBtn))
 			{
@@ -1489,13 +1556,19 @@ struct Fluid
 			else if(isMouseBeingDragged)
 			{
 				auto currentMousePos = getMousePos();
-				forceConsts.mousePos = {(float)currentMousePos.x, (float)currentMousePos.y};
+
+				forceConsts.mousePos = {(float)currentMousePos.x * dx, (float)currentMousePos.y * dx};
+				// magma::log::error("current = {} {}", forceConsts.mousePos.x, forceConsts.mousePos.y);
+
 				forceConsts.force = {
-					(float)(currentMousePos.x - prevMousePos.x), 
-					(float)(currentMousePos.y - prevMousePos.y),
+					(forceConsts.mousePos.x - prevMousePos.x)* 15000.f, 
+					(forceConsts.mousePos.y - prevMousePos.y)* 15000.f,
 					0.f, 0.f
 				};
-				magma::log::debug("recording force... {};{}",forceConsts.force.x,forceConsts.force.y);
+
+				// isMouseBeingDragged = std::abs(forceConsts.force.x) > 0 || std::abs(forceConsts.force.y > 0);
+				// magma::log::error("recording force... {};{}",forceConsts.force.x,forceConsts.force.y);
+				prevMousePos = forceConsts.mousePos;
 			}
 
 			vkCmdPushConstants(commandBuffers[commandBufferIndex], pipeLayouts[PIPE_EXTERNAL_FORCES],
@@ -1508,7 +1581,7 @@ struct Fluid
 
 			cmd_end_debug_label(commandBuffers[commandBufferIndex]);
 		}
-// insert_full_memory_barrier(commandBuffers[commandBufferIndex]);
+		
 		insert_image_memory_barrier(
 			commandBuffers[commandBufferIndex],
 			simTextures[forcePassRenderTarget].image,
@@ -1520,13 +1593,90 @@ struct Fluid
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
 
+		//force color pass
+		update_forces_descr_set(commandBufferIndex, inputColorTextureIndex, DSI_FORCES_COLOR);
+		int forceColorPassRenderTarget = inputColorTextureIndex == RT_COLOR_FIRST ?
+			RT_COLOR_SECOND : RT_COLOR_FIRST;
+		{
+			cmd_begin_debug_label(commandBuffers[commandBufferIndex], "Force color pass", {0.2f, 0.1f, 1.f, 1.f});
+
+			VkRenderPassBeginInfo forcePassBeginInfo = {};
+			forcePassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+			forcePassBeginInfo.renderPass = renderPasses[PIPE_EXTERNAL_FORCES];
+			forcePassBeginInfo.framebuffer = frameBuffers[forceColorPassRenderTarget];
+			forcePassBeginInfo.renderArea.offset = {0, 0};
+			forcePassBeginInfo.renderArea.extent = windowExtent;
+			forcePassBeginInfo.clearValueCount = 0;
+			forcePassBeginInfo.pClearValues = nullptr;
+
+			vkCmdBeginRenderPass(commandBuffers[commandBufferIndex], &forcePassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+			vkCmdBindPipeline(commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[PIPE_EXTERNAL_FORCES]);
+
+			vkCmdBindDescriptorSets(
+				commandBuffers[commandBufferIndex],
+				VK_PIPELINE_BIND_POINT_GRAPHICS,
+				pipeLayouts[PIPE_EXTERNAL_FORCES],
+				0, 1, &descrSetsPerFrame[commandBufferIndex][DSI_FORCES_COLOR],
+				0, nullptr
+			);
+
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(commandBuffers[commandBufferIndex], 0, 1, &deviceVertexBuffer.buffer, &offset);
+			vkCmdBindIndexBuffer(commandBuffers[commandBufferIndex], deviceIndexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+			
+			
+			ForceConstants forceConsts = {};
+			forceConsts.impulseRadius = 0.025f;
+
+			static bool isMouseBeingDragged = false;
+
+			if(isMouseBtnPressed(MouseBtn::LeftBtn) && !isMouseBeingDragged)
+			{
+				isMouseBeingDragged = true;
+			}
+			else if(!isMouseBtnPressed(MouseBtn::LeftBtn))
+			{
+				isMouseBeingDragged = false;
+			}
+			else if(isMouseBeingDragged)
+			{
+				auto currentMousePos = getMousePos();
+				forceConsts.mousePos = {(float)currentMousePos.x * dx, (float)currentMousePos.y * dx};
+				forceConsts.force = {0.082, 0.976, 0.901, 1.f};
+			}
+
+			vkCmdPushConstants(commandBuffers[commandBufferIndex], pipeLayouts[PIPE_EXTERNAL_FORCES],
+				VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ForceConstants), &forceConsts);
+
+			const std::uint32_t indexCount = 6; 
+			vkCmdDrawIndexed(commandBuffers[commandBufferIndex], indexCount, 1, 0, 0, 0);
+
+			vkCmdEndRenderPass(commandBuffers[commandBufferIndex]);
+
+			cmd_end_debug_label(commandBuffers[commandBufferIndex]);
+		}
+		
+		insert_image_memory_barrier(
+			commandBuffers[commandBufferIndex],
+			simTextures[forceColorPassRenderTarget].image,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			VK_ACCESS_SHADER_READ_BIT,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		);
+
+// insert_full_memory_barrier(commandBuffers[commandBufferIndex]);
+
 		int divergencePassRenderTarget = forcePassRenderTarget == RT_VELOCITY_FIRST ?
 			RT_VELOCITY_SECOND : RT_VELOCITY_FIRST;
 
 		update_divergence_descr_set(commandBufferIndex, forcePassRenderTarget);
 		//divergence pass
 		{
-			cmd_begin_debug_label(commandBuffers[commandBufferIndex], "Divergence pass",{0.254f, 0.847f, 0.839f, 1.f});
+			cmd_begin_debug_label(commandBuffers[commandBufferIndex], "Divergence pass", {0.254f, 0.847f, 0.839f, 1.f});
 
 			VkRenderPassBeginInfo divPassBeginInfo = {};
 			divPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -1579,13 +1729,14 @@ struct Fluid
 
 		cmd_begin_debug_label(commandBuffers[commandBufferIndex], "Pressure pass", {0.996f, 0.933f, 0.384f, 1.f});
 		//pressure pass
+		clear_pressure_texture(commandBuffers[commandBufferIndex], RT_PRESSURE_FIRST);
 		for(std::size_t i = 0; i < jacobiIterations; i++)
 		{
 			bool evenIteration = !(bool)(i % 2);
 			
 			VkRenderPassBeginInfo pressurePassBeginInfo = {};
 			pressurePassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			pressurePassBeginInfo.renderPass = renderPasses[PIPE_JACOBI_SOLVER];
+			pressurePassBeginInfo.renderPass = renderPasses[PIPE_JACOBI_SOLVER_PRESSURE];
 			pressurePassBeginInfo.framebuffer = frameBuffers[evenIteration ? RT_PRESSURE_SECOND : RT_PRESSURE_FIRST];
 			pressurePassBeginInfo.renderArea.offset = {0, 0};
 			pressurePassBeginInfo.renderArea.extent = windowExtent;
@@ -1594,12 +1745,12 @@ struct Fluid
 
 			vkCmdBeginRenderPass(commandBuffers[commandBufferIndex], &pressurePassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-			vkCmdBindPipeline(commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[PIPE_JACOBI_SOLVER]);
+			vkCmdBindPipeline(commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelines[PIPE_JACOBI_SOLVER_PRESSURE]);
 
 			vkCmdBindDescriptorSets(
 				commandBuffers[commandBufferIndex],
 				VK_PIPELINE_BIND_POINT_GRAPHICS,
-				pipeLayouts[PIPE_JACOBI_SOLVER],
+				pipeLayouts[PIPE_JACOBI_SOLVER_PRESSURE],
 				0, 1, &descrSetsPerFrame[commandBufferIndex][evenIteration ? DSI_PRESSURE_1 : DSI_PRESSURE_2],
 				0, nullptr
 			);
@@ -1611,9 +1762,10 @@ struct Fluid
 			SolverConstants solverConstants = {};
 			solverConstants.alpha = -(dx * dx) ;
 			solverConstants.beta = 4;
+			solverConstants.texelSize = dx;
 			vkCmdPushConstants(
 				commandBuffers[commandBufferIndex],
-				pipeLayouts[PIPE_JACOBI_SOLVER],
+				pipeLayouts[PIPE_JACOBI_SOLVER_PRESSURE],
 				VK_SHADER_STAGE_FRAGMENT_BIT,
 				0, sizeof(SolverConstants), &solverConstants
 			);
@@ -1639,12 +1791,12 @@ struct Fluid
 		cmd_end_debug_label(commandBuffers[commandBufferIndex]);
 
 		//pressure subtract pass
-		intputVelocityTextureIndex = forcePassRenderTarget;
+		inputVelocityTextureIndex = forcePassRenderTarget;
 		int pressureTextureIndex = jacobiIterations % 2 == 0 ?
 			RT_PRESSURE_SECOND : RT_PRESSURE_FIRST;
 		int subtractPassRenderTarget = divergencePassRenderTarget;
 
-		update_pressure_subtract_descr_set(commandBufferIndex, intputVelocityTextureIndex, pressureTextureIndex);
+		update_pressure_subtract_descr_set(commandBufferIndex, inputVelocityTextureIndex, pressureTextureIndex);
 		{
 			cmd_begin_debug_label(commandBuffers[commandBufferIndex], "Pressure subtract pass",{0.384f, 0.996f, 0.639f,1.f});
 
@@ -1695,8 +1847,9 @@ struct Fluid
 			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		);
 
-		update_advect_color_descriptor_sets(commandBufferIndex, subtractPassRenderTarget, intputColorTextureIndex);
-		int advectColorRenderTarget = intputColorTextureIndex == RT_COLOR_FIRST ?
+		update_advect_color_descriptor_sets(commandBufferIndex, subtractPassRenderTarget, forceColorPassRenderTarget);
+
+		int advectColorRenderTarget = forceColorPassRenderTarget == RT_COLOR_FIRST ?
 			RT_COLOR_SECOND : RT_COLOR_FIRST;
 		//  advect for color
 		{
@@ -1841,7 +1994,8 @@ struct Fluid
 			
 			vkWaitForFences(ctx->logicalDevice, 1, &swapchain->runtime.workSubmittedFences[syncIndex], VK_TRUE, UINT64_MAX);
 			vkResetFences(ctx->logicalDevice, 1, &swapchain->runtime.workSubmittedFences[syncIndex]);
-			
+
+			// magma::log::error("status = {}",vkStrError(r));
 			std::uint32_t imageIndex = {};
 			vkAcquireNextImageKHR(
 				ctx->logicalDevice,
@@ -1876,8 +2030,9 @@ struct Fluid
 			submitInfo.signalSemaphoreCount = 1;
 			submitInfo.pSignalSemaphores = &swapchain->runtime.imageMayPresentSemaphores[syncIndex];
 
-			auto queueSubmtiStatus = vkQueueSubmit(ctx->graphicsQueue, 1, &submitInfo, swapchain->runtime.workSubmittedFences[syncIndex]);
-			// magma::log::debug("queue submit at image {} with status {}", imageIndex, vkStrError(queueSubmtiStatus));
+			auto queueSubmitStatus = vkQueueSubmit(ctx->graphicsQueue, 1, &submitInfo, swapchain->runtime.workSubmittedFences[syncIndex]);
+			// magma::log::debug("queue submit at image {} with status {}", imageIndex, vkStrError(queueSubmitStatus));
+			// auto r = vkDeviceWaitIdle(ctx->logicalDevice);
 
 
 			VkPresentInfoKHR presentInfo = {};
@@ -1898,14 +2053,15 @@ struct Fluid
 
 	struct AdvectConstants
 	{
-		float timestep;
 		float gridScale;
+		float timestep;
 	};
 	
 	struct SolverConstants
 	{
 		float alpha;
 		float beta;
+		float texelSize;
 	};
 	const std::size_t jacobiIterations = 50;
 
@@ -1919,7 +2075,8 @@ struct Fluid
 	enum Pipeline
 	{
 		PIPE_ADVECTION,//velocity & color advection
-		PIPE_JACOBI_SOLVER,//viscocity, pressure solve
+		PIPE_JACOBI_SOLVER_PRESSURE,//viscocity, pressure solve
+		PIPE_JACOBI_SOLVER_VISCOCITY,
 		PIPE_EXTERNAL_FORCES,
 		PIPE_DIVERGENCE,//before pressure solve (vW)
 		PIPE_GRADIENT_SUBTRACT,
@@ -1938,16 +2095,13 @@ struct Fluid
 		RT_MAX_COUNT
 	};
 
-	// descr_advect_vel_1, descr_advect_vel_2,
-	// jacobi_1, jacobi_2, force,
-	// project_divergence, (jacobi_1,2,..), project_gradient_subtract,
-	// descr_advect_col_1, descr_advect_col_2
 	enum DescrSetIndex
 	{
 		DSI_ADVECT_VELOCITY,
 		DSI_VISCOCITY_1,
 		DSI_VISCOCITY_2,
 		DSI_FORCES,
+		DSI_FORCES_COLOR,
 		DSI_DIVERGENCE,
 		DSI_PRESSURE_1,
 		DSI_PRESSURE_2,
