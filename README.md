@@ -26,15 +26,11 @@ Beside these rules boids also avoid collision with virtual tank borders via sphe
 This sample implements a 2d fluid simulation by solving Navier-Stokes PDEs.<br />
 Instead of keeping track of each fluid particle individually(Lagrangian viewpoint) the problem domain is discretized by using 2d grid of cells, where each cell has certain fluid characteristics like velocity or pressure. <br />
 We then look at this fixed cells  and and observe how fluid quantities change over time (a.k.a Eulerian viepoint).<br />
-At each time step we update these vector fields by solving aforementioned PDEs untill the fluid becomes divergent free.
-Solving Navier-Stokes PDEs consists of the following parts:
-  * fluid advection step: update velocity vector field based on the results of the previous step  
-  * fluid viscocity step: apply viscocity to the fluid
-  * force application step: generate force by dragging the mouse over the domain
-  * pressure solver step: find pressure at every grid cell by solving a system of linear equations using Jacobi iterative algorithm
-  * pressure subtract step: make fluid divergent free again
-  * force ink step: apply colored ink by dragging mouse over the domain
-  * ink advection step: transport applied ink by velocity field
+At each time step we update these vector fields by solving aforementioned PDEs untill the fluid becomes divergent free.<br />
+References:
+* Robert-Bridson "Fluid Simulation for Computer Graphics" [link](https://www.amazon.com/Simulation-Computer-Graphics-Robert-Bridson/dp/1568813260)<br />
+* GPU-GEMS chapter-38 [link](https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/)<br />
+
 <p align="center">
   <img src="/images/girl.gif" />
 </p>
