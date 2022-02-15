@@ -23,11 +23,12 @@ Beside these rules boids also avoid collision with virtual tank borders via sphe
 </p>
 
 ### Fluid simulation
-This sample implements a 2d fluid simulation by solving Navier-Stokes PDEs.
-Instead of keeping track of each fluid particle individually(Lagrangian viewpoint) the problem domain is discretized by using 2d grid of cells, where each cell has certain fluid characteristics like velocity or pressure. We then look at this fixed cells  and and observe how fluid quantities change over time (a.k.a Eulerian viepoint).
+This sample implements a 2d fluid simulation by solving Navier-Stokes PDEs.<br />
+Instead of keeping track of each fluid particle individually(Lagrangian viewpoint) the problem domain is discretized by using 2d grid of cells, where each cell has certain fluid characteristics like velocity or pressure. <br />
+We then look at this fixed cells  and and observe how fluid quantities change over time (a.k.a Eulerian viepoint).<br />
 At each time step we update these vector fields by solving aforementioned PDEs untill the fluid becomes divergent free.
 Solving Navier-Stokes PDEs consists of the following parts:
-  * fluid advection step: update velocity vector field base the results of the previous step  
+  * fluid advection step: update velocity vector field based on the results of the previous step  
   * fluid viscocity step: apply viscocity to the fluid
   * force application step: generate force by dragging the mouse over the domain
   * pressure solver step: find pressure at every grid cell
