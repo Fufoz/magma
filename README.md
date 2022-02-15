@@ -29,7 +29,7 @@ We then look at this fixed cells  and and observe how fluid quantities change ov
 At each time step we update these vector fields by solving aforementioned PDEs untill the fluid becomes divergent free.<br />
 References:
 * Robert-Bridson "Fluid Simulation for Computer Graphics" [link](https://www.amazon.com/Simulation-Computer-Graphics-Robert-Bridson/dp/1568813260)<br />
-* GPU-GEMS chapter-38 [link](https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/)<br />
+* Nvidia GPU Gems 1 chapter-38 [link](https://developer.nvidia.com/gpugems/gpugems/part-vi-beyond-triangles/chapter-38-fast-fluid-dynamics-simulation-gpu)<br />
 
 <p align="center">
   <img src="/images/girl.gif" />
