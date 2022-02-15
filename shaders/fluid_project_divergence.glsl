@@ -14,14 +14,11 @@ layout(push_constant) uniform constants
 void main()
 {
     float texelSize = c.dx;
-    vec4 left = sample_velocity_field(velocity_field, vec2(samplePos.x - texelSize, samplePos.y), texelSize); 
-    vec4 right = sample_velocity_field(velocity_field, vec2(samplePos.x + texelSize, samplePos.y), texelSize); 
-    vec4 top = sample_velocity_field(velocity_field, vec2(samplePos.x, samplePos.y + texelSize), texelSize); 
-    vec4 bottom = sample_velocity_field(velocity_field, vec2(samplePos.x, samplePos.y - texelSize), texelSize); 
-    // vec4 left = texture(velocity_field, vec2(samplePos.x - texelSize, samplePos.y));
-    // vec4 right = texture(velocity_field, vec2(samplePos.x + texelSize, samplePos.y));
-    // vec4 top = texture(velocity_field, vec2(samplePos.x, samplePos.y + texelSize));
-    // vec4 bottom = texture(velocity_field, vec2(samplePos.x, samplePos.y - texelSize));
 
-    divergence = ((right - left) + (top - bottom)) / (2 * c.dx);
+    float left = sample_velocity_field(velocity_field, vec2(samplePos.x - texelSize, samplePos.y), texelSize).x; 
+    float right = sample_velocity_field(velocity_field, vec2(samplePos.x + texelSize, samplePos.y), texelSize).x; 
+    float top = sample_velocity_field(velocity_field, vec2(samplePos.x, samplePos.y + texelSize), texelSize).y; 
+    float bottom = sample_velocity_field(velocity_field, vec2(samplePos.x, samplePos.y - texelSize), texelSize).y; 
+
+    divergence = vec4(((right - left) + (top - bottom)) / (2 * c.dx), 0.0, 0.0, 1.0);
 }

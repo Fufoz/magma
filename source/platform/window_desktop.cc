@@ -79,6 +79,7 @@ bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, u
 
 	//disable glfw window context creation
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	GLFWwindow* window = glfwCreateWindow(width, height, "Magma", nullptr, nullptr);
 	if(!window)
 	{

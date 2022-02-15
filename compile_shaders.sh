@@ -8,3 +8,5 @@ ${COMPILER} -fshader-stage=fragment -g shaders/fluid_jacobi_solver.glsl -DPRESSU
 ${COMPILER} -fshader-stage=fragment -g shaders/fluid_jacobi_solver.glsl -o shaders/spv/fluid_jacobi_solver.spv
 ${COMPILER} -fshader-stage=fragment -g shaders/fluid_project_gradient_subtract.glsl -o shaders/spv/fluid_project_gradient_subtract.spv
 ${COMPILER} -fshader-stage=fragment -g shaders/fluid_ink_present.glsl -o shaders/spv/fluid_ink_present.spv
+${COMPILER} -fshader-stage=fragment -g shaders/fluid_vorticity_curl.glsl -o shaders/spv/fluid_vorticity_curl.spv
+${COMPILER} -fshader-stage=fragment -g shaders/fluid_vorticity_force.glsl -o shaders/spv/fluid_vorticity_force.spv
