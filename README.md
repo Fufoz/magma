@@ -31,7 +31,7 @@ Solving Navier-Stokes PDEs consists of the following parts:
   * fluid advection step: update velocity vector field based on the results of the previous step  
   * fluid viscocity step: apply viscocity to the fluid
   * force application step: generate force by dragging the mouse over the domain
-  * pressure solver step: find pressure at every grid cell
+  * pressure solver step: find pressure at every grid cell by solving a system of linear equations using Jacobi iterative algorithm
   * pressure subtract step: make fluid divergent free again
   * force ink step: apply colored ink by dragging mouse over the domain
   * ink advection step: transport applied ink by velocity field
