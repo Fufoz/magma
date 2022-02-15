@@ -37,18 +37,22 @@ namespace log
 			{
 				severityMask = MASK_ERROR|MASK_WARN;
 			}
-			else if(strcmp(filter, "info") == 0)
-			{
-				severityMask = MASK_ERROR|MASK_WARN|MASK_INFO;
-			}
 			else if(strcmp(filter, "debug") == 0)
 			{
+				severityMask = MASK_ERROR|MASK_WARN|MASK_DEBUG;
+			}
+			else if(strcmp(filter, "info") == 0)
+			{
 				severityMask = MASK_ERROR|MASK_WARN|MASK_INFO|MASK_DEBUG;
+			}
+			else if(strcmp(filter, "none") == 0)
+			{
+				severityMask = 0;
 			}
 			else
 			{
 				magma::log::warn("Unknown env variable for logging filter = {}", filter);
-				magma::log::warn("Available filters are: all, err, warn, info, debug");
+				magma::log::warn("Available filters are: all, err, warn, info, debug, none");
 			}
 		}
 	}

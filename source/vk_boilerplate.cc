@@ -26,25 +26,35 @@ static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desir
 	std::vector<VkExtensionProperties> extensions = {};
 	extensions.resize(extCount); 
 	vkEnumerateInstanceExtensionProperties(nullptr, &extCount, extensions.data());
+	
 	magma::log::debug("Desired Extensions:");
 	for(auto& extension : desiredExtensions)
+	{
 		magma::log::debug("\t Extension: {}", extension);
+	}
 
 	magma::log::debug("Extensions:");
 	for(auto& extension : extensions)
+	{
 		magma::log::debug("\t Extension: {}", extension.extensionName);
+	}
 
 	//make sure that requested extensions are exposed by the vulkan loader
 	uint32_t extFound = {};
 	for(auto& desiredExt : desiredExtensions)
 	{
+		bool extFoundd = false;
 		for(auto& extension : extensions)
 		{
 			if(!strcmp(desiredExt, extension.extensionName))
 			{
 				extFound++;
+				extFoundd = true;
+				break;
 			}
 		}
+		if(!extFoundd)
+			magma::log::error("Failed to find desired extension = {}", desiredExt);
 	}
 
 	uint32_t layerCount = {};
@@ -52,6 +62,13 @@ static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desir
 	std::vector<VkLayerProperties> layers = {};
 	layers.resize(layerCount); 
 	vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
+
+	magma::log::debug("Desired Layers:");
+	for(auto& desiredLayer : desiredLayers)
+	{
+		magma::log::debug("\t Layer: {}", desiredLayer);
+	}
+
 	magma::log::debug("Layers:");
 	for(auto& layer : layers)
 	{
@@ -63,13 +80,18 @@ static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desir
 	uint32_t layersFound = {};
 	for(auto& desiredLayer : desiredLayers)
 	{
+		bool layerFound = false;
 		for(auto& layer : layers)
 		{
 			if(!strcmp(desiredLayer, layer.layerName))
 			{
 				layersFound++;
+				layerFound = true;
+				break;
 			}
 		}
+		if(!layerFound)
+			magma::log::error("Failed to find desired layer = {}",desiredLayer);
 	}
 
 	return (extFound == desiredExtensions.size()) && (layersFound == desiredLayers.size()) ? VK_TRUE : VK_FALSE; 
@@ -87,7 +109,7 @@ static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
 	debugUtilsMessengerCreateInfo.messageType = 
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	debugUtilsMessengerCreateInfo.pfnUserCallback = runtimeDebugCallback;
+	debugUtilsMessengerCreateInfo.pfnUserCallback = debugCallback;
 	debugUtilsMessengerCreateInfo.pUserData = nullptr;
 
 	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
@@ -95,7 +117,10 @@ static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
 	return debugMessenger;
 }
 
-static VkInstance createInstance(std::vector<const char*>& desiredLayers, const std::vector<const char*>& desiredExtensions)
+static VkInstance createInstance(
+	const std::vector<const char*>& desiredLayers,
+	const std::vector<const char*>& desiredExtensions,
+	bool hasDebugUtilsExt)
 {
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -120,13 +145,15 @@ static VkInstance createInstance(std::vector<const char*>& desiredLayers, const 
 		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	debugUtilsMessengerCreateInfo.pfnUserCallback = instanceDebugCallback;
+	debugUtilsMessengerCreateInfo.pfnUserCallback = debugCallback;
 	debugUtilsMessengerCreateInfo.pUserData = nullptr;
-
 
 	VkInstanceCreateInfo instanceCreateInfo = {};
 	instanceCreateInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-	instanceCreateInfo.pNext = &debugUtilsMessengerCreateInfo;
+	if(hasDebugUtilsExt)
+	{
+		instanceCreateInfo.pNext = &debugUtilsMessengerCreateInfo;
+	}
 	instanceCreateInfo.flags = 0;
 	instanceCreateInfo.pApplicationInfo = &appInfo;
 	instanceCreateInfo.enabledLayerCount = desiredLayers.size();
@@ -329,14 +356,24 @@ VkFence createFence(VkDevice logicalDevice, bool signalled)
 	return fence;
 }
 
-VkBool32 initVulkanGlobalContext(
-	std::vector<const char*>& desiredLayers,
-	std::vector<const char*>& desiredExtensions,
+bool initVulkanGlobalContext(
+	std::vector<const char*> desiredLayers,
+	std::vector<const char*> desiredExtensions,
 	VulkanGlobalContext* generalInfo)
 {
 	assert(generalInfo);
 	
-	VK_CALL(locateAndInitVulkan());
+	VK_CALL_RETURN_BOOL(locateAndInitVulkan());
+
+	bool hasDebugUtilsExt = false;
+	for(auto&& extension : desiredExtensions)
+	{
+		if(!strcmp(extension, VK_EXT_DEBUG_UTILS_EXTENSION_NAME))
+		{
+			hasDebugUtilsExt = true;
+			break;
+		}
+	}
 
 	uint32_t requiredExtCount = {};
 	const char** requiredExtStrings = getRequiredSurfaceExtensions(&requiredExtCount);
@@ -348,12 +385,16 @@ VkBool32 initVulkanGlobalContext(
 
 	VK_CHECK(requestLayersAndExtensions(desiredExtensions, desiredLayers));
 	
-	VkInstance instance = createInstance(desiredLayers, desiredExtensions);
+	VkInstance instance = createInstance(desiredLayers, desiredExtensions, hasDebugUtilsExt);
 
 	loadInstanceFunctionPointers(instance);
-	
-	VkDebugUtilsMessengerEXT dbgCallback = registerDebugCallback(instance);
-	
+
+	VkDebugUtilsMessengerEXT dbgCallback = VK_NULL_HANDLE;
+	if(hasDebugUtilsExt)
+	{
+		dbgCallback = registerDebugCallback(instance);
+	}
+
 	uint32_t graphicsQueueFamilyIdx = VK_QUEUE_FAMILY_IGNORED;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	//we use graphics queue by default
@@ -401,13 +442,18 @@ VkBool32 initVulkanGlobalContext(
 	generalInfo->graphicsQueue = graphicsQueue;
 	generalInfo->computeQueue = computeQueue;
 	generalInfo->deviceProps = deviceProps;
+	generalInfo->hasDebugUtilsExtension = hasDebugUtilsExt;
 	uint32_t pushConstantSize = deviceProps.limits.maxPushConstantsSize;
-	return VK_TRUE;
+	return true;
 }
 
 void destroyGlobalContext(VulkanGlobalContext* ctx)
 {
-	vkDestroyDebugUtilsMessengerEXT(ctx->instance, ctx->debugCallback, nullptr);
+	if(ctx->hasDebugUtilsExtension)
+	{
+		vkDestroyDebugUtilsMessengerEXT(ctx->instance, ctx->debugCallback, nullptr);
+	}
+
 	vkDestroyDevice(ctx->logicalDevice, nullptr);
 	vkDestroyInstance(ctx->instance, nullptr);
 }

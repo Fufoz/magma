@@ -7,8 +7,8 @@ static constexpr float CAMERA_SPEED_VAL  = 1.5f;
 
 void fpsCameraUpdate(const WindowInfo& window, float deltaTime, FPSCamera* camera)
 {
-	static const uint32_t centerX = window.windowExtent.width / 2;
-	static const uint32_t centerY = window.windowExtent.height / 2;
+	static const int centerX = static_cast<int>(window.windowExtent.width) / 2;
+	static const int centerY = static_cast<int>(window.windowExtent.height) / 2;
 	static float pitch = 0.f;
 	static float yaw   = 90.f;
 

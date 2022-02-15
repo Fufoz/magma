@@ -48,7 +48,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	
 }
 
-VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, uint32_t height,
+bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, uint32_t height,
 	const char* title, WindowInfo* surface)
 {
 	auto errorCallback = [](int errorCode, const char* descr)
@@ -62,28 +62,29 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 	if(glfwInit() != GLFW_TRUE)
 	{
 		magma::log::error("GLFW: failed to init! {}", glfwError());
-		return VK_FALSE;
+		return false;
 	}
 
 	if(!glfwVulkanSupported())
 	{
 		magma::log::error("GLFW: vulkan is not supported! {}", glfwError());
-		return VK_FALSE;
+		return false;
 	}
 	//check whether selected queue family index supports window image presentation
 	if(glfwGetPhysicalDevicePresentationSupport(globalInfo.instance, globalInfo.physicalDevice, globalInfo.queueFamIdx) == GLFW_FALSE)
 	{
 		magma::log::error("Selected queue family index does not support image presentation!");
-		return VK_FALSE;
+		return false;
 	}
 
 	//disable glfw window context creation
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	GLFWwindow* window = glfwCreateWindow(width, height, "Magma", nullptr, nullptr);
 	if(!window)
 	{
 		magma::log::error("GLFW window was nullptr!");
-		return VK_FALSE;
+		return false;
 	}
 	assert(window);
 	
@@ -104,10 +105,10 @@ VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t widt
 	initInput(surface->windowHandle);
 	
 	glfwFocusWindow(window);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 	glfwSetCursorPos(window, width/2.f, height/2.f);
 
-	return VK_TRUE;
+	return true;
 }
 
 VkExtent2D getCurrentWindowExtent(void* windowHandle)

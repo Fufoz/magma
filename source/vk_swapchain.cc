@@ -31,7 +31,7 @@ static VkPresentModeKHR queryPresentMode(VkSurfaceKHR windowSurface, VkPhysicalD
 	//query for available surface presentation mode
 	uint32_t presentModeCount = {};
 	VK_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, windowSurface, &presentModeCount, nullptr));
-	VkPresentModeKHR presentModes[VK_PRESENT_MODE_RANGE_SIZE_KHR];
+	VkPresentModeKHR presentModes[16];//shouldn't be more than 16 present modes..
 	VK_CALL(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, windowSurface, &presentModeCount, presentModes));
 	VkPresentModeKHR selectedPresentMode = VK_PRESENT_MODE_FIFO_KHR;//should exist anyway
 	
@@ -126,7 +126,7 @@ static void buildSyncPrimitives(const VulkanGlobalContext& vkCtx, SwapChain* swa
 	}
 }
 
-VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain)
+bool createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain)
 {
 	VkSwapchainKHR oldSwapchain = swapChain->swapchain;
 	//query for available surface formats
@@ -181,7 +181,7 @@ VkBool32 createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInf
 		buildSyncPrimitives(vkCtx, swapChain);
 	}
 
-	return VK_TRUE;
+	return true;
 }
 
 VkResult destroySwapChain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain)
@@ -258,4 +258,23 @@ void buildFrameBuffers(VkDevice logicaDevice, const PipelineState& pipelineState
 		frameBufferCreateInfo.layers = 1;
 		VK_CALL(vkCreateFramebuffer(logicaDevice, &frameBufferCreateInfo, nullptr, &swapChain->runtime.frameBuffers[i]));
 	}
+}
+
+VkFramebuffer create_frame_buffer(
+	VkDevice logicalDevice, VkImageView imageView,
+	VkRenderPass renderpass, uint32_t width, uint32_t height)
+{
+	VkFramebufferCreateInfo frameBufferCI = {};
+    frameBufferCI.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+    frameBufferCI.renderPass = renderpass;
+    frameBufferCI.attachmentCount = 1;
+    frameBufferCI.pAttachments = &imageView;
+    frameBufferCI.width = width;
+    frameBufferCI.height = height;
+    frameBufferCI.layers = 1;
+
+	VkFramebuffer frameBuffer = VK_NULL_HANDLE;
+	
+	vkCreateFramebuffer(logicalDevice, &frameBufferCI, nullptr, &frameBuffer);
+	return frameBuffer;
 }

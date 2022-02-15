@@ -6,5 +6,6 @@ macro(build_example exec_name)
 endmacro()
 
 
-#build_example(triangle triangle.cc)
-build_example(flock flock.cc)
+# compile_shader(fluid_ink_present fragment)
+
+build_example(fluid_sim fluid_sim.cc)

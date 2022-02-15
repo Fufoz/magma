@@ -5,7 +5,9 @@
 #include <stdio.h>
 #include <cmath>
 
-#define M_PI 3.14159265359f
+#if !defined(M_PI)
+	#define M_PI 3.14159265359f
+#endif
 
 union Vec2
 {

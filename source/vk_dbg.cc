@@ -1,7 +1,7 @@
 
 #include "vk_dbg.h"
 
-VkBool32 instanceDebugCallback(
+VkBool32 debugCallback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
 	const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
@@ -11,7 +11,7 @@ VkBool32 instanceDebugCallback(
 	{
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT :
 		{
-			magma::log::debug("[Diagnostic] {}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
+			magma::log::info("[Diagnostic] {}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
 			break;
 		}
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT :
@@ -33,30 +33,6 @@ VkBool32 instanceDebugCallback(
 		default :
 		{
 			assert(!"unknown severity level in createinstance callback");
-		}
-	}
-
-	return VK_FALSE;
-}
-
-VkBool32 runtimeDebugCallback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
-	const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
-	void*                                            pUserData)
-{
-	switch(messageSeverity)
-	{
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT :
-		{
-			magma::log::warn("{}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
-			break;
-		}
-		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT :
-		{
-			magma::log::error("{}:{}", pCallbackData->pMessageIdName, pCallbackData->pMessage);
-			assert(!"error");
-			break;
 		}
 	}
 

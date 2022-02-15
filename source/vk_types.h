@@ -4,6 +4,7 @@
 #include <volk.h>
 #include <vector>
 
+
 struct VulkanGlobalContext
 {
 	VkInstance instance;
@@ -15,6 +16,7 @@ struct VulkanGlobalContext
 	uint32_t computeQueueFamIdx;
 	VkQueue graphicsQueue;
 	VkQueue computeQueue;
+	bool hasDebugUtilsExtension = false;
 };
 
 struct WindowInfo
@@ -72,6 +74,7 @@ struct ImageResource
 	VkImage image;
 	VkImageView view;
 	VkImageLayout layout;
+	VkFormat format;
 	VkDeviceSize imageSize;
 	VkDeviceMemory backupMemory;
 };

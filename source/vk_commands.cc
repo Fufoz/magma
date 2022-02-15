@@ -44,3 +44,31 @@ void createCommandBuffer(VkDevice logicalDevice, VkCommandPool commandPool, VkCo
 	buffAllocInfo.commandBufferCount = 1;
 	vkAllocateCommandBuffers(logicalDevice, &buffAllocInfo, out);
 }
+
+VkCommandBuffer begin_tmp_commands(VulkanGlobalContext& ctx, VkCommandPool cmdPool)
+{
+	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
+	createCommandBuffer(ctx.logicalDevice, cmdPool, &cmdBuffer);
+	VkCommandBufferBeginInfo cmdBuffBeginInfo = {};
+	cmdBuffBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	cmdBuffBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+	vkBeginCommandBuffer(cmdBuffer, &cmdBuffBeginInfo);
+	return cmdBuffer;
+}
+
+void end_tmp_commands(VulkanGlobalContext& ctx, VkCommandPool cmdPool, VkCommandBuffer cmdBuffer)
+{
+	vkEndCommandBuffer(cmdBuffer);
+
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &cmdBuffer;
+
+	vkQueueSubmit(ctx.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	vkQueueWaitIdle(ctx.graphicsQueue);
+
+	vkFreeCommandBuffers(ctx.logicalDevice, cmdPool, 1, &cmdBuffer);
+	vkDestroyCommandPool(ctx.logicalDevice, cmdPool, nullptr);
+}

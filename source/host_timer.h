@@ -26,4 +26,18 @@ struct HostTimer
 	}
 };
 
+struct HostScopeTimer
+{
+	TimePoint startPoint;
+	const char* timerName;
+	HostScopeTimer(const char* name) : timerName(name)
+	{
+		startPoint = std::chrono::high_resolution_clock::now();
+	}
+	~HostScopeTimer()
+	{
+		magma::log::debug("{} finished within {} ms", std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - startPoint).count() / 1000000.f);
+	}
+};
+
 #endif

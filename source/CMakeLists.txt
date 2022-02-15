@@ -19,11 +19,27 @@ list(APPEND Sources
 if(ANDROID OR IOS)
 	message(FATAL_ERROR "Mobile platforms are not supported at the moment")
 else()#assume desktop platforms here
-	list(APPEND Sources platform/window_desktop.cc platform/input_desktop.cc)
+	list(APPEND Sources
+		platform/window_desktop.cc
+		platform/input_desktop.cc
+		${CMAKE_SOURCE_DIR}/extern/imgui/imgui.cpp
+		${CMAKE_SOURCE_DIR}/extern/imgui/imgui_demo.cpp
+		${CMAKE_SOURCE_DIR}/extern/imgui/imgui_draw.cpp
+		${CMAKE_SOURCE_DIR}/extern/imgui/imgui_tables.cpp
+		${CMAKE_SOURCE_DIR}/extern/imgui/imgui_widgets.cpp
+		${CMAKE_SOURCE_DIR}/extern/imgui/imgui_impl_glfw.cpp
+		${CMAKE_SOURCE_DIR}/extern/imgui/imgui_impl_vulkan.cpp
+	)
+
 endif()
 
 
 add_library(magma STATIC ${Sources})
 
-target_include_directories(magma PUBLIC ${Vulkan_INCLUDE_DIRS} ./)
+target_include_directories(magma PUBLIC 
+	${Vulkan_INCLUDE_DIRS}
+	${CMAKE_SOURCE_DIR}/extern/imgui
+	./
+)
+
 target_link_libraries(magma PUBLIC fmt volk glfw meshopt tiny_gltf fast_obj)

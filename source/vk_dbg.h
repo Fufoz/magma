@@ -12,8 +12,10 @@
 #define VK_CALL(function)                                                           \
 do{                                                                                 \
 VkResult error = function;                                                          \
-if(error != VK_SUCCESS){                                                            \
-	magma::log::error("Error calling {}. Reason: {} ",#function,vkStrError(error)); \
+if(error != VK_SUCCESS)                                                             \
+{                                                                                   \
+	magma::log::error("Error calling {}. Reason: {}; file : {}; line {}",           \
+		#function,vkStrError(error), __FILE__, __LINE__);                           \
 	assert(!"VK_ASSERT!");														    \
 }																					\
 }while(0)
@@ -21,32 +23,42 @@ if(error != VK_SUCCESS){                                                        
 #define VK_CALL_RETURN(function)                                                   \
 do{                                                                                \
 VkResult error = function;                                                         \
-if(error != VK_SUCCESS){                                                           \
-	magma::log::error("Error calling %s. Reason: {}", #function, vkStrError(error));\
+if(error != VK_SUCCESS)                                                            \
+{                                                                                  \
+	magma::log::error("Error calling {}. Reason: {}; file : {}; line {}",          \
+		#function, vkStrError(error), __FILE__, __LINE__);                         \
 	return error;                                                                  \
 }                                                                                  \
 }while(0)
 
+#define VK_CALL_RETURN_BOOL(function)                                              \
+do{                                                                                \
+VkResult error = function;                                                         \
+if(error != VK_SUCCESS)                                                            \
+{                                                                                  \
+	magma::log::error("Error calling {}. Reason: {}; file : {}; line {}",          \
+		#function, vkStrError(error), __FILE__, __LINE__);                         \
+	return false;                                                                  \
+}                                                                                  \
+}while(0)
 
 #define VK_CHECK(function)                                                         \
 do{                                                                                \
 VkBool32 error = function;                                                         \
 if(error != VK_TRUE)                                                               \
-	magma::log::error("Check failed calling {}", #function);                       \
-}while(0)
+{                                                                                  \
+	magma::log::error("Check failed calling {} in file :{}; line: {}",             \
+		#function, __FILE__, __LINE__);                                            \
+	assert(!"WTF");                                                                \
+}                                                                                  \
+}while(0)                                                                          \
 
 const char* vkStrError(VkResult error);
 
-VkBool32 instanceDebugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
-    void*                                            pUserData);
-
-VkBool32 runtimeDebugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
-    const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
-    void*                                            pUserData);
+VkBool32 debugCallback(
+	VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
+	const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
+	void*                                            pUserData);
 
 #endif

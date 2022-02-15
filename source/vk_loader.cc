@@ -7,7 +7,7 @@ VkResult locateAndInitVulkan()
 
 void loadInstanceFunctionPointers(VkInstance instance)
 {
-	volkLoadInstance(instance);
+	volkLoadInstanceOnly(instance);
 }
 
 void loadDeviceFunctionPointers(VkDevice logicalDevice)

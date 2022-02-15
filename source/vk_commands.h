@@ -12,4 +12,8 @@ void createCommandBuffer(VkDevice logicalDevice, VkCommandPool commandPool, VkCo
 
 void destroyCommandPool(VkDevice device, VkCommandPool cmdPool);
 
+VkCommandBuffer begin_tmp_commands(VulkanGlobalContext& ctx, VkCommandPool cmdPool);
+
+void end_tmp_commands(VulkanGlobalContext& ctx, VkCommandPool cmdPool, VkCommandBuffer cmdBuffer);
+
 #endif

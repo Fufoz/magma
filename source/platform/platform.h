@@ -3,10 +3,8 @@
 
 #include <vk_types.h>
 
-VkBool32 initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width,
+bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width,
 	uint32_t height, const char* title, WindowInfo* surface);
-
-VkBool32 isPresentationSupported();
 
 VkExtent2D getCurrentWindowExtent(void* windowHandle);
 
