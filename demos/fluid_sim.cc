@@ -11,7 +11,7 @@ static constexpr int SWAPCHAIN_IMAGE_COUNT = 2;
 
 #define WARP_PICTURE_MODE
 #define DRAW_FLUID_PARAMS
-// #undef DRAW_FLUID_PARAMS
+#undef DRAW_FLUID_PARAMS
 // #undef WARP_PICTURE_MODE
 
 enum Pipeline
@@ -204,7 +204,7 @@ static bool create_fluid_context(FluidContext* ctx)
 	ctx->dx = 1.f / (float)std::max(width, height);
 	ctx->timeStep = 0.005f;
 	ctx->kv = 1.5f;//kinematic viscocity
-	ctx->impulseRadius = 0.25f;
+	ctx->impulseRadius = 0.015f;
 	
 	return true;
 }
@@ -2378,7 +2378,7 @@ static int record_force_velocity_render_pass(
 			
 			
 		ForceConstants forceConsts = {};
-		forceConsts.impulseRadius = 0.025f;
+		forceConsts.impulseRadius = ctx->impulseRadius;
 
 		static bool isMouseBeingDragged = false;
 		static Vec2 prevMousePos = {};
@@ -2476,7 +2476,7 @@ static int record_force_color_render_pass(
 			
 			
 		ForceConstants forceConsts = {};
-		forceConsts.impulseRadius = 0.025f;
+		forceConsts.impulseRadius = ctx->impulseRadius;
 
 		static bool isMouseBeingDragged = false;
 
