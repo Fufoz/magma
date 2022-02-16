@@ -36,7 +36,7 @@ static std::bitset<GLFW_MOUSE_BUTTON_LAST> mouseState = {};
 void initInput(void* windowHandle)
 {
 	GLFWwindow* handle = (GLFWwindow*)windowHandle;
-	
+
 	auto keyEventCallback = [](GLFWwindow* window, int key, int scancode, int action, int mods)
 	{
 		if(key == GLFW_KEY_ESCAPE)

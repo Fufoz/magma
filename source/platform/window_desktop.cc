@@ -49,7 +49,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 }
 
 bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, uint32_t height,
-	const char* title, WindowInfo* surface)
+	const char* title, WindowInfo* surface, bool fpsCameraMode)
 {
 	auto errorCallback = [](int errorCode, const char* descr)
 	{
@@ -105,8 +105,14 @@ bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, u
 	initInput(surface->windowHandle);
 	
 	glfwFocusWindow(window);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-	glfwSetCursorPos(window, width/2.f, height/2.f);
+	if(fpsCameraMode)
+	{
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	}
+	else
+	{
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	}
 
 	return true;
 }

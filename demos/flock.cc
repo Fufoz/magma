@@ -1111,11 +1111,11 @@ int main(int argc, char** argv)
 	magma::log::initLogging();
 	
 	std::vector<const char*> desiredLayers = {
-		"VK_LAYER_KHRONOS_validation"
+		// "VK_LAYER_KHRONOS_validation"
 	};
 
 	std::vector<const char*> desiredExtensions = {
-		"VK_EXT_debug_utils"
+		// "VK_EXT_debug_utils"
 	};
 
 	VulkanGlobalContext vkCtx = {};
@@ -1698,7 +1698,7 @@ int main(int argc, char** argv)
 	auto& imageMayPresentSemaphores = swapChain.runtime.imageMayPresentSemaphores;
 	
 	FPSCamera camera = {};
-	camera.position = {0.f, 0.f, 2.f};
+	camera.position = {0.f, 0.f, 5.f};
 
 	HostTimer timer = {};
 	timer.start();
@@ -1986,8 +1986,8 @@ int main(int argc, char** argv)
 	while(!windowShouldClose(windowInfo.windowHandle))
 	{
 		updateMessageQueue();
+
 		float deltaSec = timer.stopSec();
-		// magma::log::info("Frame took {} ms", deltaSec);
 		timer.start();
 		fpsCameraUpdate(windowInfo, deltaSec, &camera);
 		boidsGlobals.deltaTime = deltaSec;

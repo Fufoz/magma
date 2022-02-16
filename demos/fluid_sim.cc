@@ -196,7 +196,7 @@ static bool create_fluid_context(FluidContext* ctx)
 
 	const std::size_t width = 600;
 	const std::size_t height = 600;
-	if (!initPlatformWindow(ctx->vkCtx, width, height, "fluid_sim", &ctx->window))
+	if (!initPlatformWindow(ctx->vkCtx, width, height, "fluid_sim", &ctx->window, false))
 	{
 		return false;
 	}

@@ -1,21 +1,23 @@
 #include "camera.h"
 #include "logging.h"
 #include "input.h"
-
+#include "platform/platform.h"
 static constexpr float MOUSE_SENSITIVITY = 0.4f;
 static constexpr float CAMERA_SPEED_VAL  = 1.5f;
 
 void fpsCameraUpdate(const WindowInfo& window, float deltaTime, FPSCamera* camera)
 {
-	static const int centerX = static_cast<int>(window.windowExtent.width) / 2;
-	static const int centerY = static_cast<int>(window.windowExtent.height) / 2;
+	static int prevMousePosX = static_cast<int>(window.windowExtent.width) / 2;
+	static int prevMousePosY = static_cast<int>(window.windowExtent.height) / 2;
+
 	static float pitch = 0.f;
 	static float yaw   = 90.f;
 
 	const float cameraSpeed = deltaTime * CAMERA_SPEED_VAL;
 	
 	MousePos currPos = getMousePos();
-	MousePos delta = {centerX - currPos.x, centerY - currPos.y};
+
+	MousePos delta = {prevMousePosX - currPos.x, prevMousePosY - currPos.y};
 	pitch += (delta.y * MOUSE_SENSITIVITY);
 	yaw   += (delta.x * MOUSE_SENSITIVITY);
 	magma::log::debug("Pitch {} Yaw {}", pitch, yaw);
@@ -47,7 +49,7 @@ void fpsCameraUpdate(const WindowInfo& window, float deltaTime, FPSCamera* camer
 	magma::log::debug("position: {}", position);
 
 	camera->viewTransform = lookAt(camera->position, camera->position + camera->direction);
+	prevMousePosX = currPos.x;
+	prevMousePosY = currPos.y;
 
-	//reset cursor back
-	setCursorPos(window.windowHandle, centerX, centerY);
 }
