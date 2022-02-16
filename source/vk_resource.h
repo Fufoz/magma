@@ -25,6 +25,8 @@ VkBool32 pushCubemapTextureToDeviceLocalImage(VkCommandPool commandPool, const V
 
 void destroyBuffer(VkDevice logicalDevice, Buffer* buffer);
 
+void destroy_image_resource(VkDevice logicalDevice, ImageResource* image);
+
 bool findRequiredMemoryTypeIndex(VkPhysicalDevice physicalDevice, VkMemoryRequirements resourceMemoryRequirements, VkMemoryPropertyFlags desiredMemoryFlags, uint32_t* memoryTypeIndex);
 
 #endif

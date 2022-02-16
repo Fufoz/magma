@@ -570,3 +570,14 @@ VkBool32 pushCubemapTextureToDeviceLocalImage(VkCommandPool commandPool, const V
 	
 	return VK_TRUE;	
 }
+
+void destroy_image_resource(VkDevice logicalDevice, ImageResource* image)
+{
+	vkDestroyImageView(logicalDevice, image->view, nullptr);
+	vkDestroyImage(logicalDevice, image->image, nullptr);
+	vkFreeMemory(logicalDevice, image->backupMemory, nullptr);
+	
+	image->layout = VK_IMAGE_LAYOUT_UNDEFINED;
+	image->imageSize = 0;
+	image->backupMemory = VK_NULL_HANDLE;
+}

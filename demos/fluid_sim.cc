@@ -94,6 +94,7 @@ struct FluidContext
 	SwapChain swapchain;
 	WindowInfo window;	
 
+	std::vector<VkShaderModule> shaders;
 	std::array<VkPipeline, PIPE_COUNT> pipelines;
 	std::array<VkDescriptorSetLayout, PIPE_COUNT> descrSetLayouts;
 	std::array<VkPipelineLayout, PIPE_COUNT> pipeLayouts;
@@ -105,7 +106,9 @@ struct FluidContext
 
 	VkSampler defaultSampler = VK_NULL_HANDLE;
 	VkCommandPool commandPool = VK_NULL_HANDLE;
-	
+	VkDescriptorPool descrPool = VK_NULL_HANDLE;
+	VkDescriptorPool imguiDescrPool = VK_NULL_HANDLE;
+
 	Buffer deviceVertexBuffer;
 	Buffer deviceIndexBuffer;
 
@@ -145,6 +148,7 @@ static void init_imgui_context(FluidContext* ctx)
 
 	VkDescriptorPool bigAssDescriptorPool = VK_NULL_HANDLE;
 	vkCreateDescriptorPool(ctx->vkCtx.logicalDevice, &pool_info, nullptr, &bigAssDescriptorPool);
+	ctx->imguiDescrPool = bigAssDescriptorPool;
 
 	ImGui_ImplGlfw_InitForVulkan((GLFWwindow*)ctx->window.windowHandle, true);
 
@@ -170,6 +174,7 @@ static void init_imgui_context(FluidContext* ctx)
 	ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
 	end_tmp_commands(ctx->vkCtx, pool, cmdBuffer);
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
+
 }
 
 static bool create_fluid_context(FluidContext* ctx)
@@ -204,8 +209,11 @@ static bool create_fluid_context(FluidContext* ctx)
 	ctx->dx = 1.f / (float)std::max(width, height);
 	ctx->timeStep = 0.005f;
 	ctx->kv = 1.5f;//kinematic viscocity
+#if defined(WARP_PICTURE_MODE)
 	ctx->impulseRadius = 0.015f;
-	
+#else
+	ctx->impulseRadius = 0.025f;
+#endif
 	return true;
 }
 
@@ -276,7 +284,8 @@ static bool initialise_fluid_textures(FluidContext* ctx)
 	{
 		pushTextureToDeviceLocalImage(tmpCmdPool, ctx->vkCtx, stagingBuffer, textureSize, &texture);
 	}
-	// vkDestroyCommandPool(ctx->logicalDevice, tmpCmdPool, nullptr);
+	vkDestroyCommandPool(ctx->vkCtx.logicalDevice, tmpCmdPool, nullptr);
+
 	destroyBuffer(ctx->vkCtx.logicalDevice, &stagingBuffer);
 		
 	bool status = false;
@@ -302,9 +311,9 @@ static bool initialise_fluid_textures(FluidContext* ctx)
 
 	copyDataToHostVisibleBuffer(ctx->vkCtx, 0, girlTexture.data, textureByteSize, &stagingTextureBuffer);
 		
-	pushTextureToDeviceLocalImage(tmpCmdPool, ctx->vkCtx, stagingTextureBuffer, girlTexture.extent, &deviceGirlTexture);
-
-	auto cmdBuffer = begin_tmp_commands(ctx->vkCtx, tmpCmdPool);
+	auto tmpBlitPool = createCommandPool(ctx->vkCtx);
+	pushTextureToDeviceLocalImage(tmpBlitPool, ctx->vkCtx, stagingTextureBuffer, girlTexture.extent, &deviceGirlTexture);
+	auto cmdBuffer = begin_tmp_commands(ctx->vkCtx, tmpBlitPool);
 
 	VkImageSubresourceLayers layers = {};
 	layers.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -382,16 +391,62 @@ static bool initialise_fluid_textures(FluidContext* ctx)
 		VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 	);
 
-	end_tmp_commands(ctx->vkCtx, tmpCmdPool, cmdBuffer);
-		// vkDestroyCommandPool(ctx->logicalDevice, tmpCmdPool, nullptr);
-		// destroyBuffer(ctx->logicalDevice, &stagingBuffer);
+	end_tmp_commands(ctx->vkCtx, tmpBlitPool, cmdBuffer);
+	destroyBuffer(ctx->vkCtx.logicalDevice, &stagingTextureBuffer);
+	destroy_image_resource(ctx->vkCtx.logicalDevice, &deviceGirlTexture);
 #endif
 	return status;
 }
 
-static void destroy_fluid_context()
+static void destroy_fluid_context(FluidContext* ctx)
 {
+	vkDeviceWaitIdle(ctx->vkCtx.logicalDevice);
 
+#if defined(DRAW_FLUID_PARAMS)
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+	vkDestroyDescriptorPool(ctx->vkCtx.logicalDevice, ctx->imguiDescrPool, nullptr);
+#endif
+	vkDestroyDescriptorPool(ctx->vkCtx.logicalDevice, ctx->descrPool, nullptr);
+	destroyBuffer(ctx->vkCtx.logicalDevice, &ctx->deviceVertexBuffer);
+	destroyBuffer(ctx->vkCtx.logicalDevice, &ctx->deviceIndexBuffer);
+
+	vkFreeCommandBuffers(ctx->vkCtx.logicalDevice, ctx->commandPool, ctx->commandBuffers.size(), ctx->commandBuffers.data());
+	vkDestroyCommandPool(ctx->vkCtx.logicalDevice, ctx->commandPool, nullptr);
+	for(auto&& shader : ctx->shaders)
+	{
+		vkDestroyShaderModule(ctx->vkCtx.logicalDevice, shader, nullptr);
+	}
+	for(auto&& pipeLayout : ctx->pipeLayouts)
+	{
+		vkDestroyPipelineLayout(ctx->vkCtx.logicalDevice, pipeLayout, nullptr);
+	}
+	for(auto&& pipeline : ctx->pipelines)
+	{
+		vkDestroyPipeline(ctx->vkCtx.logicalDevice, pipeline, nullptr);
+	}
+	for(auto&& image : ctx->simTextures)
+	{
+		destroy_image_resource(ctx->vkCtx.logicalDevice, &image);
+	}
+	for(auto&& frameBuffer : ctx->frameBuffers)
+	{
+		vkDestroyFramebuffer(ctx->vkCtx.logicalDevice, frameBuffer, nullptr);
+	}
+	for(auto&& renderPass : ctx->renderPasses)
+	{
+		vkDestroyRenderPass(ctx->vkCtx.logicalDevice, renderPass, nullptr);
+	}
+	for(auto&& dsetLayout : ctx->descrSetLayouts)
+	{
+		vkDestroyDescriptorSetLayout(ctx->vkCtx.logicalDevice, dsetLayout, nullptr);
+	}
+	vkDestroySampler(ctx->vkCtx.logicalDevice, ctx->defaultSampler, nullptr);
+
+	destroySwapChain(ctx->vkCtx, &ctx->swapchain);
+	destroyPlatformWindow(ctx->vkCtx, &ctx->window);
+	destroyGlobalContext(&ctx->vkCtx);
 }
 
 static void init_vertex_and_index_buffers(FluidContext* ctx)
@@ -465,7 +520,9 @@ static VkPipeline create_advect_pipeline(FluidContext* ctx,
 		"shaders/spv/fluid_advect_quantity.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
-
+	ctx->shaders.push_back(shaderStageCI[0].module);
+	ctx->shaders.push_back(shaderStageCI[1].module);
+	
 	std::array<VkDescriptorSetLayoutBinding, 2> descrSetLayoutBinding = {};
 	descrSetLayoutBinding[0].binding = 0;
 	descrSetLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -574,6 +631,8 @@ static VkPipeline create_curl_pipeline(FluidContext* ctx,
 		"shaders/spv/fluid_vorticity_curl.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
+	ctx->shaders.push_back(curlShaderStageCI[0].module);
+	ctx->shaders.push_back(curlShaderStageCI[1].module);
 
 	std::array<VkDescriptorSetLayoutBinding, 1> curlDescrSetLayoutBinding = {};
 	curlDescrSetLayoutBinding[0].binding = 0;
@@ -676,6 +735,8 @@ static VkPipeline create_vorticity_pipeline(FluidContext* ctx,
 		"shaders/spv/fluid_vorticity_force.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
+	ctx->shaders.push_back(vforceShaderStageCI[0].module);
+	ctx->shaders.push_back(vforceShaderStageCI[1].module);
 
 	std::array<VkDescriptorSetLayoutBinding, 2> vforceDescrSetLayoutBinding = {};
 	vforceDescrSetLayoutBinding[0].binding = 0;
@@ -768,6 +829,7 @@ static VkPipeline create_vorticity_pipeline(FluidContext* ctx,
 	vkCreateGraphicsPipelines(ctx->vkCtx.logicalDevice, VK_NULL_HANDLE, 1, &pipeCI, nullptr, &pipeline);
 	return pipeline;
 }
+
 static VkPipeline create_present_pipeline(FluidContext* ctx,
 	const VkGraphicsPipelineCreateInfo& commonPipeCI)
 {
@@ -785,6 +847,8 @@ static VkPipeline create_present_pipeline(FluidContext* ctx,
 			"shaders/spv/fluid_ink_present.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		);
+		ctx->shaders.push_back(presentShaders[0].module);
+		ctx->shaders.push_back(presentShaders[1].module);
 
 		VkDescriptorSetLayoutBinding presentDescrSetLayoutBinding = {};
 		presentDescrSetLayoutBinding.binding = 0;
@@ -887,7 +951,10 @@ static VkPipeline create_project_pipeline(FluidContext* ctx,
 			"shaders/spv/fluid_project_gradient_subtract.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
 		);
-
+		
+		ctx->shaders.push_back(projectShaders[0].module);
+		ctx->shaders.push_back(projectShaders[1].module);
+		
 		VkPushConstantRange projectConstantRange = {};
 		projectConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		projectConstantRange.offset = 0;
@@ -988,18 +1055,20 @@ static VkPipeline create_project_pipeline(FluidContext* ctx,
 static VkPipeline create_divergence_pipeline(FluidContext* ctx,
 	const VkGraphicsPipelineCreateInfo& commonPipeCI)
 {
-		// creating divergence pipeline
-		std::array<VkPipelineShaderStageCreateInfo, 2> divShaders = {};
-		divShaders[0] = fillShaderStageCreateInfo(
-			ctx->vkCtx.logicalDevice,
-			"shaders/spv/fluid_cube_vert.spv",
-			VK_SHADER_STAGE_VERTEX_BIT
-		);
-		divShaders[1] = fillShaderStageCreateInfo(
-			ctx->vkCtx.logicalDevice,
-			"shaders/spv/fluid_project_divergence.spv",
-			VK_SHADER_STAGE_FRAGMENT_BIT
-		);
+	// creating divergence pipeline
+	std::array<VkPipelineShaderStageCreateInfo, 2> divShaders = {};
+	divShaders[0] = fillShaderStageCreateInfo(
+		ctx->vkCtx.logicalDevice,
+		"shaders/spv/fluid_cube_vert.spv",
+		VK_SHADER_STAGE_VERTEX_BIT
+	);
+	divShaders[1] = fillShaderStageCreateInfo(
+		ctx->vkCtx.logicalDevice,
+		"shaders/spv/fluid_project_divergence.spv",
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+	ctx->shaders.push_back(divShaders[0].module);
+	ctx->shaders.push_back(divShaders[1].module);
 
 		VkPushConstantRange divConstantRange = {};
 		divConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -1095,18 +1164,20 @@ static VkPipeline create_divergence_pipeline(FluidContext* ctx,
 static VkPipeline create_force_pipeline(FluidContext* ctx,
 	const VkGraphicsPipelineCreateInfo& commonPipeCI)
 {
-		// creating force pipeline
-		std::array<VkPipelineShaderStageCreateInfo, 2> forceShaders = {};
-		forceShaders[0] = fillShaderStageCreateInfo(
-			ctx->vkCtx.logicalDevice,
-			"shaders/spv/fluid_cube_vert.spv",
-			VK_SHADER_STAGE_VERTEX_BIT
-		);
-		forceShaders[1] = fillShaderStageCreateInfo(
-			ctx->vkCtx.logicalDevice,
-			"shaders/spv/fluid_apply_force.spv",
-			VK_SHADER_STAGE_FRAGMENT_BIT
-		);
+	// creating force pipeline
+	std::array<VkPipelineShaderStageCreateInfo, 2> forceShaders = {};
+	forceShaders[0] = fillShaderStageCreateInfo(
+		ctx->vkCtx.logicalDevice,
+		"shaders/spv/fluid_cube_vert.spv",
+		VK_SHADER_STAGE_VERTEX_BIT
+	);
+	forceShaders[1] = fillShaderStageCreateInfo(
+		ctx->vkCtx.logicalDevice,
+		"shaders/spv/fluid_apply_force.spv",
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+	ctx->shaders.push_back(forceShaders[0].module);
+	ctx->shaders.push_back(forceShaders[1].module);
 
 		VkPushConstantRange forceConstantRange = {};
 		forceConstantRange.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -1208,114 +1279,126 @@ struct JacobiPipes
 static JacobiPipes create_jacobi_pipelines(FluidContext* ctx,
 	const VkGraphicsPipelineCreateInfo& commonPipeCI)
 {
-		// creating jacobi solver pipelines
+	// creating jacobi solver pipelines
 
-		std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShadersVisc = {};
-		jacobiShadersVisc[0] = fillShaderStageCreateInfo(
-			ctx->vkCtx.logicalDevice,
-			"shaders/spv/fluid_cube_vert.spv",
-			VK_SHADER_STAGE_VERTEX_BIT
-		);
-		jacobiShadersVisc[1] = fillShaderStageCreateInfo(
-			ctx->vkCtx.logicalDevice,
-			"shaders/spv/fluid_jacobi_solver.spv",
-			VK_SHADER_STAGE_FRAGMENT_BIT
-		);
+	std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShadersVisc = {};
+	jacobiShadersVisc[0] = fillShaderStageCreateInfo(
+		ctx->vkCtx.logicalDevice,
+		"shaders/spv/fluid_cube_vert.spv",
+		VK_SHADER_STAGE_VERTEX_BIT
+	);
+	jacobiShadersVisc[1] = fillShaderStageCreateInfo(
+		ctx->vkCtx.logicalDevice,
+		"shaders/spv/fluid_jacobi_solver.spv",
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
 
-		std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShadersPressure = {};
-		jacobiShadersPressure[0] = fillShaderStageCreateInfo(
-			ctx->vkCtx.logicalDevice,
-			"shaders/spv/fluid_cube_vert.spv",
-			VK_SHADER_STAGE_VERTEX_BIT
-		);
-		jacobiShadersPressure[1] = fillShaderStageCreateInfo(
-			ctx->vkCtx.logicalDevice,
-			"shaders/spv/fluid_jacobi_solver_pressure.spv",
-			VK_SHADER_STAGE_FRAGMENT_BIT
-		);
+	std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShadersPressure = {};
+	jacobiShadersPressure[0] = fillShaderStageCreateInfo(
+		ctx->vkCtx.logicalDevice,
+		"shaders/spv/fluid_cube_vert.spv",
+		VK_SHADER_STAGE_VERTEX_BIT
+	);
+	jacobiShadersPressure[1] = fillShaderStageCreateInfo(
+		ctx->vkCtx.logicalDevice,
+		"shaders/spv/fluid_jacobi_solver_pressure.spv",
+		VK_SHADER_STAGE_FRAGMENT_BIT
+	);
+	ctx->shaders.push_back(jacobiShadersVisc[0].module);
+	ctx->shaders.push_back(jacobiShadersVisc[1].module);
+	ctx->shaders.push_back(jacobiShadersPressure[0].module);
+	ctx->shaders.push_back(jacobiShadersPressure[1].module);
 
-		std::array<VkDescriptorSetLayoutBinding, 2> descrSetLayoutBinding = {};
-		descrSetLayoutBinding[0].binding = 0;
-		descrSetLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descrSetLayoutBinding[0].descriptorCount = 1;
-		descrSetLayoutBinding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		descrSetLayoutBinding[0].pImmutableSamplers = &ctx->defaultSampler;
+	std::array<VkDescriptorSetLayoutBinding, 2> descrSetLayoutBinding = {};
+	descrSetLayoutBinding[0].binding = 0;
+	descrSetLayoutBinding[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descrSetLayoutBinding[0].descriptorCount = 1;
+	descrSetLayoutBinding[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	descrSetLayoutBinding[0].pImmutableSamplers = &ctx->defaultSampler;
+	
+	descrSetLayoutBinding[1].binding = 1;
+	descrSetLayoutBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descrSetLayoutBinding[1].descriptorCount = 1;
+	descrSetLayoutBinding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	descrSetLayoutBinding[1].pImmutableSamplers = &ctx->defaultSampler;
+	
+	VkDescriptorSetLayoutCreateInfo descrSetCI = {};
+	descrSetCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	descrSetCI.bindingCount = descrSetLayoutBinding.size();
+	descrSetCI.pBindings = descrSetLayoutBinding.data();
+	
+	VkPushConstantRange pushConstantRangeJacobi = {};
+	pushConstantRangeJacobi.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	pushConstantRangeJacobi.offset = 0;
+	pushConstantRangeJacobi.size = sizeof(SolverConstants);
 
-		descrSetLayoutBinding[1].binding = 1;
-		descrSetLayoutBinding[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		descrSetLayoutBinding[1].descriptorCount = 1;
-		descrSetLayoutBinding[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		descrSetLayoutBinding[1].pImmutableSamplers = &ctx->defaultSampler;
+	VkDescriptorSetLayout jacobiDescrSetLayout = {};
+	vkCreateDescriptorSetLayout(ctx->vkCtx.logicalDevice, &descrSetCI, nullptr, &jacobiDescrSetLayout);
 
-		VkDescriptorSetLayoutCreateInfo descrSetCI = {};
-		descrSetCI.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		descrSetCI.bindingCount = descrSetLayoutBinding.size();
-		descrSetCI.pBindings = descrSetLayoutBinding.data();
+	VkDescriptorSetLayout jacobiViscDescrSetLayout = {};
+	vkCreateDescriptorSetLayout(ctx->vkCtx.logicalDevice, &descrSetCI, nullptr, &jacobiViscDescrSetLayout);
 
-		VkPushConstantRange pushConstantRangeJacobi = {};
-		pushConstantRangeJacobi.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-		pushConstantRangeJacobi.offset = 0;
-		pushConstantRangeJacobi.size = sizeof(SolverConstants);
+	VkPipelineLayoutCreateInfo jacobiPipeLayoutCI = {};
+	jacobiPipeLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	jacobiPipeLayoutCI.setLayoutCount = 1;
+	jacobiPipeLayoutCI.pSetLayouts = &jacobiDescrSetLayout;
+	jacobiPipeLayoutCI.pushConstantRangeCount = 1;
+	jacobiPipeLayoutCI.pPushConstantRanges = &pushConstantRangeJacobi;
 
-		VkDescriptorSetLayout jacobiDescrSetLayout = {};
-		vkCreateDescriptorSetLayout(ctx->vkCtx.logicalDevice, &descrSetCI, nullptr, &jacobiDescrSetLayout);
+	VkPipelineLayout jacobiPipeLayout = VK_NULL_HANDLE;
+	vkCreatePipelineLayout(ctx->vkCtx.logicalDevice, &jacobiPipeLayoutCI, nullptr, &jacobiPipeLayout);
 
-		VkPipelineLayoutCreateInfo jacobiPipeLayoutCI = {};
-		jacobiPipeLayoutCI.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		jacobiPipeLayoutCI.setLayoutCount = 1;
-		jacobiPipeLayoutCI.pSetLayouts = &jacobiDescrSetLayout;
-		jacobiPipeLayoutCI.pushConstantRangeCount = 1;
-		jacobiPipeLayoutCI.pPushConstantRanges = &pushConstantRangeJacobi;
+	VkPipelineLayout jacobiViscPipeLayout = VK_NULL_HANDLE;
+	vkCreatePipelineLayout(ctx->vkCtx.logicalDevice, &jacobiPipeLayoutCI, nullptr, &jacobiViscPipeLayout);
 
-		VkPipelineLayout jacobiPipeLayout = VK_NULL_HANDLE;
-		vkCreatePipelineLayout(ctx->vkCtx.logicalDevice, &jacobiPipeLayoutCI, nullptr, &jacobiPipeLayout);
+	VkAttachmentDescription jacobiAttachmentDescr = {};
+	jacobiAttachmentDescr.format = VK_FORMAT_R32G32B32A32_SFLOAT;
+	jacobiAttachmentDescr.samples = VK_SAMPLE_COUNT_1_BIT;
+	jacobiAttachmentDescr.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+	jacobiAttachmentDescr.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	jacobiAttachmentDescr.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	jacobiAttachmentDescr.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	jacobiAttachmentDescr.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	jacobiAttachmentDescr.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
-		VkAttachmentDescription jacobiAttachmentDescr = {};
-		jacobiAttachmentDescr.format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		jacobiAttachmentDescr.samples = VK_SAMPLE_COUNT_1_BIT;
-		jacobiAttachmentDescr.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		jacobiAttachmentDescr.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		jacobiAttachmentDescr.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		jacobiAttachmentDescr.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		jacobiAttachmentDescr.initialLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		jacobiAttachmentDescr.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	VkAttachmentReference jacobiAttachmentRef = {};
+	jacobiAttachmentRef.attachment = 0;
+	jacobiAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
-		VkAttachmentReference jacobiAttachmentRef = {};
-		jacobiAttachmentRef.attachment = 0;
-		jacobiAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	VkSubpassDescription jacobiSubpassDescr = {};
+	jacobiSubpassDescr.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	jacobiSubpassDescr.colorAttachmentCount = 1;
+	jacobiSubpassDescr.pColorAttachments = &jacobiAttachmentRef;
 
-		VkSubpassDescription jacobiSubpassDescr = {};
-		jacobiSubpassDescr.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		jacobiSubpassDescr.colorAttachmentCount = 1;
-		jacobiSubpassDescr.pColorAttachments = &jacobiAttachmentRef;
+	VkSubpassDependency jacobiSubpassDep = {};
+	jacobiSubpassDep.srcSubpass = VK_SUBPASS_EXTERNAL;
+	jacobiSubpassDep.dstSubpass = 0;
+	jacobiSubpassDep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	jacobiSubpassDep.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+	jacobiSubpassDep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	jacobiSubpassDep.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+	jacobiSubpassDep.dependencyFlags = VK_FLAGS_NONE;
 
-		VkSubpassDependency jacobiSubpassDep = {};
-		jacobiSubpassDep.srcSubpass = VK_SUBPASS_EXTERNAL;
-		jacobiSubpassDep.dstSubpass = 0;
-		jacobiSubpassDep.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		jacobiSubpassDep.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-		jacobiSubpassDep.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		jacobiSubpassDep.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		jacobiSubpassDep.dependencyFlags = VK_FLAGS_NONE;
+	VkRenderPassCreateInfo jacobiRenderPassCI = {};
+	jacobiRenderPassCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	jacobiRenderPassCI.attachmentCount = 1;
+	jacobiRenderPassCI.pAttachments = &jacobiAttachmentDescr;
+	jacobiRenderPassCI.subpassCount = 1;
+	jacobiRenderPassCI.pSubpasses = &jacobiSubpassDescr;
+	jacobiRenderPassCI.dependencyCount = 1;
+	jacobiRenderPassCI.pDependencies = &jacobiSubpassDep;
 
-		VkRenderPassCreateInfo jacobiRenderPassCI = {};
-		jacobiRenderPassCI.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		jacobiRenderPassCI.attachmentCount = 1;
-		jacobiRenderPassCI.pAttachments = &jacobiAttachmentDescr;
-		jacobiRenderPassCI.subpassCount = 1;
-		jacobiRenderPassCI.pSubpasses = &jacobiSubpassDescr;
-		jacobiRenderPassCI.dependencyCount = 1;
-		jacobiRenderPassCI.pDependencies = &jacobiSubpassDep;
+	VkRenderPass jacobiRenderPass = VK_NULL_HANDLE;
+	vkCreateRenderPass(ctx->vkCtx.logicalDevice, &jacobiRenderPassCI, nullptr, &jacobiRenderPass);
+	VkRenderPass jacobiViscRenderPass = VK_NULL_HANDLE;
+	vkCreateRenderPass(ctx->vkCtx.logicalDevice, &jacobiRenderPassCI, nullptr, &jacobiViscRenderPass);
 
-		VkRenderPass jacobiRenderPass = VK_NULL_HANDLE;
-		vkCreateRenderPass(ctx->vkCtx.logicalDevice, &jacobiRenderPassCI, nullptr, &jacobiRenderPass);
-		
 
 	VkGraphicsPipelineCreateInfo pipeCI[2] = {commonPipeCI, commonPipeCI};
 	pipeCI[0].stageCount = jacobiShadersVisc.size();
 	pipeCI[0].pStages = jacobiShadersVisc.data();
-	pipeCI[0].layout = jacobiPipeLayout;
-	pipeCI[0].renderPass = jacobiRenderPass;
+	pipeCI[0].layout = jacobiViscPipeLayout;
+	pipeCI[0].renderPass = jacobiViscRenderPass;
 	pipeCI[0].subpass = 0;
 	
 	pipeCI[1].stageCount = jacobiShadersPressure.size();
@@ -1324,9 +1407,9 @@ static JacobiPipes create_jacobi_pipelines(FluidContext* ctx,
 	pipeCI[1].renderPass = jacobiRenderPass;
 	pipeCI[1].subpass = 0;
 
-	ctx->descrSetLayouts[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiDescrSetLayout;
-	ctx->pipeLayouts[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiPipeLayout;
-	ctx->renderPasses[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiRenderPass;
+	ctx->descrSetLayouts[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiViscDescrSetLayout;
+	ctx->pipeLayouts[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiViscPipeLayout;
+	ctx->renderPasses[PIPE_JACOBI_SOLVER_VISCOCITY] = jacobiViscRenderPass;
 	ctx->descrSetLayouts[PIPE_JACOBI_SOLVER_PRESSURE] = jacobiDescrSetLayout;
 	ctx->pipeLayouts[PIPE_JACOBI_SOLVER_PRESSURE] = jacobiPipeLayout;
 	ctx->renderPasses[PIPE_JACOBI_SOLVER_PRESSURE] = jacobiRenderPass;
@@ -1421,6 +1504,7 @@ static void allocate_descriptor_sets(FluidContext* ctx)
 
 	VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
 	vkCreateDescriptorPool(ctx->vkCtx.logicalDevice, &descrPoolCreateInfo, nullptr, &descriptorPool);
+	ctx->descrPool = descriptorPool;
 
 	VkDescriptorSetAllocateInfo descrSetAllocateInfo = {};
 	descrSetAllocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -2003,6 +2087,18 @@ static void assign_names_to_vulkan_objects(FluidContext* ctx)
 		"DSI_PRESENT",
 	};
 
+	const char* pipeNames[PIPE_COUNT] = {
+		"PIPE_ADVECTION",
+		"PIPE_VORTICITY_CURL",
+		"PIPE_VORTICITY_FORCE",
+		"PIPE_JACOBI_SOLVER_PRESSURE",
+		"PIPE_JACOBI_SOLVER_VISCOCITY",
+		"PIPE_EXTERNAL_FORCES",
+		"PIPE_DIVERGENCE",
+		"PIPE_GRADIENT_SUBTRACT",
+		"PIPE_PRESENT",
+	};
+
 	for(std::size_t textureIndex = 0; textureIndex < ctx->simTextures.size(); textureIndex++)
 	{
 		VkDebugUtilsObjectNameInfoEXT debugTextureInfo = {};
@@ -2012,6 +2108,38 @@ static void assign_names_to_vulkan_objects(FluidContext* ctx)
 		debugTextureInfo.pObjectName = RenderTargetNames[textureIndex];
 						
 		vkSetDebugUtilsObjectNameEXT(ctx->vkCtx.logicalDevice, &debugTextureInfo);
+	}
+
+	for(std::size_t pipeIndex = 0; pipeIndex < PIPE_COUNT; pipeIndex++)
+	{
+		
+		VkDebugUtilsObjectNameInfoEXT debugPipeLayoutsInfo = {};
+		debugPipeLayoutsInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		debugPipeLayoutsInfo.objectType = VK_OBJECT_TYPE_PIPELINE_LAYOUT;
+		debugPipeLayoutsInfo.objectHandle = (uint64_t)ctx->pipeLayouts[pipeIndex];
+		debugPipeLayoutsInfo.pObjectName = pipeNames[pipeIndex];
+		vkSetDebugUtilsObjectNameEXT(ctx->vkCtx.logicalDevice, &debugPipeLayoutsInfo);
+
+		VkDebugUtilsObjectNameInfoEXT debugPipeInfo = {};
+		debugPipeInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		debugPipeInfo.objectType = VK_OBJECT_TYPE_PIPELINE;
+		debugPipeInfo.objectHandle = (uint64_t)ctx->pipelines[pipeIndex];
+		debugPipeInfo.pObjectName = pipeNames[pipeIndex];
+		vkSetDebugUtilsObjectNameEXT(ctx->vkCtx.logicalDevice, &debugPipeInfo);
+
+		VkDebugUtilsObjectNameInfoEXT debugDescrSetLayoutInfo = {};
+		debugDescrSetLayoutInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		debugDescrSetLayoutInfo.objectType = VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT;
+		debugDescrSetLayoutInfo.objectHandle = (uint64_t)ctx->descrSetLayouts[pipeIndex];
+		debugDescrSetLayoutInfo.pObjectName = pipeNames[pipeIndex];
+		vkSetDebugUtilsObjectNameEXT(ctx->vkCtx.logicalDevice, &debugDescrSetLayoutInfo);
+
+		VkDebugUtilsObjectNameInfoEXT renderPassInfo = {};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		renderPassInfo.objectType = VK_OBJECT_TYPE_RENDER_PASS;
+		renderPassInfo.objectHandle = (uint64_t)ctx->renderPasses[pipeIndex];
+		renderPassInfo.pObjectName = pipeNames[pipeIndex];
+		vkSetDebugUtilsObjectNameEXT(ctx->vkCtx.logicalDevice, &renderPassInfo);
 	}
 
 	for(std::size_t imageIndex = 0; imageIndex < SWAPCHAIN_IMAGE_COUNT; imageIndex++)
@@ -2050,6 +2178,7 @@ static void allocate_command_buffers(FluidContext* ctx, int commandBufferCount)
 		&cmdBufferAllocInfo,
 		ctx->commandBuffers.data()
 	);
+	ctx->commandPool = commandPool;
 }
 
 static int record_advect_velocity_render_pass(
@@ -3037,6 +3166,6 @@ int main(int argc, char **argv)
 	allocate_descriptor_sets(&ctx);
 	create_frame_buffers(&ctx);
 	run_simulation_loop(&ctx);
-	destroy_fluid_context();
+	destroy_fluid_context(&ctx);
 	return 0;
 }
