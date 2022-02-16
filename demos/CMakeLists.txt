@@ -9,3 +9,5 @@ endmacro()
 # compile_shader(fluid_ink_present fragment)
 
 build_example(fluid_sim fluid_sim.cc)
+build_example(flock_sim flock.cc)
+

@@ -105,7 +105,7 @@ bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, u
 	initInput(surface->windowHandle);
 	
 	glfwFocusWindow(window);
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 	glfwSetCursorPos(window, width/2.f, height/2.f);
 
 	return true;

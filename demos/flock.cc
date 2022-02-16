@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <random>
+#include <climits>
 
 //demo specific information
 struct InstanceData
@@ -252,7 +253,7 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 
 	std::vector<mat4x4> instanceTransforms = {boidsGlobals.boidsCount, loadIdentity()};
 	Shader computeShader = {};
-	VK_CHECK(loadShader(vkCtx.logicalDevice, "shaders/boids.spv", VK_SHADER_STAGE_COMPUTE_BIT, &computeShader));
+	VK_CHECK(loadShader(vkCtx.logicalDevice, "shaders/spv/boids.spv", VK_SHADER_STAGE_COMPUTE_BIT, &computeShader));
 
 	VkSpecializationMapEntry specMapEntry = {};
 	specMapEntry.constantID = 100;
@@ -576,6 +577,9 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 
 		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
 		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeLayout, 0, 1, &descrSet, 0, nullptr);
+		vkCmdPushConstants(cmdBuffer, computePipeLayout, 
+			VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(BoidsGlobals), &boidsGlobals);
+
 		vkCmdDispatch(cmdBuffer, boidsGlobals.boidsCount / workGroupSize + 1, 1, 1);
 		
 		if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
@@ -644,8 +648,8 @@ DebugPipeData createDebugPipeline(
 {
 
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
-	shaderStageCreateInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/debugVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStageCreateInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/debugFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStageCreateInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/debugVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStageCreateInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/debugFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	
 	VkVertexInputBindingDescription bindingDescr = {};
 	bindingDescr.binding = 0;
@@ -847,8 +851,8 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 	VkPipelineColorBlendStateCreateInfo colorBlendState = fillColorBlendStateCreateInfo(blendAttachmentState);
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageInfos = {};
-	shaderStageInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/skyboxVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStageInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/skyboxFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStageInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/skyboxVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStageInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/skyboxFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	VkDynamicState dynState = VK_DYNAMIC_STATE_VIEWPORT;
 	VkPipelineDynamicStateCreateInfo dynStateCreateInfo = fillDynamicStateCreateInfo(&dynState, 1);
@@ -915,8 +919,8 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 		Vec3{-1.f,  1.f, -1.f},
 		Vec3{-1.f,  1.f,  1.f}
 	};
-	Vec3 scale = {boidsGlobals.tankSize * 10, boidsGlobals.tankSize * 10, boidsGlobals.tankSize* 10};
-	auto& mat = loadScale(scale);
+	const Vec3 scale = {boidsGlobals.tankSize * 10, boidsGlobals.tankSize * 10, boidsGlobals.tankSize* 10};
+	auto mat = loadScale(scale);
 	for(auto& vertex : cubeVertices)
 	{
 		vertex *= mat;
@@ -1192,8 +1196,8 @@ int main(int argc, char** argv)
 	pushConstantRange.size = sizeof(Vec3);
 
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
-	shaderStageCreateInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/fishVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStageCreateInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/fishFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStageCreateInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/fishVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStageCreateInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/fishFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	VkVertexInputBindingDescription bindingDescription = {};
 	bindingDescription.binding = 0;
@@ -1872,7 +1876,7 @@ int main(int argc, char** argv)
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = &computeMayStartSemaphore;
 	VK_CALL(vkQueueSubmit(vkCtx.computeQueue, 1, &submitInfo, computeFence));
-	vkWaitForFences(vkCtx.logicalDevice, 1, &computeFence, VK_TRUE, UINT_MAX);
+	vkWaitForFences(vkCtx.logicalDevice, 1, &computeFence, VK_TRUE, UINT64_MAX);
 	
 	VkFence computeFinishedFence = createFence(vkCtx.logicalDevice);
 

@@ -10,3 +10,11 @@ ${COMPILER} -fshader-stage=fragment -g shaders/fluid_project_gradient_subtract.g
 ${COMPILER} -fshader-stage=fragment -g shaders/fluid_ink_present.glsl -o shaders/spv/fluid_ink_present.spv
 ${COMPILER} -fshader-stage=fragment -g shaders/fluid_vorticity_curl.glsl -o shaders/spv/fluid_vorticity_curl.spv
 ${COMPILER} -fshader-stage=fragment -g shaders/fluid_vorticity_force.glsl -o shaders/spv/fluid_vorticity_force.spv
+
+${COMPILER} -fshader-stage=compute -g shaders/boids.comp -o shaders/spv/boids.spv
+${COMPILER} -fshader-stage=vertex -g shaders/skyboxVert.glsl -o shaders/spv/skyboxVert.spv
+${COMPILER} -fshader-stage=fragment -g shaders/skyboxFrag.glsl -o shaders/spv/skyboxFrag.spv
+${COMPILER} -fshader-stage=vertex -g shaders/debugVert.glsl -o shaders/spv/debugVert.spv
+${COMPILER} -fshader-stage=fragment -g shaders/debugFrag.glsl -o shaders/spv/debugFrag.spv
+${COMPILER} -fshader-stage=vertex -g shaders/fishVert.glsl -o shaders/spv/fishVert.spv
+${COMPILER} -fshader-stage=fragment -g shaders/fishFrag.glsl -o shaders/spv/fishFrag.spv
