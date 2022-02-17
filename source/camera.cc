@@ -1,7 +1,7 @@
 #include "camera.h"
 #include "logging.h"
 #include "input.h"
-#include "platform/platform.h"
+
 static constexpr float MOUSE_SENSITIVITY = 0.4f;
 static constexpr float CAMERA_SPEED_VAL  = 1.5f;
 

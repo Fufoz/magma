@@ -67,7 +67,18 @@ struct DebugPipeData
 	Buffer           tankBuffer;
 };
 
-std::vector<BoidTransform> generateBoids(uint32_t numberOfBoids)
+struct SkyBoxPipeData
+{
+	VkPipeline pipeline;
+	VkPipelineLayout pipeLayout;
+	VkDescriptorSet descrSet;
+	Buffer gpuVertexBuffer;
+	Buffer gpuIndexBuffer;
+	ImageResource gpuCubeMap;
+	std::array<std::uint32_t, 12 * 3> indices;
+};
+
+static std::vector<BoidTransform> generate_boids(uint32_t numberOfBoids)
 {
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> distribution(-boidsGlobals.tankSize/2.f + 2.f, boidsGlobals.tankSize/2.f - 2.f);
@@ -106,8 +117,7 @@ std::vector<BoidTransform> generateBoids(uint32_t numberOfBoids)
 	return out;
 }
 
-
-std::vector<Vec4> generatePointsOnSphere()
+static std::vector<Vec4> generate_points_on_sphere()
 {
 	const std::size_t sampleCount = boidsGlobals.spherePointsCount;
 	const float goldenRatio = (1 + sqrt(5.f)) / 2.f;
@@ -144,7 +154,7 @@ std::vector<Vec4> generatePointsOnSphere()
 	return out;
 }
 
-std::array<Plane, 6> generateTankPlanes()
+static std::array<Plane, 6> generate_tank_planes()
 {
 	std::array<Plane, 6> tankPlanes = {};
 	const float halfDistance = boidsGlobals.tankSize / 2.f;
@@ -170,7 +180,7 @@ std::array<Plane, 6> generateTankPlanes()
 	return tankPlanes;
 }
 
-std::array<DebugInfo, 25> generateTankBorders()
+static std::array<DebugInfo, 25> generate_tank_borders()
 {
 	std::array<DebugInfo, 25> out = {};
 	const float sz = boidsGlobals.tankSize/2.f;
@@ -245,11 +255,11 @@ std::array<DebugInfo, 25> generateTankBorders()
 	return out;
 }
 
-static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
+static ComputeData build_compute_pipeline(const VulkanGlobalContext& vkCtx)
 {
-	std::vector<BoidTransform> boidTransforms = generateBoids(boidsGlobals.boidsCount);
-	std::vector<Vec4> spherePoints = generatePointsOnSphere();
-	std::array<Plane, 6> tankPlanes = generateTankPlanes();
+	std::vector<BoidTransform> boidTransforms = generate_boids(boidsGlobals.boidsCount);
+	std::vector<Vec4> spherePoints = generate_points_on_sphere();
+	std::array<Plane, 6> tankPlanes = generate_tank_planes();
 
 	std::vector<mat4x4> instanceTransforms = {boidsGlobals.boidsCount, loadIdentity()};
 	Shader computeShader = {};
@@ -552,29 +562,6 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 
 	vkBeginCommandBuffer(cmdBuffer, &commandBufferBeginInfo);
 
-		// if(vkCtx.queueFamIdx != vkCtx.computeQueueFamIdx)
-		// {
-		// 	VkBufferMemoryBarrier acquireBarrier = {};
-		// 	acquireBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-		// 	acquireBarrier.pNext = nullptr;
-		// 	acquireBarrier.srcAccessMask = 0;
-		// 	acquireBarrier.dstAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
-		// 	acquireBarrier.srcQueueFamilyIndex = vkCtx.queueFamIdx;
-		// 	acquireBarrier.dstQueueFamilyIndex = vkCtx.computeQueueFamIdx;
-		// 	acquireBarrier.buffer = instanceMatricesDeviceBuffer.buffer;
-		// 	acquireBarrier.offset = 0;
-		// 	acquireBarrier.size = instanceMatricesDeviceBuffer.bufferSize;
-
-		// 	vkCmdPipelineBarrier(cmdBuffer,
-		// 		VK_PIPELINE_STAGE_VERTEX_SHADER_BIT,
-		// 		VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-		// 		0,
-		// 		0, nullptr,
-		// 		1, &acquireBarrier,
-		// 		0, nullptr
-		// 	);
-		// }
-
 		vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
 		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeLayout, 0, 1, &descrSet, 0, nullptr);
 		vkCmdPushConstants(cmdBuffer, computePipeLayout, 
@@ -639,7 +626,7 @@ static ComputeData buildComputePipeline(const VulkanGlobalContext& vkCtx)
 	return out;
 }
 
-DebugPipeData createDebugPipeline(
+static DebugPipeData create_debug_pipeline(
 	const VulkanGlobalContext& 		vkCtx,
 	const WindowInfo& 				windowInfo,
 	const SwapChain& 				swapchain,
@@ -672,9 +659,15 @@ DebugPipeData createDebugPipeline(
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo =
 		fillInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
-
+	
+	
+	VkViewport viewport = createViewPort(windowInfo.windowExtent);
+	VkRect2D scissors = {};
+	scissors.offset = {0, 0};
+	scissors.extent = windowInfo.windowExtent;
+	
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
-		fillViewportStateCreateInfo(createViewPort(windowInfo.windowExtent), {{0,0}, windowInfo.windowExtent});
+		fillViewportStateCreateInfo(viewport, scissors);
 
 	VkPipelineRasterizationStateCreateInfo rasterStateCreateInfo = 
 		fillRasterizationStateCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
@@ -773,7 +766,7 @@ DebugPipeData createDebugPipeline(
 	vkUpdateDescriptorSets(vkCtx.logicalDevice, 1, &uboWriteDescrSet, 0, nullptr);
 
 
-	std::array<DebugInfo, 25> planes = generateTankBorders();
+	std::array<DebugInfo, 25> planes = generate_tank_borders();
 	
 	Buffer hostTankBuffer = createBuffer(vkCtx, 
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
@@ -800,18 +793,7 @@ DebugPipeData createDebugPipeline(
 	return out;
 }
 
-struct SkyBoxPipeData
-{
-	VkPipeline pipeline;
-	VkPipelineLayout pipeLayout;
-	VkDescriptorSet descrSet;
-	Buffer gpuVertexBuffer;
-	Buffer gpuIndexBuffer;
-	ImageResource gpuCubeMap;
-	std::array<unsigned long, 12 * 3> indices;
-};
-
-bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInfo,
+static bool prepare_skybox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInfo,
 	const std::array<const char*, 6>& planes, VkRenderPass renderPass, VkCommandPool cmdPool, const VkDescriptorBufferInfo& uboDescrBufferInfo, SkyBoxPipeData* out)
 {
 
@@ -831,9 +813,22 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = 
 		fillInputAssemblyCreateInfo();
+
+	VkViewport viewport = createViewPort(windowInfo.windowExtent);
+	VkRect2D scissors = {};
+	scissors.offset = {0, 0};
+	scissors.extent = windowInfo.windowExtent;
 	
-	VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
-		fillViewportStateCreateInfo(createViewPort(windowInfo.windowExtent), {{0,0}, windowInfo.windowExtent});
+	VkPipelineViewportStateCreateInfo viewportStateCreateInfo = {};
+	viewportStateCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+	viewportStateCreateInfo.pNext = nullptr;
+	viewportStateCreateInfo.viewportCount = 1;
+	viewportStateCreateInfo.pViewports = &viewport;
+	viewportStateCreateInfo.scissorCount = 1;
+	viewportStateCreateInfo.pScissors = &scissors;
+
+	// VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
+		// fillViewportStateCreateInfo(viewport, scissors);
 
 	VkPipelineRasterizationStateCreateInfo rasterStateCreateInfo = 
 		fillRasterizationStateCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
@@ -850,6 +845,7 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 
 	VkPipelineColorBlendStateCreateInfo colorBlendState = fillColorBlendStateCreateInfo(blendAttachmentState);
 
+	magma::log::error("loading skybox shaders");
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageInfos = {};
 	shaderStageInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/skyboxVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
 	shaderStageInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/skyboxFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
@@ -926,7 +922,7 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 		vertex *= mat;
 	}
 
-	std::array<unsigned long, 12 * 3> indices = {
+	std::array<std::uint32_t, 12 * 3> indices = {
 		//bottom
 		0,1,3,
 		1,2,3,
@@ -968,7 +964,7 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 		vkCtx, 
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		indices.size() * sizeof(Vec3)
+		indices.size() * sizeof(std::uint32_t)
 	);
 
 	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, indices.data(), indexBuffer.bufferSize, &indexBuffer));
@@ -982,28 +978,7 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 
 	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, indexBuffer, &gpuIndexBuffer));
 
-
-	//copy texture data to gpu
-	VkSamplerCreateInfo samplerCreateInfo = {};
-	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerCreateInfo.magFilter = VK_FILTER_LINEAR;
-	samplerCreateInfo.minFilter = VK_FILTER_LINEAR;
-	samplerCreateInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-	samplerCreateInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	samplerCreateInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	samplerCreateInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-	samplerCreateInfo.mipLodBias = 0.f;
-	samplerCreateInfo.anisotropyEnable = VK_FALSE;
-	samplerCreateInfo.maxAnisotropy = 1.f;
-	samplerCreateInfo.compareEnable = VK_FALSE;
-	samplerCreateInfo.compareOp = VK_COMPARE_OP_NEVER;
-	samplerCreateInfo.minLod = 0.f;
-	samplerCreateInfo.maxLod = 1.f;
-	samplerCreateInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-
-	VkSampler sampler = VK_NULL_HANDLE;
-	VK_CALL(vkCreateSampler(vkCtx.logicalDevice, &samplerCreateInfo, nullptr, &sampler));
-
+	VkSampler sampler = createDefaultSampler(vkCtx.logicalDevice);
 
 	bool planesAreLoaded = true;
 	std::array<TextureInfo, 6> textures = {};
@@ -1103,6 +1078,24 @@ bool prepareSkyBox(const VulkanGlobalContext& vkCtx, const WindowInfo& windowInf
 	out->gpuIndexBuffer = gpuIndexBuffer;
 	out->gpuCubeMap = cubemapGpuImage;
 	out->indices = indices;
+
+	if(vkCtx.hasDebugUtilsExtension)
+	{
+		VkDebugUtilsObjectNameInfoEXT objectNameInfo = {};
+		objectNameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		objectNameInfo.objectType = VK_OBJECT_TYPE_BUFFER;
+		objectNameInfo.objectHandle = (uint64_t)gpuIndexBuffer.buffer;
+		objectNameInfo.pObjectName = "SkyBox Index Buffer";
+		vkSetDebugUtilsObjectNameEXT(vkCtx.logicalDevice, &objectNameInfo);
+
+		VkDebugUtilsObjectNameInfoEXT objectNameInfo2 = {};
+		objectNameInfo2.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+		objectNameInfo2.objectType = VK_OBJECT_TYPE_BUFFER;
+		objectNameInfo2.objectHandle = (uint64_t)gpuVertexBuffer.buffer;
+		objectNameInfo2.pObjectName = "SkyBox Vertex Buffer";
+		vkSetDebugUtilsObjectNameEXT(vkCtx.logicalDevice, &objectNameInfo2);
+
+	}
 	return true;
 }
 
@@ -1111,11 +1104,11 @@ int main(int argc, char** argv)
 	magma::log::initLogging();
 	
 	std::vector<const char*> desiredLayers = {
-		// "VK_LAYER_KHRONOS_validation"
+		"VK_LAYER_KHRONOS_validation"
 	};
 
 	std::vector<const char*> desiredExtensions = {
-		// "VK_EXT_debug_utils"
+		"VK_EXT_debug_utils"
 	};
 
 	VulkanGlobalContext vkCtx = {};
@@ -1147,7 +1140,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	ComputeData computeData = buildComputePipeline(vkCtx);
+	ComputeData computeData = build_compute_pipeline(vkCtx);
 
 	//setup uniform  buffer and sampler object 
 	//letting hardware to know upfront what descriptor type and binding count ubo will have
@@ -1396,7 +1389,7 @@ int main(int argc, char** argv)
 	attachments[1].format = depthFormat;
 	attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
 	attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-	attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachments[1].stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
 	attachments[1].stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
 	attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -1425,19 +1418,13 @@ int main(int argc, char** argv)
 
 	//TODO:this is bullshit, fix it
 	VkSubpassDependency selfDependency = {};
-	selfDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	selfDependency.dstSubpass = 0;
-	selfDependency.srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-	selfDependency.dstStageMask = 
-		VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT|
-		VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-	selfDependency.srcAccessMask = 0;
-	selfDependency.dstAccessMask = 
-		VK_ACCESS_COLOR_ATTACHMENT_READ_BIT|
-		VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT|
-		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT|
-		VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-	selfDependency.dependencyFlags = 0;
+ 	selfDependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+ 	selfDependency.dstSubpass = 0;
+ 	selfDependency.srcStageMask = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+ 	selfDependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+ 	selfDependency.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+ 	selfDependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+ 	selfDependency.dependencyFlags = 0;
 
 	/*RENDER PASS*/
 	VkRenderPassCreateInfo renderPassCreateInfo = {};
@@ -1585,12 +1572,6 @@ int main(int argc, char** argv)
 		swapChain.imageCount * sizeof(mat4x4) * animation.bindPose.size()
 	); 
 	
-	// Buffer instanceMatrices = createBuffer(vkCtx,
-		// VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-		// VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-		// swapChain.imageCount * sizeof(mat4x4) * boidsGlobals.boidsCount
-	// );
-
 	//write data to descriptor set
 	VkDescriptorBufferInfo descriptorBufferInfoMVP = {};
 	descriptorBufferInfoMVP.buffer = ubo.buffer;
@@ -1603,9 +1584,6 @@ int main(int argc, char** argv)
 	descriptorBufferInfoJoints.range = jointMatrices.bufferSize;
 
 	VkDescriptorBufferInfo descriptorBufferInfoInstances = {};
-	// descriptorBufferInfoInstances.buffer = instanceMatrices.buffer;
-	// descriptorBufferInfoInstances.offset = 0;
-	// descriptorBufferInfoInstances.range = instanceMatrices.bufferSize;
 	descriptorBufferInfoInstances.buffer = computeData.instanceTransformsDeviceBuffer.buffer;
 	descriptorBufferInfoInstances.offset = 0;
 	descriptorBufferInfoInstances.range = computeData.instanceTransformsDeviceBuffer.bufferSize;
@@ -1667,7 +1645,7 @@ int main(int argc, char** argv)
 	std::vector<VkCommandBuffer> cmdBuffers = {};
 	createCommandBuffers(vkCtx.logicalDevice, cmdPool, swapChain.imageCount, cmdBuffers);
 	
-	DebugPipeData debugData = createDebugPipeline(vkCtx, windowInfo, swapChain, renderPass, descriptorBufferInfoMVP);
+	DebugPipeData debugData = create_debug_pipeline(vkCtx, windowInfo, swapChain, renderPass, descriptorBufferInfoMVP);
 	
 	std::array<const char*, 6> planes = 
 	{
@@ -1680,7 +1658,7 @@ int main(int argc, char** argv)
 	};
 
 	SkyBoxPipeData skyboxPipeData = {};
-	if(!prepareSkyBox(vkCtx, windowInfo, planes, renderPass, cmdPool, descriptorBufferInfoMVP, &skyboxPipeData))
+	if(!prepare_skybox(vkCtx, windowInfo, planes, renderPass, cmdPool, descriptorBufferInfoMVP, &skyboxPipeData))
 	{
 		return false;
 	}
@@ -1698,7 +1676,7 @@ int main(int argc, char** argv)
 	auto& imageMayPresentSemaphores = swapChain.runtime.imageMayPresentSemaphores;
 	
 	FPSCamera camera = {};
-	camera.position = {0.f, 0.f, 5.f};
+	camera.position = {0.f, 0.f, 2.f};
 
 	HostTimer timer = {};
 	timer.start();
@@ -1785,8 +1763,9 @@ int main(int argc, char** argv)
 			vkCmdDraw(cmdBuffers[index], 24, 1, 0, 0);
 
 
-			//skybox commands
+			// skybox commands
 			vkCmdBindPipeline(cmdBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipeData.pipeline);
+			vkCmdSetViewport(cmdBuffers[index], 0, 1, &pipeState.viewport);
 			vkCmdBindDescriptorSets(cmdBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, skyboxPipeData.pipeLayout, 0, 1, &skyboxPipeData.descrSet, 0, nullptr);
 			vkCmdBindVertexBuffers(cmdBuffers[index], 0, 1, &skyboxPipeData.gpuVertexBuffer.buffer, &offset);
 			vkCmdBindIndexBuffer(cmdBuffers[index], skyboxPipeData.gpuIndexBuffer.buffer, offset, VK_INDEX_TYPE_UINT32);
@@ -2069,8 +2048,6 @@ int main(int argc, char** argv)
 		syncIndex = (syncIndex + 1) % swapChain.imageCount;
 	}
 	
-
-
 	destroySwapChain(vkCtx, &swapChain);
 	destroyPlatformWindow(vkCtx, &windowInfo);
 	destroyGlobalContext(&vkCtx);
