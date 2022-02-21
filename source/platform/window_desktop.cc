@@ -19,17 +19,17 @@ const char* glfwError()
 	return "No error";
 }
 
-bool windowShouldClose(void* windowHandle)
+bool window_should_close(void* windowHandle)
 {
 	return glfwWindowShouldClose((GLFWwindow*)windowHandle);
 }
 
-void updateMessageQueue()
+void update_message_queue()
 {
 	glfwPollEvents();
 }
 
-const char** getRequiredSurfaceExtensions(uint32_t* surfaceExtCount)
+const char** get_required_surface_exts(uint32_t* surfaceExtCount)
 {
 	if(glfwInit() != GLFW_TRUE)
 	{
@@ -48,7 +48,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 	
 }
 
-bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, uint32_t height,
+bool init_platform_window(const VulkanGlobalContext& globalInfo, uint32_t width, uint32_t height,
 	const char* title, WindowInfo* surface, bool fpsCameraMode)
 {
 	auto errorCallback = [](int errorCode, const char* descr)
@@ -102,7 +102,7 @@ bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, u
 	surface->surface = windowSurface;
 	surface->surfaceCaps = surfaceCapabilities;
 
-	initInput(surface->windowHandle);
+	init_input(surface->windowHandle);
 	
 	glfwFocusWindow(window);
 	if(fpsCameraMode)
@@ -117,7 +117,7 @@ bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width, u
 	return true;
 }
 
-VkExtent2D getCurrentWindowExtent(void* windowHandle)
+VkExtent2D get_current_window_extent(void* windowHandle)
 {
 	int w = {};
 	int h = {};
@@ -125,17 +125,17 @@ VkExtent2D getCurrentWindowExtent(void* windowHandle)
 	return {(uint32_t)w, (uint32_t)h};
 }
 
-void updateWindowDimensions(VkPhysicalDevice physicalDevice, WindowInfo* out)
+void update_window_dimensions(VkPhysicalDevice physicalDevice, WindowInfo* out)
 {
 	//query created surface capabilities
 	VkSurfaceCapabilitiesKHR surfaceCapabilities = {};
 	VK_CALL(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, out->surface, &surfaceCapabilities));
 
-	out->windowExtent = getCurrentWindowExtent(out->windowHandle);
+	out->windowExtent = get_current_window_extent(out->windowHandle);
 	out->surfaceCaps = surfaceCapabilities;
 }
 
-void destroyPlatformWindow(const VulkanGlobalContext& vkCtx, WindowInfo* info)
+void destroy_platform_window(const VulkanGlobalContext& vkCtx, WindowInfo* info)
 {
 	vkDestroySurfaceKHR(vkCtx.instance, info->surface, nullptr);
 	glfwDestroyWindow((GLFWwindow*)info->windowHandle);

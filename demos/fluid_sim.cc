@@ -169,7 +169,7 @@ static void init_imgui_context(FluidContext* ctx)
 	ImGui_ImplVulkan_Init(&imguiVulkanInitInfo, ctx->renderPasses[PIPE_PRESENT]);
 
 	//fonts
-	auto pool = createCommandPool(ctx->vkCtx);
+	auto pool = create_command_pool(ctx->vkCtx);
 	auto cmdBuffer = begin_tmp_commands(ctx->vkCtx, pool);
 	ImGui_ImplVulkan_CreateFontsTexture(cmdBuffer);
 	end_tmp_commands(ctx->vkCtx, pool, cmdBuffer);
@@ -179,7 +179,7 @@ static void init_imgui_context(FluidContext* ctx)
 
 static bool create_fluid_context(FluidContext* ctx)
 {
-	magma::log::initLogging();
+	magma::log::init_logging();
 
 	const std::vector<const char *> desiredLayers = {
 		{"VK_LAYER_KHRONOS_validation"}
@@ -189,19 +189,19 @@ static bool create_fluid_context(FluidContext* ctx)
 		{VK_EXT_DEBUG_UTILS_EXTENSION_NAME},
 	};
 
-	if (!initVulkanGlobalContext(desiredLayers, desiredExtensions, &ctx->vkCtx))
+	if (!init_vulkan_context(desiredLayers, desiredExtensions, &ctx->vkCtx))
 	{
 		return false;
 	}
 
 	const std::size_t width = 600;
 	const std::size_t height = 600;
-	if (!initPlatformWindow(ctx->vkCtx, width, height, "fluid_sim", &ctx->window, false))
+	if (!init_platform_window(ctx->vkCtx, width, height, "fluid_sim", &ctx->window, false))
 	{
 		return false;
 	}
 
-	if (!createSwapChain(ctx->vkCtx, ctx->window, SWAPCHAIN_IMAGE_COUNT, &ctx->swapchain))
+	if (!create_swapchain(ctx->vkCtx, ctx->window, SWAPCHAIN_IMAGE_COUNT, &ctx->swapchain))
 	{
 		return false;
 	}
@@ -257,7 +257,7 @@ static bool initialise_fluid_textures(FluidContext* ctx)
 	VkExtent3D textureSize = {ctx->window.windowExtent.width, ctx->window.windowExtent.height, 1};
 	for(std::size_t textureIndex = 0; textureIndex < ctx->simTextures.size(); textureIndex++)
 	{
-		ctx->simTextures[textureIndex] = createResourceImage(
+		ctx->simTextures[textureIndex] = create_image_resource(
 			ctx->vkCtx,
 			textureSize,
 			VK_FORMAT_R32G32B32A32_SFLOAT,
@@ -270,49 +270,49 @@ static bool initialise_fluid_textures(FluidContext* ctx)
 	hostBuffer.resize(ctx->window.windowExtent.width * ctx->window.windowExtent.height * numc * sizeof(float));
 	std::memset(hostBuffer.data(), 0, hostBuffer.size());
 
-	Buffer stagingBuffer = createBuffer(
+	Buffer stagingBuffer = create_buffer(
 		ctx->vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		hostBuffer.size()
 	);
 
-	copyDataToHostVisibleBuffer(ctx->vkCtx, 0, hostBuffer.data(), hostBuffer.size(), &stagingBuffer);
+	copy_data_to_host_visible_buffer(ctx->vkCtx, 0, hostBuffer.data(), hostBuffer.size(), &stagingBuffer);
 
-	auto tmpCmdPool = createCommandPool(ctx->vkCtx);
+	auto tmpCmdPool = create_command_pool(ctx->vkCtx);
 	for(auto&& texture : ctx->simTextures)
 	{
-		pushTextureToDeviceLocalImage(tmpCmdPool, ctx->vkCtx, stagingBuffer, textureSize, &texture);
+		push_texture_to_device_local_image(tmpCmdPool, ctx->vkCtx, stagingBuffer, textureSize, &texture);
 	}
 	vkDestroyCommandPool(ctx->vkCtx.logicalDevice, tmpCmdPool, nullptr);
 
-	destroyBuffer(ctx->vkCtx.logicalDevice, &stagingBuffer);
+	destroy_buffer(ctx->vkCtx.logicalDevice, &stagingBuffer);
 		
 	bool status = false;
 		
-	ctx->defaultSampler = createDefaultSampler(ctx->vkCtx.logicalDevice, &status);
+	ctx->defaultSampler = create_default_sampler(ctx->vkCtx.logicalDevice, &status);
 
 #if defined(WARP_PICTURE_MODE)
 	TextureInfo girlTexture = {};
-	status &= loadTexture("images/girl_with_a_pearl.png", &girlTexture, false);
+	status &= load_texture("images/girl_with_a_pearl.png", &girlTexture, false);
 	const std::size_t textureByteSize = girlTexture.numc * girlTexture.extent.width * girlTexture.extent.height;
 
-	auto deviceGirlTexture = createResourceImage(
+	auto deviceGirlTexture = create_image_resource(
 		ctx->vkCtx, girlTexture.extent, girlTexture.format,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
 	);
 
-	Buffer stagingTextureBuffer = createBuffer(
+	Buffer stagingTextureBuffer = create_buffer(
 		ctx->vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		textureByteSize 
 	);
 
-	copyDataToHostVisibleBuffer(ctx->vkCtx, 0, girlTexture.data, textureByteSize, &stagingTextureBuffer);
+	copy_data_to_host_visible_buffer(ctx->vkCtx, 0, girlTexture.data, textureByteSize, &stagingTextureBuffer);
 		
-	auto tmpBlitPool = createCommandPool(ctx->vkCtx);
-	pushTextureToDeviceLocalImage(tmpBlitPool, ctx->vkCtx, stagingTextureBuffer, girlTexture.extent, &deviceGirlTexture);
+	auto tmpBlitPool = create_command_pool(ctx->vkCtx);
+	push_texture_to_device_local_image(tmpBlitPool, ctx->vkCtx, stagingTextureBuffer, girlTexture.extent, &deviceGirlTexture);
 	auto cmdBuffer = begin_tmp_commands(ctx->vkCtx, tmpBlitPool);
 
 	VkImageSubresourceLayers layers = {};
@@ -392,7 +392,7 @@ static bool initialise_fluid_textures(FluidContext* ctx)
 	);
 
 	end_tmp_commands(ctx->vkCtx, tmpBlitPool, cmdBuffer);
-	destroyBuffer(ctx->vkCtx.logicalDevice, &stagingTextureBuffer);
+	destroy_buffer(ctx->vkCtx.logicalDevice, &stagingTextureBuffer);
 	destroy_image_resource(ctx->vkCtx.logicalDevice, &deviceGirlTexture);
 #endif
 	return status;
@@ -409,8 +409,8 @@ static void destroy_fluid_context(FluidContext* ctx)
 	vkDestroyDescriptorPool(ctx->vkCtx.logicalDevice, ctx->imguiDescrPool, nullptr);
 #endif
 	vkDestroyDescriptorPool(ctx->vkCtx.logicalDevice, ctx->descrPool, nullptr);
-	destroyBuffer(ctx->vkCtx.logicalDevice, &ctx->deviceVertexBuffer);
-	destroyBuffer(ctx->vkCtx.logicalDevice, &ctx->deviceIndexBuffer);
+	destroy_buffer(ctx->vkCtx.logicalDevice, &ctx->deviceVertexBuffer);
+	destroy_buffer(ctx->vkCtx.logicalDevice, &ctx->deviceIndexBuffer);
 
 	vkFreeCommandBuffers(ctx->vkCtx.logicalDevice, ctx->commandPool, ctx->commandBuffers.size(), ctx->commandBuffers.data());
 	vkDestroyCommandPool(ctx->vkCtx.logicalDevice, ctx->commandPool, nullptr);
@@ -444,9 +444,9 @@ static void destroy_fluid_context(FluidContext* ctx)
 	}
 	vkDestroySampler(ctx->vkCtx.logicalDevice, ctx->defaultSampler, nullptr);
 
-	destroySwapChain(ctx->vkCtx, &ctx->swapchain);
-	destroyPlatformWindow(ctx->vkCtx, &ctx->window);
-	destroyGlobalContext(&ctx->vkCtx);
+	destroy_swapchain(ctx->vkCtx, &ctx->swapchain);
+	destroy_platform_window(ctx->vkCtx, &ctx->window);
+	destroy_vulkan_context(&ctx->vkCtx);
 }
 
 static void init_vertex_and_index_buffers(FluidContext* ctx)
@@ -463,15 +463,15 @@ static void init_vertex_and_index_buffers(FluidContext* ctx)
 	};
 	const std::size_t vertexBufferSize = cubeVerts.size() * sizeof(Vec3);
 	const std::size_t indexBufferSize = indicies.size() * sizeof(std::uint32_t);
-	auto stagingVertexBuffer = createBuffer(
+	auto stagingVertexBuffer = create_buffer(
 		ctx->vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		vertexBufferSize
 	);
-	copyDataToHostVisibleBuffer(ctx->vkCtx, 0, cubeVerts.data(), vertexBufferSize, &stagingVertexBuffer);
+	copy_data_to_host_visible_buffer(ctx->vkCtx, 0, cubeVerts.data(), vertexBufferSize, &stagingVertexBuffer);
 	
-	ctx->deviceVertexBuffer = createBuffer(
+	ctx->deviceVertexBuffer = create_buffer(
 		ctx->vkCtx,
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
@@ -485,37 +485,37 @@ static void init_vertex_and_index_buffers(FluidContext* ctx)
 	commandPoolCI.queueFamilyIndex = ctx->vkCtx.queueFamIdx;
 	VkCommandPool cmdPool = VK_NULL_HANDLE;
 	vkCreateCommandPool(ctx->vkCtx.logicalDevice, &commandPoolCI, nullptr, &cmdPool);
-	pushDataToDeviceLocalBuffer(cmdPool, ctx->vkCtx, stagingVertexBuffer, &ctx->deviceVertexBuffer, ctx->vkCtx.graphicsQueue);
-	auto stagingIndexBuffer = createBuffer(
+	push_data_to_device_local_buffer(cmdPool, ctx->vkCtx, stagingVertexBuffer, &ctx->deviceVertexBuffer, ctx->vkCtx.graphicsQueue);
+	auto stagingIndexBuffer = create_buffer(
 		ctx->vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		indexBufferSize
 	);
-	copyDataToHostVisibleBuffer(ctx->vkCtx, 0, indicies.data(), indexBufferSize, &stagingIndexBuffer);
+	copy_data_to_host_visible_buffer(ctx->vkCtx, 0, indicies.data(), indexBufferSize, &stagingIndexBuffer);
 	
-	ctx->deviceIndexBuffer = createBuffer(
+	ctx->deviceIndexBuffer = create_buffer(
 		ctx->vkCtx,
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		indexBufferSize
 	);
-	pushDataToDeviceLocalBuffer(cmdPool, ctx->vkCtx, stagingIndexBuffer, &ctx->deviceIndexBuffer, ctx->vkCtx.graphicsQueue);
-	destroyBuffer(ctx->vkCtx.logicalDevice, &stagingVertexBuffer);
-	destroyBuffer(ctx->vkCtx.logicalDevice, &stagingIndexBuffer);
-	destroyCommandPool(ctx->vkCtx.logicalDevice, cmdPool);
+	push_data_to_device_local_buffer(cmdPool, ctx->vkCtx, stagingIndexBuffer, &ctx->deviceIndexBuffer, ctx->vkCtx.graphicsQueue);
+	destroy_buffer(ctx->vkCtx.logicalDevice, &stagingVertexBuffer);
+	destroy_buffer(ctx->vkCtx.logicalDevice, &stagingIndexBuffer);
+	destroy_command_pool(ctx->vkCtx.logicalDevice, cmdPool);
 }
 
 static VkPipeline create_advect_pipeline(FluidContext* ctx,
 	const VkGraphicsPipelineCreateInfo& commonPipeCI)
 {
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageCI = {};
-	shaderStageCI[0] = fillShaderStageCreateInfo(
+	shaderStageCI[0] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_cube_vert.spv",
 		VK_SHADER_STAGE_VERTEX_BIT
 	);
-	shaderStageCI[1] = fillShaderStageCreateInfo(
+	shaderStageCI[1] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_advect_quantity.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
@@ -621,12 +621,12 @@ static VkPipeline create_curl_pipeline(FluidContext* ctx,
 {
 	//creating curl pipe
 	std::array<VkPipelineShaderStageCreateInfo, 2> curlShaderStageCI = {};
-	curlShaderStageCI[0] = fillShaderStageCreateInfo(
+	curlShaderStageCI[0] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_cube_vert.spv",
 		VK_SHADER_STAGE_VERTEX_BIT
 	);
-	curlShaderStageCI[1] = fillShaderStageCreateInfo(
+	curlShaderStageCI[1] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_vorticity_curl.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
@@ -725,12 +725,12 @@ static VkPipeline create_vorticity_pipeline(FluidContext* ctx,
 	const VkGraphicsPipelineCreateInfo& commonPipeCI)
 {
 	std::array<VkPipelineShaderStageCreateInfo, 2> vforceShaderStageCI = {};
-	vforceShaderStageCI[0] = fillShaderStageCreateInfo(
+	vforceShaderStageCI[0] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_cube_vert.spv",
 		VK_SHADER_STAGE_VERTEX_BIT
 	);
-	vforceShaderStageCI[1] = fillShaderStageCreateInfo(
+	vforceShaderStageCI[1] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_vorticity_force.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
@@ -837,12 +837,12 @@ static VkPipeline create_present_pipeline(FluidContext* ctx,
 
 		//creating present pipeline
 		std::array<VkPipelineShaderStageCreateInfo, 2> presentShaders = {};
-		presentShaders[0] = fillShaderStageCreateInfo(
+		presentShaders[0] = fill_shader_stage_ci(
 			ctx->vkCtx.logicalDevice,
 			"shaders/spv/fluid_cube_vert.spv",
 			VK_SHADER_STAGE_VERTEX_BIT
 		);
-		presentShaders[1] = fillShaderStageCreateInfo(
+		presentShaders[1] = fill_shader_stage_ci(
 			ctx->vkCtx.logicalDevice,
 			"shaders/spv/fluid_ink_present.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
@@ -941,12 +941,12 @@ static VkPipeline create_project_pipeline(FluidContext* ctx,
 		// creating project pipeline
 		std::array<VkPipelineShaderStageCreateInfo, 2> projectShaders = {};
 
-		projectShaders[0] = fillShaderStageCreateInfo(
+		projectShaders[0] = fill_shader_stage_ci(
 			ctx->vkCtx.logicalDevice,
 			"shaders/spv/fluid_cube_vert.spv",
 			VK_SHADER_STAGE_VERTEX_BIT
 		);
-		projectShaders[1] = fillShaderStageCreateInfo(
+		projectShaders[1] = fill_shader_stage_ci(
 			ctx->vkCtx.logicalDevice,
 			"shaders/spv/fluid_project_gradient_subtract.spv",
 			VK_SHADER_STAGE_FRAGMENT_BIT
@@ -1057,12 +1057,12 @@ static VkPipeline create_divergence_pipeline(FluidContext* ctx,
 {
 	// creating divergence pipeline
 	std::array<VkPipelineShaderStageCreateInfo, 2> divShaders = {};
-	divShaders[0] = fillShaderStageCreateInfo(
+	divShaders[0] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_cube_vert.spv",
 		VK_SHADER_STAGE_VERTEX_BIT
 	);
-	divShaders[1] = fillShaderStageCreateInfo(
+	divShaders[1] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_project_divergence.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
@@ -1166,12 +1166,12 @@ static VkPipeline create_force_pipeline(FluidContext* ctx,
 {
 	// creating force pipeline
 	std::array<VkPipelineShaderStageCreateInfo, 2> forceShaders = {};
-	forceShaders[0] = fillShaderStageCreateInfo(
+	forceShaders[0] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_cube_vert.spv",
 		VK_SHADER_STAGE_VERTEX_BIT
 	);
-	forceShaders[1] = fillShaderStageCreateInfo(
+	forceShaders[1] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_apply_force.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
@@ -1282,24 +1282,24 @@ static JacobiPipes create_jacobi_pipelines(FluidContext* ctx,
 	// creating jacobi solver pipelines
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShadersVisc = {};
-	jacobiShadersVisc[0] = fillShaderStageCreateInfo(
+	jacobiShadersVisc[0] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_cube_vert.spv",
 		VK_SHADER_STAGE_VERTEX_BIT
 	);
-	jacobiShadersVisc[1] = fillShaderStageCreateInfo(
+	jacobiShadersVisc[1] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_jacobi_solver.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
 	);
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> jacobiShadersPressure = {};
-	jacobiShadersPressure[0] = fillShaderStageCreateInfo(
+	jacobiShadersPressure[0] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_cube_vert.spv",
 		VK_SHADER_STAGE_VERTEX_BIT
 	);
-	jacobiShadersPressure[1] = fillShaderStageCreateInfo(
+	jacobiShadersPressure[1] = fill_shader_stage_ci(
 		ctx->vkCtx.logicalDevice,
 		"shaders/spv/fluid_jacobi_solver_pressure.spv",
 		VK_SHADER_STAGE_FRAGMENT_BIT
@@ -1432,10 +1432,10 @@ static void create_pipelines(FluidContext* ctx)
 	vertexAttribDescrs[0].format = VK_FORMAT_R32G32B32_SFLOAT;
 	vertexAttribDescrs[0].offset = 0;
 
-	auto vertexInputStateCI = fillVertexInputStateCreateInfo(
+	auto vertexInputStateCI = fill_vertex_input_state_ci(
 		bindingDescrs.data(), bindingDescrs.size(),
 		vertexAttribDescrs.data(), vertexAttribDescrs.size());
-	auto inputAssemblyStateCI = fillInputAssemblyCreateInfo();
+	auto inputAssemblyStateCI = fill_input_assembly_state_ci();
 
 	VkViewport viewport = {
 		0.f, 0.f,
@@ -1447,23 +1447,23 @@ static void create_pipelines(FluidContext* ctx)
 	VkRect2D scissors = {};
 	scissors.offset = {0, 0};
 	scissors.extent = {ctx->window.windowExtent.width, ctx->window.windowExtent.height};
-	auto viewportStateCI = fillViewportStateCreateInfo(viewport, scissors);
+	auto viewportStateCI = fill_viewport_state_ci(viewport, scissors);
 
-	auto rasterStateCI = fillRasterizationStateCreateInfo(
+	auto rasterStateCI = fill_raster_state_ci(
 		VK_CULL_MODE_NONE, VK_FRONT_FACE_COUNTER_CLOCKWISE
 	);
 
-	auto multisampleStateCI = fillMultisampleStateCreateInfo();
+	auto multisampleStateCI = fill_multisample_state_ci();
 
-	auto depthStencilCI = fillDepthStencilStateCreateInfo(VK_COMPARE_OP_LESS_OR_EQUAL);
+	auto depthStencilCI = fill_depth_stencil_state_ci(VK_COMPARE_OP_LESS_OR_EQUAL);
 
 	//color blending is used for mixing color of transparent objects
 	VkPipelineColorBlendAttachmentState blendAttachmentState = {};
 	blendAttachmentState.colorWriteMask = 0xf;
 	blendAttachmentState.blendEnable = VK_FALSE;
-	auto colorBlendStateCI = fillColorBlendStateCreateInfo(blendAttachmentState);
+	auto colorBlendStateCI = fill_color_blend_state_ci(blendAttachmentState);
 
-	auto dynStateCI = fillDynamicStateCreateInfo(nullptr, 0);
+	auto dynStateCI = fill_dynamic_state_ci(nullptr, 0);
 
 	VkGraphicsPipelineCreateInfo commonPipeStateInfo = {}; 
 	commonPipeStateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -2512,21 +2512,21 @@ static int record_force_velocity_render_pass(
 		static bool isMouseBeingDragged = false;
 		static Vec2 prevMousePos = {};
 
-		if(isMouseBtnPressed(MouseBtn::LeftBtn) && !isMouseBeingDragged)
+		if(is_mouse_btn_pressed(MouseBtn::LeftBtn) && !isMouseBeingDragged)
 		{
 			isMouseBeingDragged = true;
-			auto pos = getMousePos();
+			auto pos = get_mouse_position();
 			prevMousePos.x = (float)pos.x * ctx->dx;
 			prevMousePos.y = (float)pos.y * ctx->dx;
 			// magma::log::error("prev = {} {}", prevMousePos.x, prevMousePos.y);
 		}
-		else if(!isMouseBtnPressed(MouseBtn::LeftBtn))
+		else if(!is_mouse_btn_pressed(MouseBtn::LeftBtn))
 		{
 			isMouseBeingDragged = false;
 		}
 		else if(isMouseBeingDragged)
 		{
-			auto currentMousePos = getMousePos();
+			auto currentMousePos = get_mouse_position();
 
 			forceConsts.mousePos = {(float)currentMousePos.x * ctx->dx, (float)currentMousePos.y * ctx->dx};
 			// magma::log::error("current = {} {}", forceConsts.mousePos.x, forceConsts.mousePos.y);
@@ -2609,17 +2609,17 @@ static int record_force_color_render_pass(
 
 		static bool isMouseBeingDragged = false;
 
-		if(isMouseBtnPressed(MouseBtn::LeftBtn) && !isMouseBeingDragged)
+		if(is_mouse_btn_pressed(MouseBtn::LeftBtn) && !isMouseBeingDragged)
 		{
 			isMouseBeingDragged = true;
 		}
-		else if(!isMouseBtnPressed(MouseBtn::LeftBtn))
+		else if(!is_mouse_btn_pressed(MouseBtn::LeftBtn))
 		{
 			isMouseBeingDragged = false;
 		}
 		else if(isMouseBeingDragged)
 		{
-			auto currentMousePos = getMousePos();
+			auto currentMousePos = get_mouse_position();
 			forceConsts.mousePos = {(float)currentMousePos.x * ctx->dx, (float)currentMousePos.y * ctx->dx};
 			forceConsts.force = {0.082, 0.976, 0.901, 1.f};
 		}
@@ -3086,16 +3086,16 @@ static void run_simulation_loop(FluidContext* ctx)
 	int inputColorTextureIndex = RT_COLOR_FIRST;
 		
 	std::size_t syncIndex = 0;
-	while(!windowShouldClose(ctx->window.windowHandle))
+	while(!window_should_close(ctx->window.windowHandle))
 	{
-		updateMessageQueue();
+		update_message_queue();
         				
 		vkWaitForFences(ctx->vkCtx.logicalDevice, 1, &ctx->swapchain.runtime.workSubmittedFences[syncIndex], VK_TRUE, UINT64_MAX);
 		vkResetFences(ctx->vkCtx.logicalDevice, 1, &ctx->swapchain.runtime.workSubmittedFences[syncIndex]);
 #if defined(DRAW_FLUID_PARAMS)
 		begin_imgui_frame();
 #endif
-		// magma::log::error("status = {}",vkStrError(r));
+		// magma::log::error("status = {}",vk_error_string(r));
 		std::uint32_t imageIndex = {};
 		vkAcquireNextImageKHR(
 			ctx->vkCtx.logicalDevice,
@@ -3132,7 +3132,7 @@ static void run_simulation_loop(FluidContext* ctx)
 		submitInfo.pSignalSemaphores = &ctx->swapchain.runtime.imageMayPresentSemaphores[syncIndex];
 
 		auto queueSubmitStatus = vkQueueSubmit(ctx->vkCtx.graphicsQueue, 1, &submitInfo, ctx->swapchain.runtime.workSubmittedFences[syncIndex]);
-		// magma::log::debug("queue submit at image {} with status {}", imageIndex, vkStrError(queueSubmitStatus));
+		// magma::log::debug("queue submit at image {} with status {}", imageIndex, vk_error_string(queueSubmitStatus));
 		// auto r = vkDeviceWaitIdle(ctx->logicalDevice);
 
 		VkPresentInfoKHR presentInfo = {};

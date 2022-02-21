@@ -20,9 +20,9 @@ namespace log
 	};
 	typedef uint32_t SeverityFlags;
 
-	void initLogging();
+	void init_logging();
 	
-	void setSeverityMask(SeverityFlags mask);
+	void set_severity_mask(SeverityFlags mask);
 
 	void dump(const std::string& info, SeverityMask mask);
 	

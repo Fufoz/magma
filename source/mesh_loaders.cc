@@ -18,7 +18,7 @@
 
 #include "logging.h"
 
-bool loadTexture(const char* path, TextureInfo* out, bool flipImage)
+bool load_texture(const char* path, TextureInfo* out, bool flipImage)
 {
 	int twidth;
 	int theight;
@@ -47,7 +47,7 @@ struct RemappedData
 	std::vector<unsigned int> remappedIndices;
 };
 
-static RemappedData meshOptimize(const Vertex* vertices, uint32_t vcount, uint32_t indexCount, const unsigned int* indices = nullptr)
+static RemappedData mesh_optimize(const Vertex* vertices, uint32_t vcount, uint32_t indexCount, const unsigned int* indices = nullptr)
 {
 	RemappedData data = {};
 	
@@ -71,7 +71,7 @@ static RemappedData meshOptimize(const Vertex* vertices, uint32_t vcount, uint32
 	};
 }
 
-bool loadGLTF(const char* path, Mesh* geom, Animation* animation)
+bool load_GLTF(const char* path, Mesh* geom, Animation* animation)
 {
 	assert(geom);
 
@@ -197,7 +197,7 @@ bool loadGLTF(const char* path, Mesh* geom, Animation* animation)
 		indices[i] = rawIndices[i];
 	}
 
-	RemappedData remap = meshOptimize(vertices.data(), vertices.size(), numberOfIndices, indices.data());
+	RemappedData remap = mesh_optimize(vertices.data(), vertices.size(), numberOfIndices, indices.data());
 	geom->vertexBuffer = remap.remappedVertices;
 	geom->indexBuffer = remap.remappedIndices;
 
@@ -346,7 +346,7 @@ bool loadGLTF(const char* path, Mesh* geom, Animation* animation)
 		for(auto& keyFrame : keyFrames)
 		{
 			keyFrame.currentJointGlobalTransforms.resize(joints.size());
-			generateGlobalJointTransforms(*animation, &keyFrame);
+			generate_global_joint_transforms(*animation, &keyFrame);
 		}
 
 	}//animation
@@ -354,7 +354,7 @@ bool loadGLTF(const char* path, Mesh* geom, Animation* animation)
 	return true;
 }
 
-bool loadOBJ(const char* path, Mesh* geom)
+bool load_OBJ(const char* path, Mesh* geom)
 {
 	assert(path);
 	assert(geom);
@@ -405,7 +405,7 @@ bool loadOBJ(const char* path, Mesh* geom)
 		}
 	}
 
-	RemappedData data = meshOptimize(vertices.data(), vertices.size(), 3 * mesh->face_count);
+	RemappedData data = mesh_optimize(vertices.data(), vertices.size(), 3 * mesh->face_count);
 	geom->vertexBuffer = data.remappedVertices;
 	geom->indexBuffer = data.remappedIndices;
 

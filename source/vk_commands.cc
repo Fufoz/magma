@@ -1,6 +1,6 @@
 #include "vk_commands.h"
 
-VkCommandPool createCommandPool(const VulkanGlobalContext& vkCtx, VkCommandPoolCreateFlags commandPoolFlags)
+VkCommandPool create_command_pool(const VulkanGlobalContext& vkCtx, VkCommandPoolCreateFlags commandPoolFlags)
 {
 	//creating command buffer for transfer operation
 	VkCommandPoolCreateInfo cmdPoolCreateInfo = {};
@@ -14,12 +14,12 @@ VkCommandPool createCommandPool(const VulkanGlobalContext& vkCtx, VkCommandPoolC
 	return commandPool;
 }
 
-void destroyCommandPool(VkDevice device, VkCommandPool cmdPool)
+void destroy_command_pool(VkDevice device, VkCommandPool cmdPool)
 {
 	vkDestroyCommandPool(device, cmdPool, nullptr);
 }
 
-void createCommandBuffers(VkDevice logicalDevice, VkCommandPool commandPool, uint32_t count, std::vector<VkCommandBuffer>& out)
+void create_command_buffers(VkDevice logicalDevice, VkCommandPool commandPool, uint32_t count, std::vector<VkCommandBuffer>& out)
 {
 	//build command buffer for each swapchain image
 	VkCommandBufferAllocateInfo buffAllocInfo = {};
@@ -33,7 +33,7 @@ void createCommandBuffers(VkDevice logicalDevice, VkCommandPool commandPool, uin
 }
 
 
-void createCommandBuffer(VkDevice logicalDevice, VkCommandPool commandPool, VkCommandBuffer* out)
+void create_command_buffer(VkDevice logicalDevice, VkCommandPool commandPool, VkCommandBuffer* out)
 {
 	//build command buffer for each swapchain image
 	VkCommandBufferAllocateInfo buffAllocInfo = {};
@@ -48,7 +48,7 @@ void createCommandBuffer(VkDevice logicalDevice, VkCommandPool commandPool, VkCo
 VkCommandBuffer begin_tmp_commands(VulkanGlobalContext& ctx, VkCommandPool cmdPool)
 {
 	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
-	createCommandBuffer(ctx.logicalDevice, cmdPool, &cmdBuffer);
+	create_command_buffer(ctx.logicalDevice, cmdPool, &cmdBuffer);
 	VkCommandBufferBeginInfo cmdBuffBeginInfo = {};
 	cmdBuffBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 	cmdBuffBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;

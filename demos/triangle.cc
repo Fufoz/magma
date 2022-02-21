@@ -8,7 +8,7 @@ void buildTriangleCommandBuffer(const SwapChain& swapChain, const PipelineState&
 
 int main(int argc, char **argv)
 {
-	magma::log::initLogging();	
+	magma::log::init_logging();	
 	
 	std::vector<const char*> desiredExtensions = {
 		"VK_EXT_debug_utils"
@@ -18,13 +18,13 @@ int main(int argc, char **argv)
 	};
 	
 	VulkanGlobalContext vkCtx = {};
-	VK_CHECK(initVulkanGlobalContext(desiredLayers, desiredExtensions, &vkCtx));
+	VK_CHECK(init_vulkan_context(desiredLayers, desiredExtensions, &vkCtx));
 
 	WindowInfo windowInfo = {};
-	VK_CHECK(initPlatformWindow(vkCtx, 640, 480, "Magma", &windowInfo));
+	VK_CHECK(init_platform_window(vkCtx, 640, 480, "Magma", &windowInfo));
 	
 	SwapChain swapChain = {};
-	VK_CHECK(createSwapChain(vkCtx, windowInfo, 2, &swapChain));
+	VK_CHECK(create_swapchain(vkCtx, windowInfo, 2, &swapChain));
 
 //////////////////////////////////////////////////////////////////////////
 	struct VertexPC
@@ -39,22 +39,22 @@ int main(int argc, char **argv)
 		{{ 0.0f,  0.5f, 0.f}, {1.0f, 0.0f, 0.f}}
 	};
 
-	Buffer stagingBuffer = createBuffer(vkCtx,
+	Buffer stagingBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 		sizeof(verticies)
 	);
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx.logicalDevice, 0, &verticies, &stagingBuffer));
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx.logicalDevice, 0, &verticies, &stagingBuffer));
 
-	Buffer deviceLocalBuffer = createBuffer(vkCtx, 
+	Buffer deviceLocalBuffer = create_buffer(vkCtx, 
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		sizeof(verticies)
 	);
 
 	//creating command buffer for transfer operation
-	VkCommandPool commandPool = createCommandPool(vkCtx);
-	pushDataToDeviceLocalBuffer(commandPool, vkCtx, stagingBuffer, &deviceLocalBuffer);
+	VkCommandPool commandPool = create_command_pool(vkCtx);
+	push_data_to_device_local_buffer(commandPool, vkCtx, stagingBuffer, &deviceLocalBuffer);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//pipeline configuration:
@@ -63,8 +63,8 @@ int main(int argc, char **argv)
 	//loading spirv shaders
 	Shader vertexShader = {};
 	Shader fragmentShader = {};
-	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleVert.spv", VK_SHADER_STAGE_VERTEX_BIT, &vertexShader));
-	VK_CHECK(loadShader(vkCtx.logicalDevice, "./shaders/triangleFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, &fragmentShader));
+	VK_CHECK(load_shader(vkCtx.logicalDevice, "./shaders/triangleVert.spv", VK_SHADER_STAGE_VERTEX_BIT, &vertexShader));
+	VK_CHECK(load_shader(vkCtx.logicalDevice, "./shaders/triangleFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT, &fragmentShader));
 
 	pipelineState.shaders[0] = vertexShader;
 	pipelineState.shaders[1] = fragmentShader;
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	
 	//build command buffer for each swapchain image
 	std::vector<VkCommandBuffer> commandBuffers = {};
-	createCommandBuffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
+	create_command_buffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
 	buildTriangleCommandBuffer(swapChain, pipelineState, deviceLocalBuffer.buffer, windowInfo.windowExtent, commandBuffers);
 
 	uint32_t syncIndex = 0;//index in semaphore array to use
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 
 	auto& resizeHandler = [&]()
 	{
-		recreateSwapChain(vkCtx, windowInfo, &swapChain);
+		recreate_swapchain(vkCtx, windowInfo, &swapChain);
 		vkDestroyRenderPass(vkCtx.logicalDevice, pipelineState.renderPass, nullptr);
 		pipelineState.renderPass = VK_NULL_HANDLE;
 		vkDestroyPipeline(vkCtx.logicalDevice, pipelineState.pipeline, nullptr);
@@ -134,18 +134,18 @@ int main(int argc, char **argv)
 		configureGraphicsPipe(swapChain, vkCtx, vbuff, windowInfo.windowExtent, &pipelineState);
 		build_frame_buffers();
 		vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, commandBuffers.size(), commandBuffers.data());
-		createCommandBuffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
+		create_command_buffers(vkCtx.logicalDevice, commandPool, swapChain.imageCount, commandBuffers);
 		buildTriangleCommandBuffer(swapChain, pipelineState, deviceLocalBuffer.buffer, windowInfo.windowExtent, commandBuffers);
 	};
 
 	//render loop
-	while(!windowShouldClose(windowInfo.windowHandle))
+	while(!window_should_close(windowInfo.windowHandle))
 	{
 		HostTimer t;
 		t.start();
 		
 		//update OS message queue
-		updateMessageQueue();
+		update_message_queue();
 
 		VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &imageFences[syncIndex], VK_TRUE, UINT64_MAX));
 		VK_CALL(vkResetFences(vkCtx.logicalDevice, 1, &imageFences[syncIndex]));
@@ -169,7 +169,7 @@ int main(int argc, char **argv)
 			}
 			default : 
 			{
-				magma::log::error("Image acquire returned {}", vkStrError(acquireStatus));
+				magma::log::error("Image acquire returned {}", vk_error_string(acquireStatus));
 				assert(!"ACQUIRE IMG ASSERT");
 				break;
 			}
@@ -218,11 +218,11 @@ int main(int argc, char **argv)
 	destroyPipeline(vkCtx, &pipelineState);
 	vkFreeCommandBuffers(vkCtx.logicalDevice, commandPool, commandBuffers.size(), commandBuffers.data());
 	vkDestroyCommandPool(vkCtx.logicalDevice, commandPool, nullptr);
-	destroyBuffer(vkCtx.logicalDevice, &stagingBuffer);
-	destroyBuffer(vkCtx.logicalDevice, &deviceLocalBuffer);
-	destroySwapChain(vkCtx, &swapChain);
-	destroyPlatformWindow(vkCtx, &windowInfo);
-	destroyGlobalContext(&vkCtx);
+	destroy_buffer(vkCtx.logicalDevice, &stagingBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &deviceLocalBuffer);
+	destroy_swapchain(vkCtx, &swapChain);
+	destroy_platform_window(vkCtx, &windowInfo);
+	destroy_vulkan_context(&vkCtx);
 
 	return 0;
 }

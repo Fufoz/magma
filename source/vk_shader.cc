@@ -4,7 +4,7 @@
 
 #include <vector>
 
-static VkShaderModule createShaderModule(VkDevice logicalDevice, const std::vector<uint8_t>& source)
+static VkShaderModule create_shader_module(VkDevice logicalDevice, const std::vector<uint8_t>& source)
 {
 	VkShaderModuleCreateInfo moduleCreateInfo = {};
 	moduleCreateInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -18,7 +18,7 @@ static VkShaderModule createShaderModule(VkDevice logicalDevice, const std::vect
 	return module;
 }
 
-VkBool32 loadShader(VkDevice logicalDevice, const char* path, VkShaderStageFlagBits shaderType, Shader* shader)
+VkBool32 load_shader(VkDevice logicalDevice, const char* path, VkShaderStageFlagBits shaderType, Shader* shader)
 {
 
 	FILE* shaderFile = fopen(path, "rb");
@@ -47,7 +47,7 @@ VkBool32 loadShader(VkDevice logicalDevice, const char* path, VkShaderStageFlagB
 	assert(totalBytesRead == fileSize);
 	fclose(shaderFile);
 	
-	shader->handle = createShaderModule(logicalDevice, buffer);
+	shader->handle = create_shader_module(logicalDevice, buffer);
 	shader->shaderType = shaderType;
 	return shader->handle != VK_NULL_HANDLE ? VK_TRUE : VK_FALSE;
 }

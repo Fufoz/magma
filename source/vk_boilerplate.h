@@ -9,19 +9,19 @@
 #include <platform/platform.h>
 
 
-bool initVulkanGlobalContext(
+bool init_vulkan_context(
 	std::vector<const char*> desiredLayers,
 	std::vector<const char*> desiredExtensions,
 	VulkanGlobalContext* generalInfo
 );
 
-void destroyGlobalContext(VulkanGlobalContext* ctx);
+void destroy_vulkan_context(VulkanGlobalContext* ctx);
 
 //sync stuff
-VkSemaphore createSemaphore(VkDevice logicalDevice);
+VkSemaphore create_semaphore(VkDevice logicalDevice);
 
-VkFence createFence(VkDevice logicalDevice, bool signalled = false);
+VkFence create_fence(VkDevice logicalDevice, bool signalled = false);
 
-VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat* out);
+VkBool32 get_supported_depth_format(VkPhysicalDevice physicalDevice, VkFormat* out);
 
 #endif

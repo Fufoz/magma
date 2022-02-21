@@ -4,20 +4,20 @@
 #include <vk_types.h>
 
 
-bool initPlatformWindow(const VulkanGlobalContext& globalInfo, uint32_t width,
+bool init_platform_window(const VulkanGlobalContext& globalInfo, uint32_t width,
 	uint32_t height, const char* title, WindowInfo* surface, bool fpsCameraMode = true);
 
-VkExtent2D getCurrentWindowExtent(void* windowHandle);
+VkExtent2D get_current_window_extent(void* windowHandle);
 
-bool windowShouldClose(void* windowHandle);
+bool window_should_close(void* windowHandle);
 
-void updateMessageQueue();
+void update_message_queue();
 
-void updateWindowDimensions(VkPhysicalDevice physicalDevice, WindowInfo* out);
+void update_window_dimensions(VkPhysicalDevice physicalDevice, WindowInfo* out);
 
-const char** getRequiredSurfaceExtensions(uint32_t* surfaceExtCount);
+const char** get_required_surface_exts(uint32_t* surfaceExtCount);
 
-void destroyPlatformWindow(const VulkanGlobalContext& vkCtx, WindowInfo* info);
+void destroy_platform_window(const VulkanGlobalContext& vkCtx, WindowInfo* info);
 
 
 #endif

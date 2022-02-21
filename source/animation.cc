@@ -3,7 +3,7 @@
 #include <cassert>
 #include <algorithm>
 
-static mat4x4 generateMatFromTransform(const JointTransform& input)
+static mat4x4 generate_mat_from_transform(const JointTransform& input)
 {
 	mat4x4 out = loadIdentity();
 	if(input.channelBits & CHANNEL_SCALE_BIT)
@@ -22,18 +22,18 @@ static mat4x4 generateMatFromTransform(const JointTransform& input)
 	return out;
 }
 
-void generateGlobalJointTransforms(const Animation& animation, KeyFrame* keyFrame)
+void generate_global_joint_transforms(const Animation& animation, KeyFrame* keyFrame)
 {
 	assert(keyFrame);
 	assert(!keyFrame->currentJointLocalTransforms.empty());
 
 	for(uint32_t i = 0; i < keyFrame->currentJointLocalTransforms.size(); i++)
 	{
-		mat4x4 globalJointTransform = generateMatFromTransform(keyFrame->currentJointLocalTransforms[i]);
+		mat4x4 globalJointTransform = generate_mat_from_transform(keyFrame->currentJointLocalTransforms[i]);
 		int parentId = animation.bindPose[i].parentId;
 		while(parentId != -1)
 		{
-			globalJointTransform *= generateMatFromTransform(keyFrame->currentJointLocalTransforms[parentId]);
+			globalJointTransform *= generate_mat_from_transform(keyFrame->currentJointLocalTransforms[parentId]);
 			parentId = animation.bindPose[parentId].parentId;
 		}
 
@@ -41,7 +41,7 @@ void generateGlobalJointTransforms(const Animation& animation, KeyFrame* keyFram
 	}
 }
 
-void updateAnimation(Animation& animation, float frameTime, std::vector<mat4x4>& jointMatrices)
+void update_animation(Animation& animation, float frameTime, std::vector<mat4x4>& jointMatrices)
 {
 	animation.currentAnimTime += frameTime * animation.playbackRate;
 	animation.currentAnimTime = fmod(animation.currentAnimTime, animation.keyFrames[animation.keyFrames.size() - 1].frameTime);
@@ -123,7 +123,7 @@ void updateAnimation(Animation& animation, float frameTime, std::vector<mat4x4>&
 		interpolatedFrame.currentJointLocalTransforms[i] = interpolatedTransform;
 	}
 
-	generateGlobalJointTransforms(animation, &interpolatedFrame);
+	generate_global_joint_transforms(animation, &interpolatedFrame);
 	generateJointMatrices(interpolatedFrame.currentJointGlobalTransforms);
 	
 }

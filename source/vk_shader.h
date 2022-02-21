@@ -3,6 +3,6 @@
 
 #include <vk_types.h>
 
-VkBool32 loadShader(VkDevice logicalDevice, const char* path, VkShaderStageFlagBits shaderType, Shader* shader);
+VkBool32 load_shader(VkDevice logicalDevice, const char* path, VkShaderStageFlagBits shaderType, Shader* shader);
 
 #endif

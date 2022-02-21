@@ -3,14 +3,11 @@
 
 #include "vk_types.h"
 
-bool createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain);
+bool create_swapchain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain);
 
-VkResult destroySwapChain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain);
+VkResult destroy_swapchain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain);
 
-VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain);
-
-//build framebuffers for later command buffer recording
-void buildFrameBuffers(VkDevice logicaDevice, const PipelineState& pipelineState, VkExtent2D windowExtent, SwapChain* swapChain);
+VkResult recreate_swapchain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain);
 
 VkFramebuffer create_frame_buffer(
 	VkDevice logicalDevice, VkImageView imageView,

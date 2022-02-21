@@ -85,17 +85,4 @@ struct Texture
 	VkSampler textureSampler;
 };
 
-
-const uint32_t MAX_VERTEX_INPUT_ATTRIB_DESCR = 10;
-const uint32_t MAX_VERTEX_INPUT_BINDING_DESCR = MAX_VERTEX_INPUT_ATTRIB_DESCR;
-struct VertexBuffer
-{
-	Buffer gpuBuffer;
-	VkVertexInputBindingDescription bindingDescr;
-	VkVertexInputAttributeDescription attrDescr[MAX_VERTEX_INPUT_ATTRIB_DESCR];
-	uint32_t attribCount;
-};
-
-
-
 #endif

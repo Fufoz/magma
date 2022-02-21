@@ -50,7 +50,7 @@ struct Animation
 	std::vector<KeyFrame> keyFrames;
 };
 
-void updateAnimation(Animation& animation, float time, std::vector<mat4x4>& jointMatrices);
-void generateGlobalJointTransforms(const Animation& animation, KeyFrame* keyFrame);
+void update_animation(Animation& animation, float time, std::vector<mat4x4>& jointMatrices);
+void generate_global_joint_transforms(const Animation& animation, KeyFrame* keyFrame);
 
 #endif

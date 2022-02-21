@@ -5,7 +5,7 @@
 
 #include <array>
 
-static VkImageAspectFlags imageAspectFromUsage(VkImageUsageFlags usageFlags)
+static VkImageAspectFlags get_image_aspect_from_usage(VkImageUsageFlags usageFlags)
 {
 	VkImageAspectFlags aspectFlags = {};
 	if(usageFlags & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
@@ -19,7 +19,7 @@ static VkImageAspectFlags imageAspectFromUsage(VkImageUsageFlags usageFlags)
 	return aspectFlags;
 }
 
-ImageResource createResourceImage(const VulkanGlobalContext& vkCtx, VkExtent3D imageExtent, VkFormat imageFormat, VkImageUsageFlags usageFlags, VkImageLayout initialLayout)
+ImageResource create_image_resource(const VulkanGlobalContext& vkCtx, VkExtent3D imageExtent, VkFormat imageFormat, VkImageUsageFlags usageFlags, VkImageLayout initialLayout)
 {
 	VkImageCreateInfo imageCreateInfo = {};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -49,7 +49,7 @@ ImageResource createResourceImage(const VulkanGlobalContext& vkCtx, VkExtent3D i
 	vkGetPhysicalDeviceMemoryProperties(vkCtx.physicalDevice, &deviceMemProps);
 
 	uint32_t preferredMemTypeIndex = -1;
-	findRequiredMemoryTypeIndex(vkCtx.physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &preferredMemTypeIndex);
+	find_required_memtype_index(vkCtx.physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &preferredMemTypeIndex);
 
 	VkMemoryAllocateInfo memAllocInfo = {};
 	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -69,7 +69,7 @@ ImageResource createResourceImage(const VulkanGlobalContext& vkCtx, VkExtent3D i
 	imageViewCreateInfo.image = image;
 	imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
 	imageViewCreateInfo.format = imageFormat;
-	imageViewCreateInfo.subresourceRange.aspectMask = imageAspectFromUsage(usageFlags);
+	imageViewCreateInfo.subresourceRange.aspectMask = get_image_aspect_from_usage(usageFlags);
 	imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
 	imageViewCreateInfo.subresourceRange.levelCount = 1;
 	imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
@@ -89,7 +89,7 @@ ImageResource createResourceImage(const VulkanGlobalContext& vkCtx, VkExtent3D i
 }
 
 
-VkSampler createDefaultSampler(VkDevice logicalDevice, bool* status)
+VkSampler create_default_sampler(VkDevice logicalDevice, bool* status)
 {
 	VkSamplerCreateInfo samplerCreateInfo = {};
 	samplerCreateInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
@@ -117,7 +117,7 @@ VkSampler createDefaultSampler(VkDevice logicalDevice, bool* status)
 	return sampler;
 }
 
-bool findRequiredMemoryTypeIndex(
+bool find_required_memtype_index(
 	VkPhysicalDevice 		physicalDevice,
 	VkMemoryRequirements	resourceMemoryRequirements,
 	VkMemoryPropertyFlags 	desiredMemoryFlags,//DEVICE_LOCAL etc
@@ -147,7 +147,7 @@ bool findRequiredMemoryTypeIndex(
 	return false;
 }
 
-Buffer createBuffer(
+Buffer create_buffer(
 	const VulkanGlobalContext&	vkCtx,
 	VkBufferUsageFlags 			usageFlags,
 	VkMemoryPropertyFlags		requiredMemProperties,
@@ -177,7 +177,7 @@ Buffer createBuffer(
 	uint32_t memTypeBits = memReqs.memoryTypeBits;
 
 	uint32_t memTypeIdx = {};
-	if(!findRequiredMemoryTypeIndex(vkCtx.physicalDevice, memReqs, requiredMemProperties, &memTypeIdx))
+	if(!find_required_memtype_index(vkCtx.physicalDevice, memReqs, requiredMemProperties, &memTypeIdx))
 	{
 		magma::log::error("Failed to find memory type index for required buffer usage!");
 		return buffer;
@@ -201,7 +201,7 @@ Buffer createBuffer(
 	return buffer;
 }
 
-void destroyBuffer(VkDevice logicalDevice, Buffer* buffer)
+void destroy_buffer(VkDevice logicalDevice, Buffer* buffer)
 {
 	vkDestroyBuffer(logicalDevice, buffer->buffer, nullptr);
 	vkFreeMemory(logicalDevice, buffer->backupMemory, nullptr);
@@ -226,7 +226,7 @@ bool isPowerOfTwo(std::size_t val)
 }
 
 //TODO: incoherent allocations!
-VkResult copyDataToHostVisibleBuffer(const VulkanGlobalContext& vkCtx, VkDeviceSize offset, const void* copyFrom, std::size_t copyByteSize, Buffer* buffer)
+VkResult copy_data_to_host_visible_buffer(const VulkanGlobalContext& vkCtx, VkDeviceSize offset, const void* copyFrom, std::size_t copyByteSize, Buffer* buffer)
 {
 	void* mappedArea = nullptr;
 
@@ -251,7 +251,7 @@ VkResult copyDataToHostVisibleBuffer(const VulkanGlobalContext& vkCtx, VkDeviceS
 	return VK_SUCCESS;
 }
 
-VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, Buffer* deviceLocalBuffer, VkQueue queue)
+VkBool32 push_data_to_device_local_buffer(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, Buffer* deviceLocalBuffer, VkQueue queue)
 {
 
 	VkCommandBufferAllocateInfo cmdBuffAllocInfo = {};
@@ -291,7 +291,7 @@ VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlob
 	queueSubmitInfo.signalSemaphoreCount = 0;
 	queueSubmitInfo.pSignalSemaphores = nullptr;
 
-	VkFence fence = createFence(vkCtx.logicalDevice);
+	VkFence fence = create_fence(vkCtx.logicalDevice);
 	VkQueue submitQueue = queue == VK_NULL_HANDLE ?  vkCtx.graphicsQueue : queue;
 	VK_CALL(vkQueueSubmit(submitQueue, 1, &queueSubmitInfo, fence));
 	VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &fence, VK_TRUE, UINT64_MAX));
@@ -303,13 +303,13 @@ VkBool32 pushDataToDeviceLocalBuffer(VkCommandPool commandPool, const VulkanGlob
 	return VK_TRUE;
 }
 
-VkBool32 pushTextureToDeviceLocalImage(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, VkExtent3D imageExtent, ImageResource* textureResource)
+VkBool32 push_texture_to_device_local_image(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, VkExtent3D imageExtent, ImageResource* textureResource)
 {
 	assert(textureResource);
 
 	VkCommandBuffer cmdBuff = VK_NULL_HANDLE;
 	//1.recording transfer commands into command buffer
-	createCommandBuffer(vkCtx.logicalDevice, commandPool, &cmdBuff);
+	create_command_buffer(vkCtx.logicalDevice, commandPool, &cmdBuff);
 
 	VkCommandBufferBeginInfo cmdBuffBegInfo = {};
 	cmdBuffBegInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -389,7 +389,7 @@ VkBool32 pushTextureToDeviceLocalImage(VkCommandPool commandPool, const VulkanGl
 	submitInfo.pSignalSemaphores = nullptr;
 
 	//submit transfer command into queue
-	VkFence textureTransferredFence = createFence(vkCtx.logicalDevice);
+	VkFence textureTransferredFence = create_fence(vkCtx.logicalDevice);
 	VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &submitInfo, textureTransferredFence));
 	VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &textureTransferredFence, VK_TRUE, UINT64_MAX));
 	
@@ -401,7 +401,7 @@ VkBool32 pushTextureToDeviceLocalImage(VkCommandPool commandPool, const VulkanGl
 	return VK_TRUE;
 }
 
-ImageResource createCubemapImage(const VulkanGlobalContext& vkCtx, VkExtent3D imageExtent, VkFormat imageFormat, VkImageUsageFlags usageFlags, VkImageLayout initialLayout)
+ImageResource create_cubemap_image(const VulkanGlobalContext& vkCtx, VkExtent3D imageExtent, VkFormat imageFormat, VkImageUsageFlags usageFlags, VkImageLayout initialLayout)
 {
 	VkImageCreateInfo imageCreateInfo = {};
 	imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -429,7 +429,7 @@ ImageResource createCubemapImage(const VulkanGlobalContext& vkCtx, VkExtent3D im
 	vkGetPhysicalDeviceMemoryProperties(vkCtx.physicalDevice, &deviceMemProps);
 
 	uint32_t preferredMemTypeIndex = -1;
-	findRequiredMemoryTypeIndex(vkCtx.physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &preferredMemTypeIndex);
+	find_required_memtype_index(vkCtx.physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, &preferredMemTypeIndex);
 
 	VkMemoryAllocateInfo memAllocInfo = {};
 	memAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -449,7 +449,7 @@ ImageResource createCubemapImage(const VulkanGlobalContext& vkCtx, VkExtent3D im
 	imageViewCreateInfo.image = image;
 	imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 	imageViewCreateInfo.format = imageFormat;
-	imageViewCreateInfo.subresourceRange.aspectMask = imageAspectFromUsage(usageFlags);
+	imageViewCreateInfo.subresourceRange.aspectMask = get_image_aspect_from_usage(usageFlags);
 	imageViewCreateInfo.subresourceRange.baseMipLevel = 0;
 	imageViewCreateInfo.subresourceRange.levelCount = 1;
 	imageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
@@ -468,13 +468,13 @@ ImageResource createCubemapImage(const VulkanGlobalContext& vkCtx, VkExtent3D im
 	return imageResource;
 }
 
-VkBool32 pushCubemapTextureToDeviceLocalImage(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, VkExtent3D imageExtent, std::size_t planeStride, ImageResource* textureResource)
+VkBool32 push_cubemap_to_device_local_image(VkCommandPool commandPool, const VulkanGlobalContext& vkCtx, const Buffer& stagingBuffer, VkExtent3D imageExtent, std::size_t planeStride, ImageResource* textureResource)
 {
 	assert(textureResource);
 
 	VkCommandBuffer cmdBuff = VK_NULL_HANDLE;
 	//1.recording transfer commands into command buffer
-	createCommandBuffer(vkCtx.logicalDevice, commandPool, &cmdBuff);
+	create_command_buffer(vkCtx.logicalDevice, commandPool, &cmdBuff);
 
 	VkCommandBufferBeginInfo cmdBuffBegInfo = {};
 	cmdBuffBegInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -560,7 +560,7 @@ VkBool32 pushCubemapTextureToDeviceLocalImage(VkCommandPool commandPool, const V
 	submitInfo.pSignalSemaphores = nullptr;
 
 	//submit transfer command into queue
-	VkFence textureTransferredFence = createFence(vkCtx.logicalDevice);
+	VkFence textureTransferredFence = create_fence(vkCtx.logicalDevice);
 	VK_CALL(vkQueueSubmit(vkCtx.graphicsQueue, 1, &submitInfo, textureTransferredFence));
 	VK_CALL(vkWaitForFences(vkCtx.logicalDevice, 1, &textureTransferredFence, VK_TRUE, UINT64_MAX));
 	

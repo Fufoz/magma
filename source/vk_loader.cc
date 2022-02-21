@@ -1,16 +1,16 @@
 #include "vk_loader.h"
 
-VkResult locateAndInitVulkan()
+VkResult locate_and_init_vulkan()
 {
 	return volkInitialize();
 }
 
-void loadInstanceFunctionPointers(VkInstance instance)
+void load_instance_function_pointers(VkInstance instance)
 {
 	volkLoadInstanceOnly(instance);
 }
 
-void loadDeviceFunctionPointers(VkDevice logicalDevice)
+void load_device_function_pointers(VkDevice logicalDevice)
 {
 	volkLoadDevice(logicalDevice);
 }

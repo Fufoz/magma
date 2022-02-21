@@ -335,13 +335,13 @@ static void update_fish_descriptor_set(FlockContext* ctx)
 	VK_CALL(vkAllocateDescriptorSets(vkCtx.logicalDevice, &descrSetAllocInfo, &descriptorSet));
 	
 	//create ubos large enough to store data for each swapchain image to avoid ubo update synchronization
-	Buffer ubo = createBuffer(vkCtx,
+	Buffer ubo = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		ctx->swapChain.imageCount * sizeof(mat4x4) * 2
 	);
 
-	Buffer jointMatrices = createBuffer(vkCtx,
+	Buffer jointMatrices = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		ctx->swapChain.imageCount * sizeof(mat4x4) * ctx->fishPipeData.animation.bindPose.size()
@@ -430,13 +430,13 @@ static void build_fish_pipeline(FlockContext* ctx)
 	Mesh mesh = {};
 	Animation animation = {};
 	animation.playbackRate = 4.f;
-	if(!loadGLTF("resources/fish.gltf", &mesh, &animation))
+	if(!load_GLTF("resources/fish.gltf", &mesh, &animation))
 	{
 		return;
 	}
 
 	TextureInfo fishTexture = {};
-	if(!loadTexture("resources/fish.png", &fishTexture, false))
+	if(!load_texture("resources/fish.png", &fishTexture, false))
 	{
 		return;
 	}
@@ -489,8 +489,8 @@ static void build_fish_pipeline(FlockContext* ctx)
 	pushConstantRange.size = sizeof(Vec3);
 
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
-	shaderStageCreateInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/fishVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStageCreateInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/fishFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStageCreateInfos[0] = fill_shader_stage_ci(vkCtx.logicalDevice, "shaders/spv/fishVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStageCreateInfos[1] = fill_shader_stage_ci(vkCtx.logicalDevice, "shaders/spv/fishFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	VkVertexInputBindingDescription bindingDescription = {};
 	bindingDescription.binding = 0;
@@ -612,9 +612,9 @@ static void build_fish_pipeline(FlockContext* ctx)
 	dynamicStateCreateInfo.pDynamicStates = &dynamicState;
 	
 	VkFormat depthFormat = VK_FORMAT_UNDEFINED;
-	VK_CHECK(getSupportedDepthFormat(vkCtx.physicalDevice, &depthFormat));
+	VK_CHECK(get_supported_depth_format(vkCtx.physicalDevice, &depthFormat));
 
-	ImageResource depthImage = createResourceImage(vkCtx, {width, height, 1},
+	ImageResource depthImage = create_image_resource(vkCtx, {width, height, 1},
 		depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 	VkAttachmentDescription attachments[2] = {};
@@ -716,29 +716,29 @@ static void build_fish_pipeline(FlockContext* ctx)
 
 	//create texture image
 	//1. create staging buffer to copy texture contents to gpu local memory
-	Buffer stagingTextureBuffer = createBuffer(vkCtx,
+	Buffer stagingTextureBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		fishTexture.numc * fishTexture.extent.width * fishTexture.extent.height
 	);
 
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, fishTexture.data, stagingTextureBuffer.bufferSize, &stagingTextureBuffer));
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, fishTexture.data, stagingTextureBuffer.bufferSize, &stagingTextureBuffer));
 
 
 	//create image on device local memory to recieve texture data
-	ImageResource textureImage = createResourceImage(
+	ImageResource textureImage = create_image_resource(
 		vkCtx, fishTexture.extent,
 		fishTexture.format,
 		VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
 	);
 	
 	//copy texture data to device local memory
-	VkCommandPool cmdPool = createCommandPool(vkCtx);
-	VK_CHECK(pushTextureToDeviceLocalImage(cmdPool, vkCtx, stagingTextureBuffer, fishTexture.extent, &textureImage));
-	destroyBuffer(vkCtx.logicalDevice, &stagingTextureBuffer);
+	VkCommandPool cmdPool = create_command_pool(vkCtx);
+	VK_CHECK(push_texture_to_device_local_image(cmdPool, vkCtx, stagingTextureBuffer, fishTexture.extent, &textureImage));
+	destroy_buffer(vkCtx.logicalDevice, &stagingTextureBuffer);
 
 	// //create sampler to sample the fish texture
-	VkSampler textureSampler = createDefaultSampler(vkCtx.logicalDevice);
+	VkSampler textureSampler = create_default_sampler(vkCtx.logicalDevice);
 
 	Texture texture = {};
 	texture.imageInfo = textureImage;
@@ -746,35 +746,35 @@ static void build_fish_pipeline(FlockContext* ctx)
 	texture.imageInfo.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
 	//push vertices to device local memory
-	Buffer stagingVertexBuffer = createBuffer(vkCtx,
+	Buffer stagingVertexBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		mesh.vertexBuffer.size() * sizeof(Vertex)
 	);
-	Buffer deviceLocalVertexBuffer = createBuffer(vkCtx, 
+	Buffer deviceLocalVertexBuffer = create_buffer(vkCtx, 
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		stagingVertexBuffer.bufferSize);
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, mesh.vertexBuffer.data(), stagingVertexBuffer.bufferSize, &stagingVertexBuffer));
-	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, stagingVertexBuffer, &deviceLocalVertexBuffer));
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, mesh.vertexBuffer.data(), stagingVertexBuffer.bufferSize, &stagingVertexBuffer));
+	VK_CHECK(push_data_to_device_local_buffer(cmdPool, vkCtx, stagingVertexBuffer, &deviceLocalVertexBuffer));
 	
-	destroyBuffer(vkCtx.logicalDevice, &stagingVertexBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &stagingVertexBuffer);
 
 	//push indices to device local memory
-	Buffer stagingIndexBuffer = createBuffer(vkCtx,
+	Buffer stagingIndexBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		mesh.indexBuffer.size() * sizeof(unsigned int)
 	);
 
-	Buffer deviceLocalIndexBuffer = createBuffer(vkCtx, 
+	Buffer deviceLocalIndexBuffer = create_buffer(vkCtx, 
 		VK_BUFFER_USAGE_INDEX_BUFFER_BIT|VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		stagingIndexBuffer.bufferSize);
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, mesh.indexBuffer.data(), stagingIndexBuffer.bufferSize, &stagingIndexBuffer));
-	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, stagingIndexBuffer, &deviceLocalIndexBuffer));
-	destroyBuffer(vkCtx.logicalDevice, &stagingIndexBuffer);
-	destroyCommandPool(vkCtx.logicalDevice, cmdPool);
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, mesh.indexBuffer.data(), stagingIndexBuffer.bufferSize, &stagingIndexBuffer));
+	VK_CHECK(push_data_to_device_local_buffer(cmdPool, vkCtx, stagingIndexBuffer, &deviceLocalIndexBuffer));
+	destroy_buffer(vkCtx.logicalDevice, &stagingIndexBuffer);
+	destroy_command_pool(vkCtx.logicalDevice, cmdPool);
 
 	for(auto&& shader : shaderStageCreateInfos)
 	{
@@ -808,7 +808,7 @@ static void build_compute_pipeline(FlockContext* ctx)
 
 	std::vector<mat4x4> instanceTransforms = {boidsGlobals.boidsCount, loadIdentity()};
 	Shader computeShader = {};
-	VK_CHECK(loadShader(vkCtx.logicalDevice, "shaders/spv/boids.spv", VK_SHADER_STAGE_COMPUTE_BIT, &computeShader));
+	VK_CHECK(load_shader(vkCtx.logicalDevice, "shaders/spv/boids.spv", VK_SHADER_STAGE_COMPUTE_BIT, &computeShader));
 
 	VkSpecializationMapEntry specMapEntry = {};
 	specMapEntry.constantID = 100;
@@ -939,78 +939,78 @@ static void build_compute_pipeline(FlockContext* ctx)
 	VkCommandPool commandPool = VK_NULL_HANDLE;
 	VK_CALL(vkCreateCommandPool(vkCtx.logicalDevice, &cmdPoolCreateInfo, nullptr, &commandPool));
 
-	Buffer boidsStateStagingBuffer = createBuffer(vkCtx, 
+	Buffer boidsStateStagingBuffer = create_buffer(vkCtx, 
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		boidsGlobals.boidsCount * sizeof(BoidTransform));
 
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, boidTransforms.data(),
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, boidTransforms.data(),
 		boidsGlobals.boidsCount * sizeof(BoidTransform), &boidsStateStagingBuffer)
 	);
 
-	Buffer boidsStateDeviceBuffer = createBuffer(vkCtx,
+	Buffer boidsStateDeviceBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		boidsGlobals.boidsCount * sizeof(BoidTransform));
 
-	VK_CHECK(pushDataToDeviceLocalBuffer(commandPool, vkCtx, boidsStateStagingBuffer, &boidsStateDeviceBuffer, vkCtx.computeQueue));
-	destroyBuffer(vkCtx.logicalDevice, &boidsStateStagingBuffer);
+	VK_CHECK(push_data_to_device_local_buffer(commandPool, vkCtx, boidsStateStagingBuffer, &boidsStateDeviceBuffer, vkCtx.computeQueue));
+	destroy_buffer(vkCtx.logicalDevice, &boidsStateStagingBuffer);
 
-	Buffer stagingInstanceMatrices = createBuffer(vkCtx,
+	Buffer stagingInstanceMatrices = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		boidsGlobals.boidsCount * sizeof(mat4x4)
 	);
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, instanceTransforms.data(),
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, instanceTransforms.data(),
 		boidsGlobals.boidsCount * sizeof(mat4x4), &stagingInstanceMatrices)
 	);
 
-	Buffer instanceMatricesDeviceBuffer = createBuffer(vkCtx,
+	Buffer instanceMatricesDeviceBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		boidsGlobals.boidsCount * sizeof(mat4x4));
 
-	VK_CHECK(pushDataToDeviceLocalBuffer(commandPool, vkCtx, stagingInstanceMatrices, &instanceMatricesDeviceBuffer, vkCtx.computeQueue));
-	destroyBuffer(vkCtx.logicalDevice, &stagingInstanceMatrices);
+	VK_CHECK(push_data_to_device_local_buffer(commandPool, vkCtx, stagingInstanceMatrices, &instanceMatricesDeviceBuffer, vkCtx.computeQueue));
+	destroy_buffer(vkCtx.logicalDevice, &stagingInstanceMatrices);
 
-	Buffer stagingSpherePointsBuffer = createBuffer(vkCtx, 
+	Buffer stagingSpherePointsBuffer = create_buffer(vkCtx, 
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		spherePoints.size() * sizeof(Vec4)
 	);
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, spherePoints.data(),
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, spherePoints.data(),
 		spherePoints.size() * sizeof(Vec4), &stagingSpherePointsBuffer
 	));
 
-	Buffer deviceSpherePointsBuffer = createBuffer(vkCtx,
+	Buffer deviceSpherePointsBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		spherePoints.size() * sizeof(Vec4)
 	);
-	VK_CHECK(pushDataToDeviceLocalBuffer(commandPool, vkCtx, stagingSpherePointsBuffer, &deviceSpherePointsBuffer, vkCtx.computeQueue));
-	destroyBuffer(vkCtx.logicalDevice, &stagingSpherePointsBuffer);
+	VK_CHECK(push_data_to_device_local_buffer(commandPool, vkCtx, stagingSpherePointsBuffer, &deviceSpherePointsBuffer, vkCtx.computeQueue));
+	destroy_buffer(vkCtx.logicalDevice, &stagingSpherePointsBuffer);
 
-	Buffer stagingPlaneUniformBuffer = createBuffer(vkCtx, 
+	Buffer stagingPlaneUniformBuffer = create_buffer(vkCtx, 
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		tankPlanes.size() * sizeof(Plane)
 	);
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, tankPlanes.data(),
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, tankPlanes.data(),
 		stagingPlaneUniformBuffer.bufferSize, &stagingPlaneUniformBuffer
 	));
 
-	Buffer devicePlaneUniformBuffer = createBuffer(vkCtx,
+	Buffer devicePlaneUniformBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		stagingPlaneUniformBuffer.bufferSize
 	);
-	VK_CHECK(pushDataToDeviceLocalBuffer(commandPool, vkCtx, stagingPlaneUniformBuffer, &devicePlaneUniformBuffer, vkCtx.computeQueue));
-	destroyBuffer(vkCtx.logicalDevice, &stagingPlaneUniformBuffer);
+	VK_CHECK(push_data_to_device_local_buffer(commandPool, vkCtx, stagingPlaneUniformBuffer, &devicePlaneUniformBuffer, vkCtx.computeQueue));
+	destroy_buffer(vkCtx.logicalDevice, &stagingPlaneUniformBuffer);
 
 	//debugBufferSize = each instance has 2 structures of debugInfo data to describe a single vector ( ),
 	// we have 3 vectors for each instance, hence (* 3)
 	const std::size_t debugBufferSize = boidsGlobals.boidsCount * 2 * sizeof(DebugInfo) * 3;
-	Buffer deviceDebugBuffer = createBuffer(vkCtx,
+	Buffer deviceDebugBuffer = create_buffer(vkCtx,
 		VK_BUFFER_USAGE_STORAGE_BUFFER_BIT|VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		debugBufferSize
@@ -1101,7 +1101,7 @@ static void build_compute_pipeline(FlockContext* ctx)
 
 	vkUpdateDescriptorSets(vkCtx.logicalDevice, writeDescrSets.size(), writeDescrSets.data(), 0, nullptr);
 	VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
-	createCommandBuffer(vkCtx.logicalDevice, commandPool, &cmdBuffer);
+	create_command_buffer(vkCtx.logicalDevice, commandPool, &cmdBuffer);
 
 	VkCommandBufferBeginInfo commandBufferBeginInfo = {};
 	commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1181,8 +1181,8 @@ static void build_debug_pipeline(FlockContext* ctx)
 	auto& vkCtx = ctx->vkCtx;
 	auto& windowInfo = ctx->windowInfo;
 	VkPipelineShaderStageCreateInfo shaderStageCreateInfos[2] = {};
-	shaderStageCreateInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/debugVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStageCreateInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/debugFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStageCreateInfos[0] = fill_shader_stage_ci(vkCtx.logicalDevice, "shaders/spv/debugVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStageCreateInfos[1] = fill_shader_stage_ci(vkCtx.logicalDevice, "shaders/spv/debugFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 	
 	VkVertexInputBindingDescription bindingDescr = {};
 	bindingDescr.binding = 0;
@@ -1201,28 +1201,28 @@ static void build_debug_pipeline(FlockContext* ctx)
 	vertexAttribs[1].offset = offsetof(DebugInfo, color);
 
 	VkPipelineVertexInputStateCreateInfo vertexInpuStateCreateInfo = 
-		fillVertexInputStateCreateInfo(&bindingDescr, 1, vertexAttribs.data(), vertexAttribs.size());
+		fill_vertex_input_state_ci(&bindingDescr, 1, vertexAttribs.data(), vertexAttribs.size());
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo =
-		fillInputAssemblyCreateInfo(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
+		fill_input_assembly_state_ci(VK_PRIMITIVE_TOPOLOGY_LINE_LIST);
 	
 	
-	VkViewport viewport = createViewPort(windowInfo.windowExtent);
+	VkViewport viewport = create_viewport(windowInfo.windowExtent);
 	VkRect2D scissors = {};
 	scissors.offset = {0, 0};
 	scissors.extent = windowInfo.windowExtent;
 	
 	VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
-		fillViewportStateCreateInfo(viewport, scissors);
+		fill_viewport_state_ci(viewport, scissors);
 
 	VkPipelineRasterizationStateCreateInfo rasterStateCreateInfo = 
-		fillRasterizationStateCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+		fill_raster_state_ci(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 	
 	VkPipelineMultisampleStateCreateInfo msStateCreateInfo = 
-		fillMultisampleStateCreateInfo();
+		fill_multisample_state_ci();
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = 
-		fillDepthStencilStateCreateInfo(VK_COMPARE_OP_LESS_OR_EQUAL);
+		fill_depth_stencil_state_ci(VK_COMPARE_OP_LESS_OR_EQUAL);
 
 
 	//color blending is used for mixing color of transparent objects
@@ -1230,11 +1230,11 @@ static void build_debug_pipeline(FlockContext* ctx)
 	blendAttachmentState.colorWriteMask = 0xf;
 	blendAttachmentState.blendEnable = VK_FALSE;
 	VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = 
-		fillColorBlendStateCreateInfo(blendAttachmentState);
+		fill_color_blend_state_ci(blendAttachmentState);
 	
 	std::array<VkDynamicState, 2> dynamicStates = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_LINE_WIDTH};
 	VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = 
-		fillDynamicStateCreateInfo(dynamicStates.data(), dynamicStates.size());
+		fill_dynamic_state_ci(dynamicStates.data(), dynamicStates.size());
 
 	VkDescriptorSetLayoutBinding descrSetLayoutBinding = {};
 	descrSetLayoutBinding.binding = 0;
@@ -1251,7 +1251,7 @@ static void build_debug_pipeline(FlockContext* ctx)
 
 	VkDescriptorSetLayout descrSetLayout = VK_NULL_HANDLE;
 	VK_CALL(vkCreateDescriptorSetLayout(vkCtx.logicalDevice, &descrSetLayoutCreateInfo, nullptr, &descrSetLayout));
-	VkPipelineLayout pipeLayout = createPipelineLayout(vkCtx.logicalDevice, &descrSetLayout, 1, nullptr, 0);
+	VkPipelineLayout pipeLayout = create_pipe_layout(vkCtx.logicalDevice, &descrSetLayout, 1, nullptr, 0);
 
 	VkGraphicsPipelineCreateInfo debugPipeCreateInfo = {};
 	debugPipeCreateInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -1318,22 +1318,22 @@ static void build_debug_pipeline(FlockContext* ctx)
 
 	std::array<DebugInfo, 25> planes = generate_tank_borders();
 	
-	Buffer hostTankBuffer = createBuffer(vkCtx, 
+	Buffer hostTankBuffer = create_buffer(vkCtx, 
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		planes.size() * sizeof(DebugInfo)
 	);
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, planes.data(), hostTankBuffer.bufferSize, &hostTankBuffer));
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, planes.data(), hostTankBuffer.bufferSize, &hostTankBuffer));
 	
-	Buffer deviceTankBuffer = createBuffer(vkCtx, 
+	Buffer deviceTankBuffer = create_buffer(vkCtx, 
 		VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		hostTankBuffer.bufferSize
 	);
 
-	VkCommandPool cmdPool = createCommandPool(vkCtx);
-	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, hostTankBuffer, &deviceTankBuffer));
-	destroyBuffer(vkCtx.logicalDevice, &hostTankBuffer);
+	VkCommandPool cmdPool = create_command_pool(vkCtx);
+	VK_CHECK(push_data_to_device_local_buffer(cmdPool, vkCtx, hostTankBuffer, &deviceTankBuffer));
+	destroy_buffer(vkCtx.logicalDevice, &hostTankBuffer);
 	vkDestroyCommandPool(vkCtx.logicalDevice, cmdPool, nullptr);
 	
 	for(auto&& shader : shaderStageCreateInfos)
@@ -1367,12 +1367,12 @@ static bool build_skybox_pipeline(FlockContext* ctx)
 	attribDescr.offset = 0;
 
 	VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo =
-		fillVertexInputStateCreateInfo(&bindingDescr, 1, &attribDescr, 1);
+		fill_vertex_input_state_ci(&bindingDescr, 1, &attribDescr, 1);
 
 	VkPipelineInputAssemblyStateCreateInfo inputAssemblyCreateInfo = 
-		fillInputAssemblyCreateInfo();
+		fill_input_assembly_state_ci();
 
-	VkViewport viewport = createViewPort(windowInfo.windowExtent);
+	VkViewport viewport = create_viewport(windowInfo.windowExtent);
 	VkRect2D scissors = {};
 	scissors.offset = {0, 0};
 	scissors.extent = windowInfo.windowExtent;
@@ -1386,29 +1386,29 @@ static bool build_skybox_pipeline(FlockContext* ctx)
 	viewportStateCreateInfo.pScissors = &scissors;
 
 	// VkPipelineViewportStateCreateInfo viewportStateCreateInfo =
-		// fillViewportStateCreateInfo(viewport, scissors);
+		// fill_viewport_state_ci(viewport, scissors);
 
 	VkPipelineRasterizationStateCreateInfo rasterStateCreateInfo = 
-		fillRasterizationStateCreateInfo(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
+		fill_raster_state_ci(VK_CULL_MODE_BACK_BIT, VK_FRONT_FACE_COUNTER_CLOCKWISE);
 	
 	VkPipelineMultisampleStateCreateInfo msStateCreateInfo = 
-		fillMultisampleStateCreateInfo();
+		fill_multisample_state_ci();
 
 	VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = 
-		fillDepthStencilStateCreateInfo(VK_COMPARE_OP_LESS_OR_EQUAL);
+		fill_depth_stencil_state_ci(VK_COMPARE_OP_LESS_OR_EQUAL);
 
 	VkPipelineColorBlendAttachmentState blendAttachmentState = {};
 	blendAttachmentState.colorWriteMask = 0xf;
 	blendAttachmentState.blendEnable = VK_FALSE;
 
-	VkPipelineColorBlendStateCreateInfo colorBlendState = fillColorBlendStateCreateInfo(blendAttachmentState);
+	VkPipelineColorBlendStateCreateInfo colorBlendState = fill_color_blend_state_ci(blendAttachmentState);
 
 	std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageInfos = {};
-	shaderStageInfos[0] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/skyboxVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
-	shaderStageInfos[1] = fillShaderStageCreateInfo(vkCtx.logicalDevice, "shaders/spv/skyboxFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
+	shaderStageInfos[0] = fill_shader_stage_ci(vkCtx.logicalDevice, "shaders/spv/skyboxVert.spv", VK_SHADER_STAGE_VERTEX_BIT);
+	shaderStageInfos[1] = fill_shader_stage_ci(vkCtx.logicalDevice, "shaders/spv/skyboxFrag.spv", VK_SHADER_STAGE_FRAGMENT_BIT);
 
 	VkDynamicState dynState = VK_DYNAMIC_STATE_VIEWPORT;
-	VkPipelineDynamicStateCreateInfo dynStateCreateInfo = fillDynamicStateCreateInfo(&dynState, 1);
+	VkPipelineDynamicStateCreateInfo dynStateCreateInfo = fill_dynamic_state_ci(&dynState, 1);
 
 	std::array<VkDescriptorSetLayoutBinding, 2> descrSetLayoutBinding = {};
 	descrSetLayoutBinding[0].binding = 0;
@@ -1498,46 +1498,46 @@ static bool build_skybox_pipeline(FlockContext* ctx)
 	};
 
 	//transfer cube geom to gpu
-	Buffer vertexBuffer = createBuffer(
+	Buffer vertexBuffer = create_buffer(
 		vkCtx, 
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		cubeVertices.size() * sizeof(Vec3)
 	);
 
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, cubeVertices.data(), vertexBuffer.bufferSize, &vertexBuffer));
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, cubeVertices.data(), vertexBuffer.bufferSize, &vertexBuffer));
 
-	Buffer gpuVertexBuffer = createBuffer(
+	Buffer gpuVertexBuffer = create_buffer(
 		vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		vertexBuffer.bufferSize
 	);
-	auto cmdPool = createCommandPool(vkCtx);
-	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, vertexBuffer, &gpuVertexBuffer));
-	destroyBuffer(vkCtx.logicalDevice, &vertexBuffer);
+	auto cmdPool = create_command_pool(vkCtx);
+	VK_CHECK(push_data_to_device_local_buffer(cmdPool, vkCtx, vertexBuffer, &gpuVertexBuffer));
+	destroy_buffer(vkCtx.logicalDevice, &vertexBuffer);
 
 	//transfer cube geom indices to gpu
-	Buffer indexBuffer = createBuffer(
+	Buffer indexBuffer = create_buffer(
 		vkCtx, 
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT|VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 		indices.size() * sizeof(std::uint32_t)
 	);
 
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, indices.data(), indexBuffer.bufferSize, &indexBuffer));
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, indices.data(), indexBuffer.bufferSize, &indexBuffer));
 
-	Buffer gpuIndexBuffer = createBuffer(
+	Buffer gpuIndexBuffer = create_buffer(
 		vkCtx,
 		VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
 		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 		indexBuffer.bufferSize
 	);
 
-	VK_CHECK(pushDataToDeviceLocalBuffer(cmdPool, vkCtx, indexBuffer, &gpuIndexBuffer));
-	destroyBuffer(vkCtx.logicalDevice, &indexBuffer);
+	VK_CHECK(push_data_to_device_local_buffer(cmdPool, vkCtx, indexBuffer, &gpuIndexBuffer));
+	destroy_buffer(vkCtx.logicalDevice, &indexBuffer);
 
-	VkSampler sampler = createDefaultSampler(vkCtx.logicalDevice);
+	VkSampler sampler = create_default_sampler(vkCtx.logicalDevice);
 
 	bool planesAreLoaded = true;
 	std::array<TextureInfo, 6> textures = {};
@@ -1551,7 +1551,7 @@ static bool build_skybox_pipeline(FlockContext* ctx)
 		"resources/posz.png",
 	};
 
-	planesAreLoaded &= loadTexture(planes[0], &textures[0]);
+	planesAreLoaded &= load_texture(planes[0], &textures[0]);
 
 	const std::size_t planeStride = textures[0].extent.width * textures[0].extent.height * textures[0].numc;
 	const std::size_t cubemapSize = textures.size() * planeStride;
@@ -1564,7 +1564,7 @@ static bool build_skybox_pipeline(FlockContext* ctx)
 	
 	for(uint32_t i = 0; i < planes.size(); i++)
 	{
-		planesAreLoaded &= loadTexture(planes[i], &textures[i], false);
+		planesAreLoaded &= load_texture(planes[i], &textures[i], false);
 		memcpy(dstPtr, textures[i].data, planeStride);
 		dstPtr += planeStride;
 	}
@@ -1575,22 +1575,22 @@ static bool build_skybox_pipeline(FlockContext* ctx)
 	}
 
 	//creating big-ass staging buffer
-	Buffer stagingCubeMapBuffer = createBuffer(
+	Buffer stagingCubeMapBuffer = create_buffer(
 		vkCtx, 
 		VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
 		VK_MEMORY_PROPERTY_HOST_COHERENT_BIT|VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
 		cubemapSize
 	);
-	VK_CALL(copyDataToHostVisibleBuffer(vkCtx, 0, hostPtr.data(), cubemapSize, &stagingCubeMapBuffer));
+	VK_CALL(copy_data_to_host_visible_buffer(vkCtx, 0, hostPtr.data(), cubemapSize, &stagingCubeMapBuffer));
 
 	// createResourceImage
-	ImageResource cubemapGpuImage = createCubemapImage(
+	ImageResource cubemapGpuImage = create_cubemap_image(
 		vkCtx,
 		textures[0].extent, textures[0].format,
 		VK_IMAGE_USAGE_SAMPLED_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT
 	);
-	VK_CHECK(pushCubemapTextureToDeviceLocalImage(cmdPool, vkCtx, stagingCubeMapBuffer, planeExtent, planeStride, &cubemapGpuImage));
-	destroyBuffer(vkCtx.logicalDevice, &stagingCubeMapBuffer);
+	VK_CHECK(push_cubemap_to_device_local_image(cmdPool, vkCtx, stagingCubeMapBuffer, planeExtent, planeStride, &cubemapGpuImage));
+	destroy_buffer(vkCtx.logicalDevice, &stagingCubeMapBuffer);
 	vkDestroyCommandPool(vkCtx.logicalDevice, cmdPool, nullptr);
 
 	//updating descriptor sets
@@ -1683,7 +1683,7 @@ static bool build_skybox_pipeline(FlockContext* ctx)
 
 static bool init_flock_context(FlockContext* out)
 {
-	magma::log::initLogging();
+	magma::log::init_logging();
 	
 	std::vector<const char*> desiredLayers = {
 		"VK_LAYER_KHRONOS_validation"
@@ -1694,16 +1694,16 @@ static bool init_flock_context(FlockContext* out)
 	};
 
 	VulkanGlobalContext vkCtx = {};
-	VK_CHECK(initVulkanGlobalContext(desiredLayers, desiredExtensions, &vkCtx));
+	VK_CHECK(init_vulkan_context(desiredLayers, desiredExtensions, &vkCtx));
 
 	const std::size_t width = 640;
 	const std::size_t height = 480;
 	
 	WindowInfo windowInfo = {};
-	VK_CHECK(initPlatformWindow(vkCtx, width, height, "Magma", &windowInfo));	
+	VK_CHECK(init_platform_window(vkCtx, width, height, "Magma", &windowInfo));	
 
 	SwapChain swapChain = {};
-	VK_CHECK(createSwapChain(vkCtx, windowInfo, 2, &swapChain));
+	VK_CHECK(create_swapchain(vkCtx, windowInfo, 2, &swapChain));
 
 	out->swapChain = swapChain;
 	out->windowInfo = windowInfo;
@@ -1756,10 +1756,10 @@ static void destroy_flock_context(FlockContext* ctx)
 	vkDestroyPipeline(vkCtx.logicalDevice, ctx->fishPipeData.fishPipeline, nullptr);
 	vkDestroyDescriptorSetLayout(vkCtx.logicalDevice, ctx->fishPipeData.descrSetLayout, nullptr);
 	vkDestroyDescriptorPool(vkCtx.logicalDevice, ctx->fishPipeData.descrPool, nullptr);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->fishPipeData.vertexBuffer);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->fishPipeData.indexBuffer);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->fishPipeData.ubo);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->fishPipeData.jointMatrices);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->fishPipeData.vertexBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->fishPipeData.indexBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->fishPipeData.ubo);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->fishPipeData.jointMatrices);
 
 	vkDestroyPipelineLayout(vkCtx.logicalDevice, ctx->computePipeData.pipelineLayout, nullptr);
 	vkDestroyPipeline(vkCtx.logicalDevice, ctx->computePipeData.pipeline, nullptr);
@@ -1767,36 +1767,36 @@ static void destroy_flock_context(FlockContext* ctx)
 	vkDestroyDescriptorPool(vkCtx.logicalDevice, ctx->computePipeData.descriptorPool, nullptr);
 	vkFreeCommandBuffers(vkCtx.logicalDevice, ctx->computePipeData.commandPool, 1, &ctx->computePipeData.commandBuffer);
 	vkDestroyCommandPool(vkCtx.logicalDevice, ctx->computePipeData.commandPool, nullptr);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->computePipeData.instanceTransformsDeviceBuffer);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->computePipeData.debugBuffer);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->computePipeData.boidsStateDeviceBuffer);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->computePipeData.deviceSpherePointsBuffer);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->computePipeData.devicePlaneUniformBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->computePipeData.instanceTransformsDeviceBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->computePipeData.debugBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->computePipeData.boidsStateDeviceBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->computePipeData.deviceSpherePointsBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->computePipeData.devicePlaneUniformBuffer);
 
 	vkDestroyPipelineLayout(vkCtx.logicalDevice, ctx->debugPipeData.pipelineLayout, nullptr);
 	vkDestroyPipeline(vkCtx.logicalDevice, ctx->debugPipeData.pipeline, nullptr);
 	vkDestroyDescriptorSetLayout(vkCtx.logicalDevice, ctx->debugPipeData.descrSetLayout, nullptr);
 	vkDestroyDescriptorPool(vkCtx.logicalDevice, ctx->debugPipeData.descrPool, nullptr);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->debugPipeData.tankBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->debugPipeData.tankBuffer);
 
 	vkDestroyPipelineLayout(vkCtx.logicalDevice, ctx->skyboxPipeData.pipeLayout, nullptr);
 	vkDestroyPipeline(vkCtx.logicalDevice, ctx->skyboxPipeData.pipeline, nullptr);
 	vkDestroyDescriptorSetLayout(vkCtx.logicalDevice, ctx->skyboxPipeData.descrSetLayout, nullptr);
 	vkDestroyDescriptorPool(vkCtx.logicalDevice, ctx->skyboxPipeData.descrPool, nullptr);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->debugPipeData.tankBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->debugPipeData.tankBuffer);
 	destroy_image_resource(vkCtx.logicalDevice, &ctx->skyboxPipeData.gpuCubeMap);
 	vkDestroySampler(vkCtx.logicalDevice, ctx->skyboxPipeData.sampler, nullptr);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->skyboxPipeData.gpuVertexBuffer);
-	destroyBuffer(vkCtx.logicalDevice, &ctx->skyboxPipeData.gpuIndexBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->skyboxPipeData.gpuVertexBuffer);
+	destroy_buffer(vkCtx.logicalDevice, &ctx->skyboxPipeData.gpuIndexBuffer);
 
-	destroySwapChain(vkCtx, &ctx->swapChain);
-	destroyPlatformWindow(vkCtx, &ctx->windowInfo);
-	destroyGlobalContext(&vkCtx);
+	destroy_swapchain(vkCtx, &ctx->swapChain);
+	destroy_platform_window(vkCtx, &ctx->windowInfo);
+	destroy_vulkan_context(&vkCtx);
 }
 
 static void allocate_command_buffers(FlockContext* ctx)
 {
-	ctx->commandPool = createCommandPool(ctx->vkCtx);
+	ctx->commandPool = create_command_pool(ctx->vkCtx);
 
 	VkCommandBufferAllocateInfo buffAllocInfo = {};
 	buffAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -2091,9 +2091,9 @@ int main(int argc, char** argv)
 	mvp.model = modelToWorldTransform;
 
 	auto vkCtx = ctx.vkCtx;
-	VkFence computeFence = createFence(vkCtx.logicalDevice);
-	VkSemaphore computeFinishedSemaphore = createSemaphore(vkCtx.logicalDevice);
-	VkSemaphore computeMayStartSemaphore = createSemaphore(vkCtx.logicalDevice);
+	VkFence computeFence = create_fence(vkCtx.logicalDevice);
+	VkSemaphore computeFinishedSemaphore = create_semaphore(vkCtx.logicalDevice);
+	VkSemaphore computeMayStartSemaphore = create_semaphore(vkCtx.logicalDevice);
 	//Signal the semaphore
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -2103,15 +2103,15 @@ int main(int argc, char** argv)
 	VK_CALL(vkQueueSubmit(vkCtx.computeQueue, 1, &submitInfo, computeFence));
 	vkWaitForFences(vkCtx.logicalDevice, 1, &computeFence, VK_TRUE, UINT64_MAX);
 	
-	VkFence computeFinishedFence = createFence(vkCtx.logicalDevice);
+	VkFence computeFinishedFence = create_fence(vkCtx.logicalDevice);
 
-	while(!windowShouldClose(ctx.windowInfo.windowHandle))
+	while(!window_should_close(ctx.windowInfo.windowHandle))
 	{
-		updateMessageQueue();
+		update_message_queue();
 
 		float deltaSec = timer.stopSec();
 		timer.start();
-		fpsCameraUpdate(ctx.windowInfo, deltaSec, &camera);
+		fps_camera_update(ctx.windowInfo, deltaSec, &camera);
 		boidsGlobals.deltaTime = deltaSec;
 		mvp.viewProjection = camera.viewTransform * perspective;
 
@@ -2146,12 +2146,12 @@ int main(int argc, char** argv)
 		));
 
 		VkDeviceSize uboMVPBufferOffset = imageIndex * sizeof(Transform);
-		VK_CALL(copyDataToHostVisibleBuffer(ctx.vkCtx, uboMVPBufferOffset, &mvp, sizeof(Transform), &ctx.fishPipeData.ubo));
+		VK_CALL(copy_data_to_host_visible_buffer(ctx.vkCtx, uboMVPBufferOffset, &mvp, sizeof(Transform), &ctx.fishPipeData.ubo));
 
-		updateAnimation(ctx.fishPipeData.animation, deltaSec, jointMats);
+		update_animation(ctx.fishPipeData.animation, deltaSec, jointMats);
 		
 		VkDeviceSize uboJointBufferOffset = imageIndex * sizeof(mat4x4) * jointMats.size();
-		VK_CALL(copyDataToHostVisibleBuffer(ctx.vkCtx, uboJointBufferOffset, jointMats.data(), sizeof(mat4x4) * jointMats.size(), &ctx.fishPipeData.jointMatrices));
+		VK_CALL(copy_data_to_host_visible_buffer(ctx.vkCtx, uboJointBufferOffset, jointMats.data(), sizeof(mat4x4) * jointMats.size(), &ctx.fishPipeData.jointMatrices));
 
 		record_graphics_command_buffer(&ctx, camera, imageIndex);
 		

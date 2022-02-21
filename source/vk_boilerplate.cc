@@ -11,7 +11,7 @@ const char *desiredDeviceExtensions[] = {
 };
 const uint32_t deviceExtSize = sizeof(desiredDeviceExtensions)/sizeof(desiredDeviceExtensions[0]);
 
-static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desiredExtensions, const std::vector<const char*>& desiredLayers)
+static VkBool32 request_layers_and_extensions(const std::vector<const char*>& desiredExtensions, const std::vector<const char*>& desiredLayers)
 {
 	
 	uint32_t vkApiVersion = {};
@@ -97,7 +97,7 @@ static VkBool32 requestLayersAndExtensions(const std::vector<const char*>& desir
 	return (extFound == desiredExtensions.size()) && (layersFound == desiredLayers.size()) ? VK_TRUE : VK_FALSE; 
 }
 
-static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
+static VkDebugUtilsMessengerEXT register_debug_callback(VkInstance instance)
 {
 	VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {};
 
@@ -109,7 +109,7 @@ static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
 	debugUtilsMessengerCreateInfo.messageType = 
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	debugUtilsMessengerCreateInfo.pfnUserCallback = debugCallback;
+	debugUtilsMessengerCreateInfo.pfnUserCallback = debug_callback;
 	debugUtilsMessengerCreateInfo.pUserData = nullptr;
 
 	VkDebugUtilsMessengerEXT debugMessenger = VK_NULL_HANDLE;
@@ -117,7 +117,7 @@ static VkDebugUtilsMessengerEXT registerDebugCallback(VkInstance instance)
 	return debugMessenger;
 }
 
-static VkInstance createInstance(
+static VkInstance create_instance(
 	const std::vector<const char*>& desiredLayers,
 	const std::vector<const char*>& desiredExtensions,
 	bool hasDebugUtilsExt)
@@ -145,7 +145,7 @@ static VkInstance createInstance(
 		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT|
 		VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
-	debugUtilsMessengerCreateInfo.pfnUserCallback = debugCallback;
+	debugUtilsMessengerCreateInfo.pfnUserCallback = debug_callback;
 	debugUtilsMessengerCreateInfo.pUserData = nullptr;
 
 	VkInstanceCreateInfo instanceCreateInfo = {};
@@ -166,7 +166,7 @@ static VkInstance createInstance(
 }
 
 //finds queue family index of the supplied physical device
-static uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFlags desiredFlags, VkQueueFlags flagsToAvoid = 0)
+static uint32_t find_queue_family_index(VkPhysicalDevice physicalDevice, VkQueueFlags desiredFlags, VkQueueFlags flagsToAvoid = 0)
 {
 	uint32_t queueFamPropsCount = 0;
 	//Reports properties of the queues of the specified physical device
@@ -190,12 +190,12 @@ static uint32_t findQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkQueueFla
 	return VK_QUEUE_FAMILY_IGNORED;
 }
 
-static uint32_t getDedicatedComputeQueue(VkPhysicalDevice physicalDevice)
+static uint32_t get_dedicated_compute_queue(VkPhysicalDevice physicalDevice)
 {
-	return findQueueFamilyIndex(physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
+	return find_queue_family_index(physicalDevice, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT);
 }
 
-static VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlags queueFlags, VkPhysicalDeviceType preferredGPUType, VkPhysicalDevice* physicalDevice, uint32_t* queueFamIdx)
+static VkBool32 pick_queue_index_and_physical_device(VkInstance instance, VkQueueFlags queueFlags, VkPhysicalDeviceType preferredGPUType, VkPhysicalDevice* physicalDevice, uint32_t* queueFamIdx)
 {
 	uint32_t physicalDeviceCount = 0;
 	int32_t preferredIndex = -1;
@@ -214,7 +214,7 @@ static VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlag
 		magma::log::warn("Checking GPU - {}", vkPhysicalDeviceProps.deviceName);
 
 		//checks whether physical device supports queue family with graphics flag set
-		uint32_t familyIndex = findQueueFamilyIndex(deviceList[i], queueFlags);
+		uint32_t familyIndex = find_queue_family_index(deviceList[i], queueFlags);
 		
 		if(familyIndex == VK_QUEUE_FAMILY_IGNORED)
 			continue;
@@ -241,7 +241,7 @@ static VkBool32 pickQueueIndexAndPhysicalDevice(VkInstance instance, VkQueueFlag
 	return VK_FALSE;
 }
 
-static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkQueueFlags requestedQueueTypes)
+static VkDevice create_logical_device(VkPhysicalDevice physicalDevice, VkQueueFlags requestedQueueTypes)
 {
 	uint32_t deviceExtCount = {};
 	vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &deviceExtCount, nullptr);
@@ -283,7 +283,7 @@ static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkQueueFlag
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.pNext = nullptr;
 		queueCreateInfo.flags = VK_FLAGS_NONE;
-		queueCreateInfo.queueFamilyIndex = findQueueFamilyIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT);
+		queueCreateInfo.queueFamilyIndex = find_queue_family_index(physicalDevice, VK_QUEUE_GRAPHICS_BIT);
 		queueCreateInfo.queueCount = 1;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 		queueCreateInfos.push_back(queueCreateInfo);
@@ -291,11 +291,11 @@ static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkQueueFlag
 
 	if(requestedQueueTypes & VK_QUEUE_COMPUTE_BIT)
 	{
-		uint32_t computeQueueFamIndex = getDedicatedComputeQueue(physicalDevice);
+		uint32_t computeQueueFamIndex = get_dedicated_compute_queue(physicalDevice);
 		//if there is no dedicated compute queue, just use the first one that has a compute flag set.
 		if(computeQueueFamIndex == VK_QUEUE_FAMILY_IGNORED)
 		{
-			computeQueueFamIndex = findQueueFamilyIndex(physicalDevice, VK_QUEUE_COMPUTE_BIT);
+			computeQueueFamIndex = find_queue_family_index(physicalDevice, VK_QUEUE_COMPUTE_BIT);
 		}
 
 		if(computeQueueFamIndex >= 0)
@@ -332,7 +332,7 @@ static VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice, VkQueueFlag
 	return logicalDevice;
 }
 
-VkSemaphore createSemaphore(VkDevice logicalDevice)
+VkSemaphore create_semaphore(VkDevice logicalDevice)
 {
 	VkSemaphoreCreateInfo semaphoreCreateInfo = {};
 	semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -344,7 +344,7 @@ VkSemaphore createSemaphore(VkDevice logicalDevice)
 	return semaphore;
 }
 
-VkFence createFence(VkDevice logicalDevice, bool signalled)
+VkFence create_fence(VkDevice logicalDevice, bool signalled)
 {
 	VkFenceCreateInfo fenceCreateInfo = {};
 	fenceCreateInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -356,14 +356,14 @@ VkFence createFence(VkDevice logicalDevice, bool signalled)
 	return fence;
 }
 
-bool initVulkanGlobalContext(
+bool init_vulkan_context(
 	std::vector<const char*> desiredLayers,
 	std::vector<const char*> desiredExtensions,
 	VulkanGlobalContext* generalInfo)
 {
 	assert(generalInfo);
 	
-	VK_CALL_RETURN_BOOL(locateAndInitVulkan());
+	VK_CALL_RETURN_BOOL(locate_and_init_vulkan());
 
 	bool hasDebugUtilsExt = false;
 	for(auto&& extension : desiredExtensions)
@@ -376,29 +376,29 @@ bool initVulkanGlobalContext(
 	}
 
 	uint32_t requiredExtCount = {};
-	const char** requiredExtStrings = getRequiredSurfaceExtensions(&requiredExtCount);
+	const char** requiredExtStrings = get_required_surface_exts(&requiredExtCount);
 
 	for(std::size_t i = 0; i < requiredExtCount; i++)
 	{
 		desiredExtensions.push_back(requiredExtStrings[i]);
 	}
 
-	VK_CHECK(requestLayersAndExtensions(desiredExtensions, desiredLayers));
+	VK_CHECK(request_layers_and_extensions(desiredExtensions, desiredLayers));
 	
-	VkInstance instance = createInstance(desiredLayers, desiredExtensions, hasDebugUtilsExt);
+	VkInstance instance = create_instance(desiredLayers, desiredExtensions, hasDebugUtilsExt);
 
-	loadInstanceFunctionPointers(instance);
+	load_instance_function_pointers(instance);
 
 	VkDebugUtilsMessengerEXT dbgCallback = VK_NULL_HANDLE;
 	if(hasDebugUtilsExt)
 	{
-		dbgCallback = registerDebugCallback(instance);
+		dbgCallback = register_debug_callback(instance);
 	}
 
 	uint32_t graphicsQueueFamilyIdx = VK_QUEUE_FAMILY_IGNORED;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	//we use graphics queue by default
-	VK_CHECK(pickQueueIndexAndPhysicalDevice(
+	VK_CHECK(pick_queue_index_and_physical_device(
 		instance,
 		VK_QUEUE_GRAPHICS_BIT,
 		VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU,
@@ -407,18 +407,18 @@ bool initVulkanGlobalContext(
 	);
 	assert(graphicsQueueFamilyIdx >= 0);
 
-	VkDevice logicalDevice = createLogicalDevice(
+	VkDevice logicalDevice = create_logical_device(
 		physicalDevice,
 		VK_QUEUE_GRAPHICS_BIT|VK_QUEUE_COMPUTE_BIT
 	);
 
-	loadDeviceFunctionPointers(logicalDevice);
+	load_device_function_pointers(logicalDevice);
 
 	VkQueue graphicsQueue = VK_NULL_HANDLE;
 	vkGetDeviceQueue(logicalDevice, graphicsQueueFamilyIdx, 0, &graphicsQueue);
 	assert(graphicsQueue != VK_NULL_HANDLE);
 	
-	uint32_t computeQueueFamilyIndex = getDedicatedComputeQueue(physicalDevice);
+	uint32_t computeQueueFamilyIndex = get_dedicated_compute_queue(physicalDevice);
 	VkQueue computeQueue = VK_NULL_HANDLE;
 	if(computeQueueFamilyIndex >=0)
 	{
@@ -447,7 +447,7 @@ bool initVulkanGlobalContext(
 	return true;
 }
 
-void destroyGlobalContext(VulkanGlobalContext* ctx)
+void destroy_vulkan_context(VulkanGlobalContext* ctx)
 {
 	if(ctx->hasDebugUtilsExtension)
 	{
@@ -458,7 +458,7 @@ void destroyGlobalContext(VulkanGlobalContext* ctx)
 	vkDestroyInstance(ctx->instance, nullptr);
 }
 
-VkBool32 getSupportedDepthFormat(VkPhysicalDevice physicalDevice, VkFormat* out)
+VkBool32 get_supported_depth_format(VkPhysicalDevice physicalDevice, VkFormat* out)
 {
 	assert(out);
 

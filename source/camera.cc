@@ -5,7 +5,7 @@
 static constexpr float MOUSE_SENSITIVITY = 0.4f;
 static constexpr float CAMERA_SPEED_VAL  = 1.5f;
 
-void fpsCameraUpdate(const WindowInfo& window, float deltaTime, FPSCamera* camera)
+void fps_camera_update(const WindowInfo& window, float deltaTime, FPSCamera* camera)
 {
 	static int prevMousePosX = static_cast<int>(window.windowExtent.width) / 2;
 	static int prevMousePosY = static_cast<int>(window.windowExtent.height) / 2;
@@ -15,7 +15,7 @@ void fpsCameraUpdate(const WindowInfo& window, float deltaTime, FPSCamera* camer
 
 	const float cameraSpeed = deltaTime * CAMERA_SPEED_VAL;
 	
-	MousePos currPos = getMousePos();
+	MousePos currPos = get_mouse_position();
 
 	MousePos delta = {prevMousePosX - currPos.x, prevMousePosY - currPos.y};
 	pitch += (delta.y * MOUSE_SENSITIVITY);
@@ -33,17 +33,17 @@ void fpsCameraUpdate(const WindowInfo& window, float deltaTime, FPSCamera* camer
 
 	auto& position = camera->position;
 
-	if(isBtnPressed(KeyBoardBtn::W))
+	if(is_btn_pressed(KeyBoardBtn::W))
 		position += cameraSpeed * camera->direction;
-	if(isBtnPressed(KeyBoardBtn::A))
+	if(is_btn_pressed(KeyBoardBtn::A))
 		position += cameraSpeed * normaliseVec3(cross(Vec3{0.f, 1.f, 0.f}, camera->direction));
-	if(isBtnPressed(KeyBoardBtn::S))
+	if(is_btn_pressed(KeyBoardBtn::S))
 		position -= cameraSpeed * camera->direction;
-	if(isBtnPressed(KeyBoardBtn::D))
+	if(is_btn_pressed(KeyBoardBtn::D))
 		position -= cameraSpeed * normaliseVec3(cross(Vec3{0.f, 1.f, 0.f}, camera->direction));
-	if(isBtnPressed(KeyBoardBtn::Space))
+	if(is_btn_pressed(KeyBoardBtn::Space))
 		position += cameraSpeed * Vec3{0.f, 1.f, 0.f};
-	if(isBtnPressed(KeyBoardBtn::LeftCtrl))
+	if(is_btn_pressed(KeyBoardBtn::LeftCtrl))
 		position -= cameraSpeed * Vec3{0.f, 1.f, 0.f};
 
 	magma::log::debug("position: {}", position);

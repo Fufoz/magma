@@ -2,36 +2,32 @@
 #define VK_PIPELINE_H
 #include "vk_types.h"
 
-VkBool32 configureGraphicsPipe(SwapChain& swapChain, VulkanGlobalContext& vkCtx,
-	VertexBuffer& vertexInfo, VkExtent2D windowExtent, PipelineState* state);
 
-void destroyPipeline(const VulkanGlobalContext& ctx, PipelineState* pipeline);
-
-VkPipelineShaderStageCreateInfo fillShaderStageCreateInfo(const VkDevice logicalDevice,
+VkPipelineShaderStageCreateInfo fill_shader_stage_ci(const VkDevice logicalDevice,
  	const char* shaderSource, VkShaderStageFlagBits shaderStage);
 
-VkPipelineVertexInputStateCreateInfo fillVertexInputStateCreateInfo(
+VkPipelineVertexInputStateCreateInfo fill_vertex_input_state_ci(
 	const VkVertexInputBindingDescription* bindingDescr, uint32_t bindingDescrCount,
 	const VkVertexInputAttributeDescription* vertexAttribDescr, uint32_t attribDescrCount);
 
-VkPipelineLayout createPipelineLayout(VkDevice logicalDevice, const VkDescriptorSetLayout* descrSetLayouts,
+VkPipelineLayout create_pipe_layout(VkDevice logicalDevice, const VkDescriptorSetLayout* descrSetLayouts,
 	uint32_t descrSetLayoutCount, const VkPushConstantRange* pushConstantRanges, uint32_t pushConstantRangeCount);
 
-VkPipelineRasterizationStateCreateInfo fillRasterizationStateCreateInfo(VkCullModeFlags cullMode, VkFrontFace frontFaceWindingOrder);
+VkPipelineRasterizationStateCreateInfo fill_raster_state_ci(VkCullModeFlags cullMode, VkFrontFace frontFaceWindingOrder);
 
-VkViewport createViewPort(VkExtent2D windowExtent);
+VkViewport create_viewport(VkExtent2D windowExtent);
 
-VkPipelineViewportStateCreateInfo fillViewportStateCreateInfo(const VkViewport& viewport, const VkRect2D& scissors);
+VkPipelineViewportStateCreateInfo fill_viewport_state_ci(const VkViewport& viewport, const VkRect2D& scissors);
 
-VkPipelineInputAssemblyStateCreateInfo fillInputAssemblyCreateInfo(VkPrimitiveTopology primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+VkPipelineInputAssemblyStateCreateInfo fill_input_assembly_state_ci(VkPrimitiveTopology primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
 
-VkPipelineMultisampleStateCreateInfo fillMultisampleStateCreateInfo();
+VkPipelineMultisampleStateCreateInfo fill_multisample_state_ci();
 
-VkPipelineDepthStencilStateCreateInfo fillDepthStencilStateCreateInfo(VkCompareOp depthCompareOp);
+VkPipelineDepthStencilStateCreateInfo fill_depth_stencil_state_ci(VkCompareOp depthCompareOp);
 
-VkPipelineColorBlendStateCreateInfo fillColorBlendStateCreateInfo(const VkPipelineColorBlendAttachmentState& blendAttachmentState);
+VkPipelineColorBlendStateCreateInfo fill_color_blend_state_ci(const VkPipelineColorBlendAttachmentState& blendAttachmentState);
 
-VkPipelineDynamicStateCreateInfo fillDynamicStateCreateInfo(VkDynamicState* dynStates, uint32_t statesCount);
+VkPipelineDynamicStateCreateInfo fill_dynamic_state_ci(VkDynamicState* dynStates, uint32_t statesCount);
 
 
 #endif

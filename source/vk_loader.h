@@ -3,10 +3,10 @@
 
 #include <volk.h>
 
-VkResult locateAndInitVulkan();
+VkResult locate_and_init_vulkan();
 
-void loadInstanceFunctionPointers(VkInstance instance);
+void load_instance_function_pointers(VkInstance instance);
 
-void loadDeviceFunctionPointers(VkDevice logicalDevice);
+void load_device_function_pointers(VkDevice logicalDevice);
 
 #endif

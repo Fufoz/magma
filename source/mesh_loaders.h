@@ -39,10 +39,10 @@ struct TextureInfo
 	uint8_t* data;
 };
 
-bool loadTexture(const char* path, TextureInfo* out, bool flipImage = true);
+bool load_texture(const char* path, TextureInfo* out, bool flipImage = true);
 
-bool loadOBJ(const char* path, Mesh* geom);
+bool load_OBJ(const char* path, Mesh* geom);
 
-bool loadGLTF(const char* path, Mesh* geom, Animation* animation = nullptr);
+bool load_GLTF(const char* path, Mesh* geom, Animation* animation = nullptr);
 
 #endif

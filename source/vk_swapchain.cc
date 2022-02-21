@@ -66,7 +66,7 @@ static VkExtent2D pickImageExtent(VkExtent2D imageExtent, VkSurfaceCapabilitiesK
 	return selectedExtent;
 }
 
-static VkSwapchainKHR createSwapChain(VkDevice logicalDevice, VkSurfaceKHR windowSurface, VkSurfaceCapabilitiesKHR surfaceCaps, VkSurfaceFormatKHR surfaceFormat, VkExtent2D imageExtent, VkPresentModeKHR presentationMode, uint32_t queueFamIdx, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE)
+static VkSwapchainKHR create_swapchain(VkDevice logicalDevice, VkSurfaceKHR windowSurface, VkSurfaceCapabilitiesKHR surfaceCaps, VkSurfaceFormatKHR surfaceFormat, VkExtent2D imageExtent, VkPresentModeKHR presentationMode, uint32_t queueFamIdx, VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE)
 {
 
 	//create swapchain
@@ -108,25 +108,25 @@ static void buildSyncPrimitives(const VulkanGlobalContext& vkCtx, SwapChain* swa
 	imageAvailableSemaphores.resize(presentableFrames);
 	for(auto& semaphore : imageAvailableSemaphores)
 	{
-		semaphore = createSemaphore(vkCtx.logicalDevice);
+		semaphore = create_semaphore(vkCtx.logicalDevice);
 	}
 
 	auto& imageMayPresentSemaphores = swapChain->runtime.imageMayPresentSemaphores;
 	imageMayPresentSemaphores.resize(presentableFrames);
 	for(auto& semaphore : imageMayPresentSemaphores)
 	{
-		semaphore = createSemaphore(vkCtx.logicalDevice);
+		semaphore = create_semaphore(vkCtx.logicalDevice);
 	}
 
 	auto& imageFences = swapChain->runtime.workSubmittedFences;
 	imageFences.resize(presentableFrames);
 	for(auto& fence : imageFences)
 	{
-		fence = createFence(vkCtx.logicalDevice, true);
+		fence = create_fence(vkCtx.logicalDevice, true);
 	}
 }
 
-bool createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain)
+bool create_swapchain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, uint32_t preferredImageCount, SwapChain* swapChain)
 {
 	VkSwapchainKHR oldSwapchain = swapChain->swapchain;
 	//query for available surface formats
@@ -134,7 +134,7 @@ bool createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, u
 	VkPresentModeKHR selectedPresentMode = queryPresentMode(windowInfo.surface, vkCtx.physicalDevice, VK_PRESENT_MODE_FIFO_KHR);
 	VkExtent2D imageExtent = pickImageExtent(windowInfo.windowExtent, windowInfo.surfaceCaps);
 	VK_CHECK(queryPresentationSupport(vkCtx.physicalDevice, vkCtx.queueFamIdx, windowInfo.surface));
-	VkSwapchainKHR vkSwapChain = createSwapChain(vkCtx.logicalDevice, windowInfo.surface, windowInfo.surfaceCaps,
+	VkSwapchainKHR vkSwapChain = create_swapchain(vkCtx.logicalDevice, windowInfo.surface, windowInfo.surfaceCaps,
 		surfaceFormat, imageExtent, selectedPresentMode, vkCtx.queueFamIdx, oldSwapchain);
 	
 	uint32_t swapChainImageCount = {};
@@ -184,7 +184,7 @@ bool createSwapChain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, u
 	return true;
 }
 
-VkResult destroySwapChain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain)
+VkResult destroy_swapchain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain)
 {
 	//wait until all submitted commands will be executed
 	vkDeviceWaitIdle(vkCtx.logicalDevice);
@@ -219,7 +219,7 @@ VkResult destroySwapChain(const VulkanGlobalContext& vkCtx, SwapChain* swapChain
 	return VK_SUCCESS;
 }
 
-VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain)
+VkResult recreate_swapchain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, SwapChain* swapChain)
 {
 	//wait until gpu is done using any runtime objects
 	vkDeviceWaitIdle(vkCtx.logicalDevice);
@@ -234,30 +234,11 @@ VkResult recreateSwapChain(VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, S
 		vkDestroyImageView(vkCtx.logicalDevice, imageView, nullptr);
 	}	
 
-	updateWindowDimensions(vkCtx.physicalDevice, &windowInfo);
+	update_window_dimensions(vkCtx.physicalDevice, &windowInfo);
 
-	createSwapChain(vkCtx, windowInfo, swapChain->imageCount, swapChain);
+	create_swapchain(vkCtx, windowInfo, swapChain->imageCount, swapChain);
 
 	return VK_SUCCESS;
-}
-
-
-void buildFrameBuffers(VkDevice logicaDevice, const PipelineState& pipelineState, VkExtent2D windowExtent, SwapChain* swapChain)
-{
-	for(std::size_t i = 0; i < swapChain->imageCount; i++)
-	{
-		VkFramebufferCreateInfo frameBufferCreateInfo = {};
-		frameBufferCreateInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-		frameBufferCreateInfo.pNext = nullptr;
-		frameBufferCreateInfo.flags = VK_FLAGS_NONE;
-		frameBufferCreateInfo.renderPass = pipelineState.renderPass;
-		frameBufferCreateInfo.attachmentCount = 1;
-		frameBufferCreateInfo.pAttachments = &swapChain->runtime.imageViews[i];
-		frameBufferCreateInfo.width = windowExtent.width;
-		frameBufferCreateInfo.height = windowExtent.height;
-		frameBufferCreateInfo.layers = 1;
-		VK_CALL(vkCreateFramebuffer(logicaDevice, &frameBufferCreateInfo, nullptr, &swapChain->runtime.frameBuffers[i]));
-	}
 }
 
 VkFramebuffer create_frame_buffer(

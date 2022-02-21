@@ -4,13 +4,13 @@
 #include "vk_types.h"
 #include "vk_dbg.h"
 
-VkCommandPool createCommandPool(const VulkanGlobalContext& vkCtx, VkCommandPoolCreateFlags commandPoolFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+VkCommandPool create_command_pool(const VulkanGlobalContext& vkCtx, VkCommandPoolCreateFlags commandPoolFlags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
-void createCommandBuffers(VkDevice logicalDevice, VkCommandPool commandPool, uint32_t count, std::vector<VkCommandBuffer>& out);
+void create_command_buffers(VkDevice logicalDevice, VkCommandPool commandPool, uint32_t count, std::vector<VkCommandBuffer>& out);
 
-void createCommandBuffer(VkDevice logicalDevice, VkCommandPool commandPool, VkCommandBuffer* out);
+void create_command_buffer(VkDevice logicalDevice, VkCommandPool commandPool, VkCommandBuffer* out);
 
-void destroyCommandPool(VkDevice device, VkCommandPool cmdPool);
+void destroy_command_pool(VkDevice device, VkCommandPool cmdPool);
 
 VkCommandBuffer begin_tmp_commands(VulkanGlobalContext& ctx, VkCommandPool cmdPool);
 

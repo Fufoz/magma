@@ -11,6 +11,6 @@ struct FPSCamera
 	mat4x4 viewTransform;
 };
 
-void fpsCameraUpdate(const WindowInfo& window, float deltaTime, FPSCamera* camera);
+void fps_camera_update(const WindowInfo& window, float deltaTime, FPSCamera* camera);
 
 #endif

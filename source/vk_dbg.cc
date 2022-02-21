@@ -1,7 +1,7 @@
 
 #include "vk_dbg.h"
 
-VkBool32 debugCallback(
+VkBool32 debug_callback(
 	VkDebugUtilsMessageSeverityFlagBitsEXT           messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT                  messageTypes,
 	const VkDebugUtilsMessengerCallbackDataEXT*      pCallbackData,
@@ -40,7 +40,7 @@ VkBool32 debugCallback(
 }
 
 
-const char* vkStrError(VkResult error)
+const char* vk_error_string(VkResult error)
 {
 	switch(error)
 	{

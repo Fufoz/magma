@@ -23,11 +23,16 @@ struct MousePos
 	int x, y;
 };
 
-MousePos getMousePos();
-MousePos getDeltaMousePos();
-void initInput(void* windowHandle);
-bool isBtnPressed(KeyBoardBtn btn);
-bool isMouseBtnPressed(MouseBtn btn);
-void setCursorPos(void* windowHandle, int x, int y);
+void init_input(void* windowHandle);
+
+MousePos get_mouse_position();
+
+MousePos get_delta_mouse_position();
+
+bool is_btn_pressed(KeyBoardBtn btn);
+
+bool is_mouse_btn_pressed(MouseBtn btn);
+
+void set_cursor_pos(void* windowHandle, int x, int y);
 
 #endif

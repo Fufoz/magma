@@ -33,7 +33,7 @@ static MousePos mousePosition = {};
 static std::bitset<GLFW_KEY_LAST> keyState = {};
 static std::bitset<GLFW_MOUSE_BUTTON_LAST> mouseState = {};
 
-void initInput(void* windowHandle)
+void init_input(void* windowHandle)
 {
 	GLFWwindow* handle = (GLFWwindow*)windowHandle;
 
@@ -77,12 +77,12 @@ void initInput(void* windowHandle)
 	glfwSetCursorPosCallback(handle, mouseHoverCallback);
 }
 
-MousePos getMousePos()
+MousePos get_mouse_position()
 {
 	return mousePosition;
 }
 
-MousePos getDeltaMousePos()
+MousePos get_delta_mouse_position()
 {
 	static MousePos previousMousePos = mousePosition;
 	MousePos currentMousePos = mousePosition;
@@ -94,17 +94,17 @@ MousePos getDeltaMousePos()
 	return delta;
 }
 
-bool isBtnPressed(KeyBoardBtn btn)
+bool is_btn_pressed(KeyBoardBtn btn)
 {
 	return keyState[keyRemapTable[btn]];
 }
 
-bool isMouseBtnPressed(MouseBtn btn)
+bool is_mouse_btn_pressed(MouseBtn btn)
 {
 	return mouseState[mouseRemapTable[btn]];
 }
 
-void setCursorPos(void* windowHandle, int x, int y)
+void set_cursor_pos(void* windowHandle, int x, int y)
 {
 	glfwSetCursorPos((GLFWwindow*)windowHandle, x, y); 
 }

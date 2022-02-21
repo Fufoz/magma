@@ -15,12 +15,12 @@ namespace log
 
 	static SeverityFlags severityMask = MASK_WARN|MASK_ERROR;
 	
-	void setSeverityMask(SeverityFlags mask)
+	void set_severity_mask(SeverityFlags mask)
 	{
 		severityMask |= mask;
 	}
 
-	void initLogging()
+	void init_logging()
 	{
 		const char* filter = std::getenv("MAGMA_LOGGING");
 		if(filter)
@@ -78,7 +78,7 @@ namespace log
 		COLOR_WHITE = FOREGROUND_RED|FOREGROUND_GREEN|FOREGROUND_BLUE|FOREGROUND_INTENSITY
 	};
 
-	Color logLvlToColor(SeverityMask mask)
+	Color log_lvl_to_color(SeverityMask mask)
 	{
 		switch(mask) 
 		{
@@ -100,7 +100,7 @@ namespace log
 			GetConsoleScreenBufferInfo(consoleHandle, &consoleInfo);
 			SetConsoleTextAttribute(consoleHandle, COLOR_WHITE);
 			fprintf(streamHandle, "[Magma]");
-			SetConsoleTextAttribute(consoleHandle, logLvlToColor(mask));
+			SetConsoleTextAttribute(consoleHandle, log_lvl_to_color(mask));
 			fprintf(streamHandle, " %s\n", info.c_str());
 			SetConsoleTextAttribute(consoleHandle, consoleInfo.wAttributes);
 		}
@@ -113,7 +113,7 @@ namespace log
 	static const char* COLOR_YELLOW = "\x1B[33m";
 	static const char* COLOR_WHITE = "\033[0m";
 
-	const char* logLvlToColor(SeverityMask mask)
+	const char* log_lvl_to_color(SeverityMask mask)
 	{
 		switch(mask) 
 		{
@@ -130,7 +130,7 @@ namespace log
 		if(severityMask & mask)
 		{
 			FILE* streamHandle = mask & MASK_ERROR ? stderr : stdout;
-			fprintf(streamHandle, "%s[Magma] %s %s %s\n", COLOR_WHITE, logLvlToColor(mask), info.c_str(), COLOR_WHITE);
+			fprintf(streamHandle, "%s[Magma] %s %s %s\n", COLOR_WHITE, log_lvl_to_color(mask), info.c_str(), COLOR_WHITE);
 		}
 	}
 
