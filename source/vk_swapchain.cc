@@ -3,7 +3,7 @@
 #include "vk_boilerplate.h"
 #include "platform/platform.h"
 
-static VkSurfaceFormatKHR querySurfaceFormat(VkSurfaceKHR windowSurface, VkPhysicalDevice physicalDevice)
+static VkSurfaceFormatKHR query_surface_format(VkSurfaceKHR windowSurface, VkPhysicalDevice physicalDevice)
 {
 	//query for available surface formats
 	uint32_t surfaceFormatCount = {};
@@ -26,7 +26,7 @@ static VkSurfaceFormatKHR querySurfaceFormat(VkSurfaceKHR windowSurface, VkPhysi
 	return formatFound ? selectedFormat : surfaceFormats[0];
 }
 
-static VkPresentModeKHR queryPresentMode(VkSurfaceKHR windowSurface, VkPhysicalDevice physicalDevice, VkPresentModeKHR preferredPresentMode)
+static VkPresentModeKHR query_present_mode(VkSurfaceKHR windowSurface, VkPhysicalDevice physicalDevice, VkPresentModeKHR preferredPresentMode)
 {
 	//query for available surface presentation mode
 	uint32_t presentModeCount = {};
@@ -46,14 +46,14 @@ static VkPresentModeKHR queryPresentMode(VkSurfaceKHR windowSurface, VkPhysicalD
 	return selectedPresentMode;
 }
 
-static VkBool32 queryPresentationSupport(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIdx, VkSurfaceKHR windowSurface)
+static VkBool32 query_presentation_support(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIdx, VkSurfaceKHR windowSurface)
 {
 	VkBool32 surfaceSupported = VK_FALSE;
 	VK_CALL(vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamilyIdx, windowSurface, &surfaceSupported));
 	return surfaceSupported;
 }
 
-static VkExtent2D pickImageExtent(VkExtent2D imageExtent, VkSurfaceCapabilitiesKHR& surfaceCaps)
+static VkExtent2D pick_image_extent(VkExtent2D imageExtent, VkSurfaceCapabilitiesKHR& surfaceCaps)
 {
 	//determine current image extent:
 	VkExtent2D selectedExtent = surfaceCaps.currentExtent;
@@ -101,7 +101,7 @@ static VkSwapchainKHR create_swapchain(VkDevice logicalDevice, VkSurfaceKHR wind
 	return swapChain;
 }
 
-static void buildSyncPrimitives(const VulkanGlobalContext& vkCtx, SwapChain* swapChain)
+static void build_sync_primitives(const VulkanGlobalContext& vkCtx, SwapChain* swapChain)
 {
 	uint32_t presentableFrames = swapChain->imageCount;
 	auto& imageAvailableSemaphores = swapChain->runtime.imageAvailableSemaphores;
@@ -130,10 +130,10 @@ bool create_swapchain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, 
 {
 	VkSwapchainKHR oldSwapchain = swapChain->swapchain;
 	//query for available surface formats
-	VkSurfaceFormatKHR surfaceFormat = querySurfaceFormat(windowInfo.surface, vkCtx.physicalDevice);	
-	VkPresentModeKHR selectedPresentMode = queryPresentMode(windowInfo.surface, vkCtx.physicalDevice, VK_PRESENT_MODE_FIFO_KHR);
-	VkExtent2D imageExtent = pickImageExtent(windowInfo.windowExtent, windowInfo.surfaceCaps);
-	VK_CHECK(queryPresentationSupport(vkCtx.physicalDevice, vkCtx.queueFamIdx, windowInfo.surface));
+	VkSurfaceFormatKHR surfaceFormat = query_surface_format(windowInfo.surface, vkCtx.physicalDevice);	
+	VkPresentModeKHR selectedPresentMode = query_present_mode(windowInfo.surface, vkCtx.physicalDevice, VK_PRESENT_MODE_FIFO_KHR);
+	VkExtent2D imageExtent = pick_image_extent(windowInfo.windowExtent, windowInfo.surfaceCaps);
+	VK_CHECK(query_presentation_support(vkCtx.physicalDevice, vkCtx.queueFamIdx, windowInfo.surface));
 	VkSwapchainKHR vkSwapChain = create_swapchain(vkCtx.logicalDevice, windowInfo.surface, windowInfo.surfaceCaps,
 		surfaceFormat, imageExtent, selectedPresentMode, vkCtx.queueFamIdx, oldSwapchain);
 	
@@ -178,7 +178,7 @@ bool create_swapchain(const VulkanGlobalContext& vkCtx, WindowInfo& windowInfo, 
 	
 	if(oldSwapchain == VK_NULL_HANDLE)
 	{
-		buildSyncPrimitives(vkCtx, swapChain);
+		build_sync_primitives(vkCtx, swapChain);
 	}
 
 	return true;
